@@ -5,7 +5,7 @@ db: ./dbs/polkadot-asset-hub.sqlite
 runtime-log-level: 5
 
 wasm-override: ./runtime_wasm/asset_hub_polkadot_runtime.compact.compressed.wasm
-# resume: ${env.POLKADOT_ASSET_HUB_BLOCK_NUMBER}
+# resume: true
 
 import-storage:
   System:

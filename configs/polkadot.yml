@@ -7,7 +7,7 @@ db: ./dbs/polkadot.sqlite
 runtime-log-level: 5
 
 wasm-override: ./runtime_wasm/polkadot_runtime.compact.compressed.wasm
-# resume: ${env.POLKADOT_BLOCK_NUMBER}
+# resume: true
 
 import-storage:
   System:

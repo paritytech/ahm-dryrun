@@ -5,7 +5,7 @@ db: ./dbs/polkadot-collectives.sqlite
 runtime-log-level: 5
 
 wasm-override: ./runtime_wasm/collectives_polkadot_runtime.compact.compressed.wasm
-# resume: ${env.POLKADOT_COLLECTIVES_BLOCK_NUMBER}
+# resume: true
 
 import-storage:
   System:

@@ -5,23 +5,30 @@ Scripts for dry-running the Asset Hub migration and verifying the post-migration
 Using [Chopsticks](https://github.com/AcalaNetwork/chopsticks) and [PAPI](papi.how).
 
 ## Getting started
-Source the env, replacing any paths you want to customise.
+```
+git clone --recursive git@github.com:paritytech/ahm-dryrun.git && cd ahm-dryrun
+```
+
+Or, if you've already cloned and didn't use the recursive flag, you can run:
+```
+git submodule update --init
+```
+
+Replacing any paths you want to customise in the env file.
+
 Use the justfile to do most common actions.
+
+> ⚠️ These should probably be migrated to npm scripts in the package.json when the testing tooling is in place.
 
 Start the network with the default options (resuming at the post-state):
 ```
+just build-runtimes
 just run
 ```
 
-Re-run the migration from a new block number:
-
-make your changes to the env
-```
-just migrate
-```
-
-List the other available commands with `just`.
-
+List the other available commands with `just help`.
 
 ## Contributions
-DBs are provided for resuming post-migration - don't commit your db changes unless you're re-running the migration. There will be a script for this.
+Make any changes to the env rather than to the bare configs.
+
+DBs are provided for resuming post-migration - don't commit your db changes unless you're re-running the migration, and never commit them after tests have run.

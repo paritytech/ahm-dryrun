@@ -1,23 +1,25 @@
+set dotenv-load
+
 # Fork network and run tests for polkadot from the post-migration state
 default:
     just run
 
 # Run the network from the post-migration state
 run:
-    source ./env
     npx @acala-network/chopsticks@latest xcm -r ./configs/polkadot.yml -p ./configs/polkadot-asset-hub.yml -p ./configs/polkadot-collectives.yml
 
 # Run the network from the pre-migration state
 run-pre:
-    source ./env
     POLKADOT_BLOCK_NUMBER=${POLKADOT_BLOCK_NUMBER_PRE} POLKADOT_ASSET_HUB_BLOCK_NUMBER=${POLKADOT_ASSET_HUB_BLOCK_NUMBER_PRE} POLKADOT_COLLECTIVES_BLOCK_NUMBER=${POLKADOT_COLLECTIVES_BLOCK_NUMBER_PRE} npx @acala-network/chopsticks@latest xcm -r ./configs/polkadot.yml -p ./configs/polkadot-asset-hub.yml -p ./configs/polkadot-collectives.yml
+
+# Update the runtimes submodule
+update-runtimes:
+    git submodule update runtimes
+    @echo '\nYou probably want to now run `just build-runtimes`'
 
 # Build the runtimes and copy back (works for local and remote)
 build-runtimes:
-    source ./env
-    cd ${RUNTIMES_PATH}
-    ${CARGO_CMD} build --release --features=on-chain-release-build -p asset-hub-polkadot-runtime -p polkadot-runtime -p collectives-polkadot-runtime
-    cd -
+    cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --release --features=on-chain-release-build -p asset-hub-polkadot-runtime -p polkadot-runtime -p collectives-polkadot-runtime
     scp ${BUILD_ARTIFACTS_PATH}/**/**.compact.compressed.wasm ./runtime_wasm/
 
 # Install dependencies for testing

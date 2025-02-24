@@ -1,0 +1,4 @@
+[submodule "runtimes"]
+	path = runtimes
+	url = git@github.com:polkadot-fellows/runtimes.git
+	branch = dev-asset-hub-migration
