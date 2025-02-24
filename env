@@ -1,0 +1,19 @@
+# Block numbers for post-migration state
+POLKADOT_BLOCK_NUMBER=
+POLKADOT_ASSET_HUB_BLOCK_NUMBER=
+POLKADOT_COLLECTIVES_BLOCK_NUMBER=
+
+# Block numbers for the pre-migration state
+POLKADOT_BLOCK_NUMBER_PRE=
+POLKADOT_ASSET_HUB_BLOCK_NUMBER_PRE=
+POLKADOT_COLLECTIVES_BLOCK_NUMBER_PRE=
+
+RUNTIMES_PATH=./runtimes
+
+# Local
+CARGO_CMD=cargo
+BUILD_ARTIFACTS_PATH=./runtimes/target/release/wbuild
+
+# Remote server
+# CARGO_CMD=cargo remote --
+# BUILD_ARTIFACTS_PATH=palace-frame:remote-builds/runtimes/target/release/wbuild
