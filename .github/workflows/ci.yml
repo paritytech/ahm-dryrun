@@ -24,6 +24,8 @@ jobs:
           node-version: 22
       - uses: extractions/setup-just@v2
       - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          cache: false
       - run: |
           # sudo apt-get update && sudo apt-get install -y curl jq
           # docker run -p 9944:9944 --rm --name polkadot parity/polkadot:v1.17.2 --sync warp --state-pruning 1000 --blocks-pruning 1000 --tmp --rpc-port 9944 --rpc-cors all --rpc-external &
@@ -31,6 +33,7 @@ jobs:
           # while [ $(curl -s localhost:9944/health | jq .isSyncing) = true ]; do echo "syncing"; sleep 30; done
           # echo "synced"
 
-          just test-prepare
+          npm install
+          # just test-prepare
           just build-runtimes
           # just run
