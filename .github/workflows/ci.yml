@@ -1,0 +1,36 @@
+name: CI
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  ci:
+    runs-on: parity-default
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: extractions/setup-just@v2
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - run: |
+          # sudo apt-get update && sudo apt-get install -y curl jq
+          # docker run -p 9944:9944 --rm --name polkadot parity/polkadot:v1.17.2 --sync warp --state-pruning 1000 --blocks-pruning 1000 --tmp --rpc-port 9944 --rpc-cors all --rpc-external &
+          # sleep 30
+          # while [ $(curl -s localhost:9944/health | jq .isSyncing) = true ]; do echo "syncing"; sleep 30; done
+          # echo "synced"
+
+          just test-prepare
+          just build-runtimes
+          # just run
