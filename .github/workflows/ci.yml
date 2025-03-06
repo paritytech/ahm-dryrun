@@ -33,7 +33,5 @@ jobs:
           # while [ $(curl -s localhost:9944/health | jq .isSyncing) = true ]; do echo "syncing"; sleep 30; done
           # echo "synced"
 
-          npm install
-          # just test-prepare
           just build-runtimes
           # just run
