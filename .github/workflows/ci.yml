@@ -27,6 +27,7 @@ jobs:
         with:
           toolchain: 1.84.1
           cache: false
+          components: rust-src
       - name: just run
         env:
           RUSTFLAGS: "-A warnings"
