@@ -27,7 +27,10 @@ jobs:
         with:
           toolchain: 1.84.1
           cache: false
-      - run: |
+      - name: just run
+        env:
+          RUSTFLAGS: "-A warnings"
+        run: |
           sudo apt-get update && sudo apt-get install -y curl jq build-essential
           # docker run -p 9944:9944 --rm --name polkadot parity/polkadot:v1.17.2 --sync warp --state-pruning 1000 --blocks-pruning 1000 --tmp --rpc-port 9944 --rpc-cors all --rpc-external &
           # sleep 30
