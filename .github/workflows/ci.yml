@@ -15,6 +15,7 @@ permissions: {}
 jobs:
   ci:
     runs-on: parity-default
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
         with:
@@ -32,9 +33,9 @@ jobs:
         env:
           RUSTFLAGS: "-A warnings"
         run: |
+          docker run -p 9944:9944 --rm --name polkadot parity/polkadot:v1.17.2 --sync warp --state-pruning 1000 --blocks-pruning 1000 --tmp --rpc-port 9944 --rpc-cors all --rpc-external  >/dev/null 2>&1 &
           rustup target add wasm32-unknown-unknown
           sudo apt-get update && sudo apt-get install -y curl jq build-essential
-          docker run -p 9944:9944 --rm --name polkadot parity/polkadot:v1.17.2 --sync warp --state-pruning 1000 --blocks-pruning 1000 --tmp --rpc-port 9944 --rpc-cors all --rpc-external &
           sleep 30
           while [ $(curl -s localhost:9944/health | jq .isSyncing) = true ]; do echo "syncing"; sleep 30; done
           echo "synced"
