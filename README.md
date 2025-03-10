@@ -32,3 +32,8 @@ List the other available commands with `just help`.
 Make any changes to the env rather than to the bare configs.
 
 DBs are provided for resuming post-migration - don't commit your db changes unless you're re-running the migration, and never commit them after tests have run.
+
+## Updating submodules
+Make sure to run `git submodule update --recursive` after you pull from the repo to update the submodules to the commits tracked in the repo.
+
+You can run e.g. `cd runtimes && git checkout <commit_hash> && cd - && git add runtimes && git commit` to update the commit that the runtimes submodule points to.
