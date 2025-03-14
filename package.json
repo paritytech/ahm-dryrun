@@ -1,6 +1,5 @@
 {
   "dependencies": {
     "@acala-network/chopsticks-testing": "^1.0.3",
-    "polkadot-api": "^1.9.5"
   }
 }
