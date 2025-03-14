@@ -7,7 +7,7 @@ test('test migration run', async() => {
         polkadot: {
             endpoint: 'wss://polkadot.rpc.permanence.io',
             block: 25100182,
-            'wasm-override': '/Users/ndk/parity/polkadot_runtime.compact.compressed.wasm',
+            'wasm-override': 'runtime_wasm/polkadot_runtime.compact.compressed.wasm',
             'runtime-log-level': 5,
             'fetch-storages': '0x', // universal prefix
             db: './rc-db.sqlite',
