@@ -31,15 +31,19 @@ test('test migration run', async() => {
         },
     });
 
-    let migrationStage = (await polkadot.api.query.rcMigrator.rcMigrationStage()).toHuman();
-    let stageName = migrationStage ? Object.keys(migrationStage)[0] : null;
+    let ahMigrationStage = (await polkadot.api.query.ahMigrator.ahMigrationStage()).toHuman();
+    let rcMigrationStage = (await polkadot.api.query.rcMigrator.rcMigrationStage()).toHuman();
+    let rcStageName = rcMigrationStage ? Object.keys(rcMigrationStage)[0] : null;
 
-    while (stageName == 'AccountsMigrationOngoing') {
+    while (rcStageName == 'AccountsMigrationOngoing') {
         await polkadot.dev.newBlock();
 
-        migrationStage = (await polkadot.api.query.rcMigrator.rcMigrationStage()).toHuman();
-        console.log('new RC migration stage is ', migrationStage);
-        stageName = migrationStage ? Object.keys(migrationStage)[0] : null;
+        ahMigrationStage = (await polkadot.api.query.ahMigrator.ahMigrationStage()).toHuman();
+        console.log('new AH migration stage is ', ahMigrationStage);
+
+        rcMigrationStage = (await polkadot.api.query.rcMigrator.rcMigrationStage()).toHuman();
+        console.log('new RC migration stage is ', rcMigrationStage);
+        rcStageName = rcMigrationStage ? Object.keys(rcMigrationStage)[0] : null;
     }
 
     console.log('migration has finished');
