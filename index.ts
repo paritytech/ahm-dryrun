@@ -31,7 +31,7 @@ test('test migration run', async() => {
         },
     });
 
-    let ahMigrationStage = (await polkadot.api.query.ahMigrator.ahMigrationStage()).toHuman();
+    let ahMigrationStage = (await assetHub.api.query.ahMigrator.ahMigrationStage()).toHuman();
     let rcMigrationStage = (await polkadot.api.query.rcMigrator.rcMigrationStage()).toHuman();
     let rcStageName = rcMigrationStage ? Object.keys(rcMigrationStage)[0] : null;
 
