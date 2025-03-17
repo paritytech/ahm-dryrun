@@ -26,6 +26,23 @@ just build-runtimes
 just run
 ```
 
+### E2E Tests on AHNW runtime
+
+To run PET'S currently existing E2E test suites on the AHNW, use
+
+```sh
+#runs all of them, AHNW and beyond
+just e2e-tests
+
+# runs all suites from current E2E suites that have been adapted to the AHNW
+just e2e-tests assetHubNext
+
+# specific test suite(s)
+just e2e-tests assetHubNext.scheduler
+just e2e-tests assetHubNext.staking assetHubNext.nominationPools
+...
+```
+
 List the other available commands with `just help`.
 
 ## Contributions
