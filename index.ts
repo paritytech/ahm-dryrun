@@ -38,7 +38,7 @@ test('test migration run', async() => {
     while (rcStageName == 'AccountsMigrationOngoing') {
         await polkadot.dev.newBlock();
 
-        ahMigrationStage = (await polkadot.api.query.ahMigrator.ahMigrationStage()).toHuman();
+        ahMigrationStage = (await assetHub.api.query.ahMigrator.ahMigrationStage()).toHuman();
         console.log('new AH migration stage is ', ahMigrationStage);
 
         rcMigrationStage = (await polkadot.api.query.rcMigrator.rcMigrationStage()).toHuman();
