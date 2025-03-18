@@ -1,8 +1,6 @@
 import { test } from "bun:test";
 import { setupNetworks } from '@acala-network/chopsticks-testing'
 
-// run it with bun test ./index.ts --timeout=22000000
-// 22000000 miliseconds ~ 6.1 hours which should be enough (in theory) to run accounts migration
 test('test migration run', async() => {
     const {polkadot, assetHub} = await setupNetworks({
         polkadot: {
