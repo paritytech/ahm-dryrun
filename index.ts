@@ -14,7 +14,7 @@ test('test migration run', async() => {
             'wasm-override': 'runtime_wasm/polkadot_runtime.compact.compressed.wasm',
             // 'runtime-log-level': 5,
             'prefetch-storages': ['0x'], // universal prefix
-            // db: './rc-db.sqlite',
+            db: './dbs/polkadot.sqlite',
             port: 8000,
         },
         assetHub: {
@@ -27,6 +27,7 @@ test('test migration run', async() => {
             'prefetch-storages': ['0x'],
             // 'runtime-log-level': 5,
             // db: './ah-db.sqlite',
+            db: './dbs/polkadot-asset-hub.sqlite',
             port: 8001,
         },
     });
