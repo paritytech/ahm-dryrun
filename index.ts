@@ -6,7 +6,7 @@ import { setupNetworks } from '@acala-network/chopsticks-testing'
 test('test migration run', async() => {
     const {polkadot, assetHub} = await setupNetworks({
         polkadot: {
-            endpoint: process.env.POLKADOT_ENDPOINT,
+            endpoint: process.env.POLKADOT_ENDPOINT || 'ws://localhost:9944',
             // resumes from the highest block.
             // resume: true,
             // setupNetworks invokes dev.newBlock to override the wasm, so blocks in the db start from block+1
@@ -18,7 +18,7 @@ test('test migration run', async() => {
             port: 8000,
         },
         assetHub: {
-            endpoint: process.env.POLKADOT_ASSET_HUB_ENDPOINT,
+            endpoint: process.env.POLKADOT_ASSET_HUB_ENDPOINT || 'ws://localhost:9955',
             // resumes from the highest block.
             // resume: true,
             // setupNetworks invokes dev.newBlock to override the wasm, so blocks in the db start from block+1
