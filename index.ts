@@ -6,27 +6,27 @@ import { setupNetworks } from '@acala-network/chopsticks-testing'
 test('test migration run', async() => {
     const {polkadot, assetHub} = await setupNetworks({
         polkadot: {
-            endpoint: 'wss://polkadot.rpc.permanence.io',
+            endpoint: process.env.POLKADOT_ENDPOINT,
             // resumes from the highest block.
-            resume: true,
+            // resume: true,
             // setupNetworks invokes dev.newBlock to override the wasm, so blocks in the db start from block+1
-            // block: 25172409, -- initial block
+            block: 25172409,
             'wasm-override': 'runtime_wasm/polkadot_runtime.compact.compressed.wasm',
             // 'runtime-log-level': 5,
-            'fetch-storages': '0x', // universal prefix
-            db: './rc-db.sqlite',
+            'prefetch-storages': ['0x'], // universal prefix
+            // db: './rc-db.sqlite',
             port: 8000,
         },
         assetHub: {
-            endpoint: 'wss://polkadot-asset-hub-rpc.polkadot.io',
+            endpoint: process.env.POLKADOT_ASSET_HUB_ENDPOINT,
             // resumes from the highest block.
-            resume: true,
+            // resume: true,
             // setupNetworks invokes dev.newBlock to override the wasm, so blocks in the db start from block+1
-            // block: 8433079, -- initial block
+            block: 8433079,
             'wasm-override': 'runtime_wasm/asset_hub_polkadot_runtime.compact.compressed.wasm',
-            'fetch-storages': '0x',
+            'prefetch-storages': ['0x'],
             // 'runtime-log-level': 5,
-            db: './ah-db.sqlite',
+            // db: './ah-db.sqlite',
             port: 8001,
         },
     });
