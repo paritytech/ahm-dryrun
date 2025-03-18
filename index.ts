@@ -24,7 +24,6 @@ test('test migration run', async() => {
             'wasm-override': 'runtime_wasm/asset_hub_polkadot_runtime.compact.compressed.wasm',
             'prefetch-storages': ['0x'],
             // 'runtime-log-level': 5,
-            // db: './ah-db.sqlite',
             db: './dbs/polkadot-asset-hub.sqlite',
             port: 8001,
         },
