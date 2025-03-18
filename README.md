@@ -26,7 +26,7 @@ just build-runtimes
 just run
 ```
 
-### E2E Tests on AHNW runtime
+### E2E Tests on Asset Hub Next
 
 To run PET'S currently existing E2E test suites on the AHNW, use
 
