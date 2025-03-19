@@ -1,5 +1,6 @@
 import { test } from "bun:test";
 import { setupNetworks } from '@acala-network/chopsticks-testing'
+import assert from "assert";
 
 test('test migration run', async() => {
     const {polkadot, assetHub} = await setupNetworks({
@@ -29,8 +30,8 @@ test('test migration run', async() => {
         },
     });
 
-    let rcAccBefore = (await polkadot.api.query.system.account('5Ee7mSUN7p9YGqzthB1uCbQPMo9zC2Z2Yv5b2nsHKDzmtseR')).data.free;
-    let ahAccBefore = (await assetHub.api.query.system.account('5Ee7mSUN7p9YGqzthB1uCbQPMo9zC2Z2Yv5b2nsHKDzmtseR')).data.free;
+    let rcAccBefore = (await polkadot.api.query.system.account('5Ee7mSUN7p9YGqzthB1uCbQPMo9zC2Z2Yv5b2nsHKDzmtseR')).data;
+    let ahAccBefore = (await assetHub.api.query.system.account('5Ee7mSUN7p9YGqzthB1uCbQPMo9zC2Z2Yv5b2nsHKDzmtseR')).data;
     console.log('rcAccBefore: ', rcAccBefore.toHuman());
     console.log('ahAccBefore: ', ahAccBefore.toHuman())
 
@@ -52,8 +53,10 @@ test('test migration run', async() => {
 
     console.log('migration has finished');
 
-    let rcAccAfter = (await polkadot.api.query.system.account('5Ee7mSUN7p9YGqzthB1uCbQPMo9zC2Z2Yv5b2nsHKDzmtseR')).data.free;
-    let ahAccAfter = (await assetHub.api.query.system.account('5Ee7mSUN7p9YGqzthB1uCbQPMo9zC2Z2Yv5b2nsHKDzmtseR')).data.free;
+    let rcAccAfter = (await polkadot.api.query.system.account('5Ee7mSUN7p9YGqzthB1uCbQPMo9zC2Z2Yv5b2nsHKDzmtseR')).data;
+    let ahAccAfter = (await assetHub.api.query.system.account('5Ee7mSUN7p9YGqzthB1uCbQPMo9zC2Z2Yv5b2nsHKDzmtseR')).data;
     console.log('rcAccAfter: ', rcAccAfter.toHuman());
     console.log('ahAccAfter: ', ahAccAfter.toHuman())
+
+    assert(ahAccAfter.free.eq(rcAccBefore.free));
 });
