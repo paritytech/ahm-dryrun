@@ -1,5 +1,6 @@
 import { test } from "bun:test";
 import { setupNetworks } from '@acala-network/chopsticks-testing'
+import assert from "assert";
 
 test('test migration run', async() => {
     const {polkadot, assetHub} = await setupNetworks({
@@ -29,20 +30,33 @@ test('test migration run', async() => {
         },
     });
 
+    let rcAccBefore = (await polkadot.api.query.system.account('5Ee7mSUN7p9YGqzthB1uCbQPMo9zC2Z2Yv5b2nsHKDzmtseR')).data;
+    let ahAccBefore = (await assetHub.api.query.system.account('5Ee7mSUN7p9YGqzthB1uCbQPMo9zC2Z2Yv5b2nsHKDzmtseR')).data;
+    console.log('rcAccBefore: ', rcAccBefore.toHuman());
+    console.log('ahAccBefore: ', ahAccBefore.toHuman())
+
+
     let ahMigrationStage = (await assetHub.api.query.ahMigrator.ahMigrationStage()).toHuman();
     let rcMigrationStage = (await polkadot.api.query.rcMigrator.rcMigrationStage()).toHuman();
     let rcStageName = rcMigrationStage ? Object.keys(rcMigrationStage)[0] : null;
 
-    while (rcStageName == 'AccountsMigrationOngoing') {
+    for (let i = 0; i < 3; i++) {
         await polkadot.dev.newBlock();
 
         ahMigrationStage = (await assetHub.api.query.ahMigrator.ahMigrationStage()).toHuman();
-        console.log('new AH migration stage is ', ahMigrationStage);
+        // console.log('new AH migration stage is ', ahMigrationStage);
 
         rcMigrationStage = (await polkadot.api.query.rcMigrator.rcMigrationStage()).toHuman();
-        console.log('new RC migration stage is ', rcMigrationStage);
+        // console.log('new RC migration stage is ', rcMigrationStage);
         rcStageName = rcMigrationStage ? Object.keys(rcMigrationStage)[0] : null;
     }
 
     console.log('migration has finished');
+
+    let rcAccAfter = (await polkadot.api.query.system.account('5Ee7mSUN7p9YGqzthB1uCbQPMo9zC2Z2Yv5b2nsHKDzmtseR')).data;
+    let ahAccAfter = (await assetHub.api.query.system.account('5Ee7mSUN7p9YGqzthB1uCbQPMo9zC2Z2Yv5b2nsHKDzmtseR')).data;
+    console.log('rcAccAfter: ', rcAccAfter.toHuman());
+    console.log('ahAccAfter: ', ahAccAfter.toHuman())
+
+    assert(ahAccAfter.free.eq(rcAccBefore.free));
 });
