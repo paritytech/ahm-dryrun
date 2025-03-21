@@ -40,6 +40,9 @@ build-runtimes:
 test-prepare:
     npm install
 
+e2e-test *TEST:
+    cd ${PET_PATH} && yarn && yarn test {{TEST}}
+
 # Run the tests
 test:
     npm test
