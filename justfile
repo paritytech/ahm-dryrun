@@ -8,6 +8,10 @@ default:
 run:
     npx @acala-network/chopsticks@latest xcm -r ./configs/polkadot.yml -p ./configs/polkadot-asset-hub.yml -p ./configs/polkadot-collectives.yml
 
+# Spins up and sync polkadot node
+sync:
+    polkadot --sync warp --rpc-max-request-size 999999999 --rpc-max-response-size 999999999 --state-pruning 1000 --blocks-pruning 1000 --tmp --rpc-port 9944 --rpc-cors all
+
 # Run the network from the pre-migration state
 run-pre:
     POLKADOT_BLOCK_NUMBER=${POLKADOT_BLOCK_NUMBER_PRE} POLKADOT_ASSET_HUB_BLOCK_NUMBER=${POLKADOT_ASSET_HUB_BLOCK_NUMBER_PRE} POLKADOT_COLLECTIVES_BLOCK_NUMBER=${POLKADOT_COLLECTIVES_BLOCK_NUMBER_PRE} npx @acala-network/chopsticks@latest xcm -r ./configs/polkadot.yml -p ./configs/polkadot-asset-hub.yml -p ./configs/polkadot-collectives.yml
