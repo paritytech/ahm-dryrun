@@ -10,3 +10,7 @@
 	path = polkadot-sdk
 	url = git@github.com:paritytech/polkadot-sdk.git
 	branch = donal-ahm
+[submodule "zombie-bite/polkadot-sdk-doppelganger"]
+	path = zombie-bite/polkadot-sdk-doppelganger
+	url = git@github.com:paritytech/polkadot-sdk.git
+	branch = jv-doppelganger-node
