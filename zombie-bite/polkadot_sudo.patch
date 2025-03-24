@@ -1,0 +1,88 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index 768e9d8a8..9f81c65ff 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -10256,6 +10256,7 @@ dependencies = [
+  "pallet-staking-reward-fn",
+  "pallet-staking-runtime-api",
+  "pallet-state-trie-migration",
++ "pallet-sudo",
+  "pallet-timestamp",
+  "pallet-transaction-payment",
+  "pallet-transaction-payment-rpc-runtime-api",
+diff --git a/relay/polkadot/Cargo.toml b/relay/polkadot/Cargo.toml
+index 5176168fb..cfdc8858d 100644
+--- a/relay/polkadot/Cargo.toml
++++ b/relay/polkadot/Cargo.toml
+@@ -115,6 +115,9 @@ sp-debug-derive = { workspace = true }
+ # just for the coretime migration
+ polkadot-parachain-primitives = { workspace = true }
+ 
++# SUDO
++pallet-sudo = { workspace = true }
++
+ [dev-dependencies]
+ approx = { workspace = true }
+ sp-keyring = { workspace = true }
+@@ -188,6 +191,8 @@ std = [
+ 	"pallet-staking-runtime-api/std",
+ 	"pallet-staking/std",
+ 	"pallet-state-trie-migration/std",
++	# SUDO
++	"pallet-sudo/std",
+ 	"pallet-timestamp/std",
+ 	"pallet-transaction-payment-rpc-runtime-api/std",
+ 	"pallet-transaction-payment/std",
+diff --git a/relay/polkadot/src/ah_migration/phase1.rs b/relay/polkadot/src/ah_migration/phase1.rs
+index 221f68457..220dadbf7 100644
+--- a/relay/polkadot/src/ah_migration/phase1.rs
++++ b/relay/polkadot/src/ah_migration/phase1.rs
+@@ -134,6 +134,7 @@ pub fn call_allowed_status(call: &<Runtime as frame_system::Config>::RuntimeCall
+ 		AssetRate(..) => (OFF, OFF),
+ 		Beefy(..) => (OFF, ON), /* TODO @claravanstaden @bkontur */
+ 		RcMigrator(..) => (ON, ON),
++		Sudo(..) => (ON, ON)
+ 		// Exhaustive match. Compiler ensures that we did not miss any.
+ 	}
+ }
+diff --git a/relay/polkadot/src/genesis_config_presets.rs b/relay/polkadot/src/genesis_config_presets.rs
+index 63717f69e..a47debfe6 100644
+--- a/relay/polkadot/src/genesis_config_presets.rs
++++ b/relay/polkadot/src/genesis_config_presets.rs
+@@ -189,6 +189,9 @@ fn polkadot_testnet_genesis(
+ 			"forceEra": Forcing::NotForcing,
+ 			"slashRewardFraction": Perbill::from_percent(10),
+ 		},
++		"sudo": {
++			"key": Some(_root_key),
++		},
+ 		"babe": {
+ 			"epochConfig": Some(BABE_GENESIS_EPOCH_CONFIG),
+ 		},
+diff --git a/relay/polkadot/src/lib.rs b/relay/polkadot/src/lib.rs
+index 0a5f2a56e..fb3ce5a83 100644
+--- a/relay/polkadot/src/lib.rs
++++ b/relay/polkadot/src/lib.rs
+@@ -1712,11 +1712,22 @@ construct_runtime! {
+ 		Mmr: pallet_mmr = 201,
+ 		BeefyMmrLeaf: pallet_beefy_mmr = 202,
+ 
++		// Sudo.
++		Sudo: pallet_sudo = 250,
++
+ 		// Relay Chain Migrator
+ 		RcMigrator: pallet_rc_migrator = 255,
++
++
+ 	}
+ }
+ 
++impl pallet_sudo::Config for Runtime {
++	type RuntimeEvent = RuntimeEvent;
++	type RuntimeCall = RuntimeCall;
++	type WeightInfo = ();
++}
++
+ /// The address format for describing accounts.
+ pub type Address = sp_runtime::MultiAddress<AccountId, ()>;
+ /// Block header type as expected by this runtime.

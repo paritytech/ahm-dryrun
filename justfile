@@ -52,6 +52,25 @@ build-westend:
     cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --release --features=on-chain-release-build -p asset-hub-westend-runtime -p westend-runtime -p collectives-westend-runtime
     scp ${RUNTIMES_BUILD_ARTIFACTS_PATH}/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
 
+# Run zombie-bite to spawn polkadot(with sudo)/asset-hub
+run-zombie-bite:
+    which zombie-bite 2>&1 > /dev/null || cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite
+
+    # TODO: generate a way to update patch after changes.
+    cd ${RUNTIMES_PATH} && git checkout b167d1a3d5cb07cfb5c48d1230155508bb2b8a77 && git apply ../zombie-bite/polkadot_sudo.patch
+
+    just build-polkadot
+
+    # build doppelganger bins
+    cd ${DOPPELGANGER_PATH} && \
+    SKIP_WASM_BUILD=1 cargo build --release -p polkadot-doppelganger-node --bin doppelganger && \
+    SKIP_WASM_BUILD=1 cargo build --release -p polkadot-parachain-bin --features doppelganger --bin doppelganger-parachain && \
+    SKIP_WASM_BUILD=1 cargo build --release -p polkadot-parachain-bin --bin polkadot-parachain && \
+    SKIP_WASM_BUILD=1 cargo build --release --bin polkadot --bin polkadot-prepare-worker --bin polkadot-execute-worker
+
+    # run zombie-bite
+    PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite polkadot:./runtime_wasm/polkadot_runtime.compact.compressed.wasm asset-hub
+
 # Install dependencies for testing
 test-prepare:
     npm install

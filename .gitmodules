@@ -1,12 +1,16 @@
 [submodule "runtimes"]
 	path = runtimes
-	url = git@github.com:polkadot-fellows/runtimes.git
+	url = https://github.com/polkadot-fellows/runtimes.git
 	branch = dev-asset-hub-migration
 [submodule "polkadot-ecosystem-tests"]
 	path = polkadot-ecosystem-tests
-	url = git@github.com:open-web3-stack/polkadot-ecosystem-tests.git
+	url = https://github.com/open-web3-stack/polkadot-ecosystem-tests.git
 	branch = ahm-tests
 [submodule "polkadot-sdk"]
 	path = polkadot-sdk
-	url = git@github.com:paritytech/polkadot-sdk.git
+	url = https://github.com/paritytech/polkadot-sdk.git
 	branch = donal-ahm
+[submodule "zombie-bite/polkadot-sdk-doppelganger"]
+	path = zombie-bite/polkadot-sdk-doppelganger
+	url = https://github.com/paritytech/polkadot-sdk.git
+	branch = jv-doppelganger-node
