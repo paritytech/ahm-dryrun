@@ -55,7 +55,8 @@ build-westend:
 run-zombie-bite:
     which zombie-bite 2>&1 > /dev/null || cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite
 
-    cd ${RUNTIMES_PATH} && git apply ../zombie-bite/polkadot_sudo.patch
+    # TODO: generate a way to update patch after changes.
+    cd ${RUNTIMES_PATH} && git checkout b167d1a3d5cb07cfb5c48d1230155508bb2b8a77 && git apply ../zombie-bite/polkadot_sudo.patch
 
     just build-polkadot
 
