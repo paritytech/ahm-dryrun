@@ -17,7 +17,10 @@
 Apply the patch `polkadot_sudo.patch` on top of the polkadot code in `runtimes` directory and then compile the runtime.
 
 ```
-cd ../runtimes && cargo build --release -p polkadot-runtime && cd -
+cd ../runtimes
+git apply ../zombie-bite/polkadot_sudo.patch
+cargo build --release -p polkadot-runtime
+cd -
 ```
 
 - Compile the needed binaries (from `polkadot-sdk-doppelganger`)
