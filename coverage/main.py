@@ -39,7 +39,7 @@ def main(runtimes_repo):
 		suggest_storage_req(storage_reqs, f)
 		exit = 1
 	
-	if len(storage_csv) > 0:
+	if exit != 0:
 		sys.exit(exit)
 
 	for req_name, fulfillments in storage_output.items():

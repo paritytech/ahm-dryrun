@@ -28,11 +28,18 @@ def main(dir):
 
 def scan_file(file_path, root, output_map):
 	with open(file_path, "r") as file:
-		lines = file.readlines()
+		data = file.read()
+
+	# Fast check to avoid slow regex path
+	if not 'Assert' in data:
+		return
+	
+	lines = data.split("\n")
 
 	for line_number, line in enumerate(lines):
 		rel_path = f'{os.path.relpath(file_path, root)}:{line_number + 1}'
 		abs_path = f'{os.path.abspath(file_path)}:{line_number + 1}'
+
 		line = line.strip().replace("'", '"')
 		
 		if storage := re.match(r".*Assert storage\s+\"([^\"]+)\".*", line):
