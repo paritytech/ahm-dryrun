@@ -3,7 +3,7 @@ Scan all code files (*.rs) recursively in the given folder and extract our magic
 - `Asserts functionality "pallet::extrinsic::functionality"`
 - `Asserts storage "pallet::storage::when::assertion"`
 
-The output will be used to populate a CSV map and uploaded to GDrive.
+The output will be used to populate a CSV map.
 
 Always exclude the `target/` directory.
 """
