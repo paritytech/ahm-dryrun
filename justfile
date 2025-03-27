@@ -1,3 +1,5 @@
+mod coverage
+
 set dotenv-load
 
 # Fork network and run tests for polkadot from the post-migration state
