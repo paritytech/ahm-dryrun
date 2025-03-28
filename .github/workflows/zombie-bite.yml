@@ -26,7 +26,12 @@ jobs:
       - name: install_deps
         run: |
           sudo apt-get update
-          sudo apt install -y build-essential
+          sudo apt-get install -y \
+          ca-certificates \
+          libssl1.1 \
+          libssl-dev \
+          pkg-config
+
       - name: install_zombie-bite
         run: |
           cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite
