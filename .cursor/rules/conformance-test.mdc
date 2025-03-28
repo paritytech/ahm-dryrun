@@ -1,0 +1,20 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+The [code.py](mdc:conformance/code.py) file is doing automated code scanning to check whether some requirements are fulfilled.  
+All storages need to have the requirements check somewhere for the mentioned `functionalities` in that file.
+
+When a specific test does indeed fulfil one of those requirements, it should be marked in the form of:  
+`// Assert storage "Pallet::StorageFor::when::what"` directly above the line that checks it.
+
+Example:
+```rust
+// Assert storage "Preimage::PreimageFor::ah_post::correct"
+assert!(alias::PreimageFor::<T>::contains_key((hash, len)));
+```
+
+It is possible to have multiple assertions for the same requirement - it will just be shown multiple times in the output.
+
+Functional requirements are not yet supported but will be added soon.

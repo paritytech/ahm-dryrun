@@ -1,12 +1,15 @@
+mod coverage
+
 set dotenv-load
 
 # Fork network and run tests for polkadot from the post-migration state
 default:
     just run
 
-# Run the network from the post-migration state
+# Run the network migration
 run:
-    npx @acala-network/chopsticks@latest xcm -r ./configs/polkadot.yml -p ./configs/polkadot-asset-hub.yml -p ./configs/polkadot-collectives.yml
+    bun test ./index.ts --timeout=22000000
+    # 22000000 miliseconds ~ 6.1 hours which should be enough (in theory) to run accounts migration
 
 # Run the network from the pre-migration state
 run-pre:

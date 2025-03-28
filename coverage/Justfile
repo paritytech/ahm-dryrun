@@ -1,0 +1,9 @@
+default: update
+
+show: update
+	open storage.csv
+
+update runtime="../runtimes":
+	#!/usr/bin/env bash
+
+	python3 main.py {{runtime}}

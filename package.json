@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@acala-network/chopsticks-testing": "^1.0.3",
+  }
+}
