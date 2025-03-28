@@ -1,4 +1,4 @@
-name: CI
+name: Zombie-bite
 on:
   workflow_dispatch:
 
@@ -10,7 +10,7 @@ concurrency:
 permissions: {}
 
 jobs:
-  ci:
+  run_zombie-bite:
     runs-on: parity-default
     timeout-minutes: 60
     steps:
@@ -23,6 +23,10 @@ jobs:
           toolchain: 1.84.1
           cache: false
           components: rust-src
+      - name: install_deps
+        run: |
+          sudo apt-get update
+          sudo apt install build-essential
       - name: install_zombie-bite
         run: |
           cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite
