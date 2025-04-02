@@ -29,7 +29,7 @@ jobs:
           RUSTFLAGS: "-A warnings"
         run: |
           # override cargo cmd to use forklift
-          echo "CARGO_CMD="forklift cargo" >> .env
+          echo 'CARGO_CMD="forklift cargo"' >> .env
           just run-zombie-bite
       - name: upload_artifacts
         uses: actions/upload-artifact@v4
