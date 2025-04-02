@@ -1,7 +1,10 @@
 name: Zombie-bite
 on:
   workflow_dispatch:
-
+    inputs:
+      sudo-key:
+        description: 'Sudo key to use as override'
+        required: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -27,11 +30,16 @@ jobs:
         env:
           ZOMBIE_BITE_CI_PATH: "/tmp/ci"
           RUSTFLAGS: "-A warnings"
+          SUDO: ${{ inputs.sudo-key }}
         run: |
           # override cargo cmd to use forklift
           echo 'CARGO_CMD="forklift cargo"' >> .env
           # create dst dir
           mkdir -p ${ZOMBIE_BITE_CI_PATH}
+
+          # export sudo if is not empty
+           if [[ $SUDO != "" ]];then  export ZOMBIE_SUDO=$SUDO; else echo "no sudo key provided, using default '//Alice'";fi
+
           just run-zombie-bite
       - name: upload_artifacts
         uses: actions/upload-artifact@v4
