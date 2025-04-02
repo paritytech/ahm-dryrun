@@ -44,8 +44,8 @@ build-kusama:
     scp ${RUNTIMES_BUILD_ARTIFACTS_PATH}/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
 
 # Build the polkadot runtimes and copy back
-build-polkadot:
-    cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --release --features=on-chain-release-build -p asset-hub-polkadot-runtime -p polkadot-runtime -p collectives-polkadot-runtime
+build-polkadot *EXTRA:
+    cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --release --features=on-chain-release-build {{EXTRA}} -p asset-hub-polkadot-runtime -p polkadot-runtime -p collectives-polkadot-runtime
     scp ${RUNTIMES_BUILD_ARTIFACTS_PATH}/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
 
 # Build the westend runtimes and copy back
@@ -58,10 +58,7 @@ build-westend:
 run-zombie-bite:
     which zombie-bite 2>&1 > /dev/null || cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite
 
-    # TODO: generate a way to update patch after changes.
-    cd ${RUNTIMES_PATH} && git checkout b167d1a3d5cb07cfb5c48d1230155508bb2b8a77 && git apply ../zombie-bite/polkadot_sudo.patch
-
-    just build-polkadot
+    just build-polkadot "--features zombie-bite-sudo"
 
     # build doppelganger bins
     cd ${DOPPELGANGER_PATH} && \
