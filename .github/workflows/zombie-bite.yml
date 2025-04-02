@@ -30,6 +30,8 @@ jobs:
         run: |
           # override cargo cmd to use forklift
           echo 'CARGO_CMD="forklift cargo"' >> .env
+          # create dst dir
+          mkdir -p ${ZOMBIE_BITE_CI_PATH}
           just run-zombie-bite
       - name: upload_artifacts
         uses: actions/upload-artifact@v4
