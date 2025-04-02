@@ -30,7 +30,8 @@ jobs:
           ca-certificates \
           libssl-dev \
           cmake \
-          pkg-config
+          pkg-config \
+          build-essential
 
       - name: install_zombie-bite
         run: |
