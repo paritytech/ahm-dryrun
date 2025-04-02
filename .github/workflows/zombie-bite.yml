@@ -11,7 +11,7 @@ permissions: {}
 
 jobs:
   run_zombie-bite:
-    runs-on: parity-default
+    runs-on: parity-large
     container:
         image: docker.io/paritytech/ci-unified:bullseye-1.84.1-2025-01-28-v202502131220
     timeout-minutes: 60
@@ -28,6 +28,8 @@ jobs:
           ZOMBIE_BITE_CI_PATH: "/tmp/ci"
           RUSTFLAGS: "-A warnings"
         run: |
+          # override cargo cmd to use forklift
+          echo "CARGO_CMD="forklift cargo" >> .env
           just run-zombie-bite
       - name: upload_artifacts
         uses: actions/upload-artifact@v4
