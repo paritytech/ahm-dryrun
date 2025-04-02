@@ -19,6 +19,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+      - uses: extractions/setup-just@v2
       - name: install_zombie-bite
         run: |
           cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite
