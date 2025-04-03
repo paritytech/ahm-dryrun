@@ -1,3 +1,4 @@
+import { config } from "dotenv";
 import { sr25519CreateDerive } from "@polkadot-labs/hdkd";
 import {
   DEV_PHRASE,
@@ -34,8 +35,10 @@ const aliceSigner = getPolkadotSigner(
   hdkdKeyPairAlice.sign,
 );
 
+config()
+const RC_WS_URL = process.env.ZOMBIE_BITE_RC_ENDPOINT || "ws://localhost:9977";
 const client = createClient(
-  withPolkadotSdkCompat(getWsProvider("ws://localhost:63168")),
+  withPolkadotSdkCompat(getWsProvider(RC_WS_URL)),
 );
 const RCApi = client.getTypedApi(polkadot_rc);
 
