@@ -56,7 +56,7 @@ build-westend:
 
 # Run zombie-bite to spawn polkadot(with sudo)/asset-hub
 run-zombie-bite:
-    which zombie-bite 2>&1 > /dev/null || cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite
+    which zombie-bite 2>&1 > /dev/null || cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite --force
 
     just build-polkadot "--features zombie-bite-sudo"
 
