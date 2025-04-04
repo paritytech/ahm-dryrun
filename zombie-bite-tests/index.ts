@@ -1,3 +1,5 @@
+import fs from "fs";
+import { blake2AsHex } from "@polkadot/util-crypto";
 import { config } from "dotenv";
 import { sr25519CreateDerive } from "@polkadot-labs/hdkd";
 import {
@@ -35,17 +37,26 @@ const aliceSigner = getPolkadotSigner(
   hdkdKeyPairAlice.sign,
 );
 
-config()
+config();
 const RC_WS_URL = process.env.ZOMBIE_BITE_RC_ENDPOINT || "ws://localhost:9977";
-const client = createClient(
-  withPolkadotSdkCompat(getWsProvider(RC_WS_URL)),
-);
+const client = createClient(withPolkadotSdkCompat(getWsProvider(RC_WS_URL)));
 const RCApi = client.getTypedApi(polkadot_rc);
 
 const dest = XcmVersionedLocation.V4({
   parents: 1,
   interior: XcmV3Junctions.X1(XcmV3Junction.Parachain(1000)),
 });
+
+const wasmFilePath =
+  "./runtime_wasm/asset_hub_polkadot_runtime.compact.compressed.wasm";
+const wasmBuffer = fs.readFileSync(wasmFilePath);
+const wasmHash = blake2AsHex(wasmBuffer);
+
+const authorizeCall = RCApi.tx.System.authorize_upgrade({
+  code_hash: Binary.fromHex(wasmHash),
+});
+
+const authorizeCallHexData = (await authorizeCall.getEncodedData()).asHex();
 
 const message = XcmVersionedXcm.V4([
   XcmV4Instruction.UnpaidExecution({
@@ -58,9 +69,7 @@ const message = XcmVersionedXcm.V4([
       ref_time: 999999999n,
       proof_size: 7777777n,
     },
-    call: Binary.fromHex(
-      "0x00090b4504a75e80db9cc956610c2a7ca5689df83a15a5311a1d62e4e3bf7bd2825c",
-    ),
+    call: Binary.fromHex(authorizeCallHexData),
   }),
 ]);
 
@@ -74,5 +83,4 @@ const sudoCall = RCApi.tx.Sudo.sudo({
 });
 
 const hash = await sudoCall.signAndSubmit(aliceSigner);
-
 console.log(`Transaction sent! Hash: ${hash}`);
