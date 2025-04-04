@@ -70,6 +70,10 @@ run-zombie-bite:
     # run zombie-bite
     PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite polkadot:./runtime_wasm/polkadot_runtime.compact.compressed.wasm asset-hub
 
+# Run script to upgrade Asset Hub runtime
+run-ah-upgrade:
+    bun run ./zombie-bite-scripts/authorize_upgrade_ah.ts
+
 # Install dependencies for testing
 test-prepare:
     npm install
