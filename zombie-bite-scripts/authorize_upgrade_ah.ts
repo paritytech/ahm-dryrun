@@ -37,7 +37,8 @@ const aliceSigner = getPolkadotSigner(
 );
 
 config();
-const RC_WS_URL = process.env.ZOMBIE_BITE_RC_ENDPOINT || "ws://localhost:9977";
+const rcPort = process.env.ZOMBIE_BITE_RC_PORT || 9977;
+const RC_WS_URL = `ws://localhost:${rcPort}`;
 const client = createClient(withPolkadotSdkCompat(getWsProvider(RC_WS_URL)));
 const RCApi = client.getTypedApi(polkadot_rc);
 
