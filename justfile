@@ -74,7 +74,6 @@ run-zombie-bite:
 run-ah-upgrade:
     bun run ./zombie-bite-scripts/authorize_upgrade_ah.ts
 
-
 # Install dependencies for testing
 test-prepare:
     npm install
