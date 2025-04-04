@@ -8,7 +8,7 @@ default:
 
 # Run the network migration
 run:
-    bun test ./index.ts --timeout=22000000
+    bun test ./authorize_upgrade_ah.ts --timeout=22000000
     # 22000000 miliseconds ~ 6.1 hours which should be enough (in theory) to run accounts migration
 
 # Run the network from the pre-migration state
@@ -72,7 +72,7 @@ run-zombie-bite:
 
 # Run script to upgrade Asset Hub runtime
 run-ah-upgrade:
-    bun run ./zombie-bite-tests/index.ts
+    bun run ./zombie-bite-scripts/authorize_upgrade_ah.ts
 
 
 # Install dependencies for testing

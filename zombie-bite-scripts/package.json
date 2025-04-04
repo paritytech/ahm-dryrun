@@ -1,6 +1,6 @@
 {
   "name": "zombie-bite-tests",
-  "module": "index.ts",
+  "module": "authorize_upgrade_ah.ts",
   "type": "module",
   "private": true,
   "devDependencies": {
