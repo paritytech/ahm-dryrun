@@ -30,7 +30,6 @@ const miniSecret = entropyToMiniSecret(entropy);
 const derive = sr25519CreateDerive(miniSecret);
 
 const hdkdKeyPairAlice = derive("//Alice");
-
 const aliceSigner = getPolkadotSigner(
   hdkdKeyPairAlice.publicKey,
   "Sr25519",
@@ -42,11 +41,6 @@ const RC_WS_URL = process.env.ZOMBIE_BITE_RC_ENDPOINT || "ws://localhost:9977";
 const client = createClient(withPolkadotSdkCompat(getWsProvider(RC_WS_URL)));
 const RCApi = client.getTypedApi(polkadot_rc);
 
-const dest = XcmVersionedLocation.V4({
-  parents: 1,
-  interior: XcmV3Junctions.X1(XcmV3Junction.Parachain(1000)),
-});
-
 const wasmFilePath =
   "./runtime_wasm/asset_hub_polkadot_runtime.compact.compressed.wasm";
 const wasmBuffer = fs.readFileSync(wasmFilePath);
@@ -55,7 +49,6 @@ const wasmHash = blake2AsHex(wasmBuffer);
 const authorizeCall = RCApi.tx.System.authorize_upgrade({
   code_hash: Binary.fromHex(wasmHash),
 });
-
 const authorizeCallHexData = (await authorizeCall.getEncodedData()).asHex();
 
 const message = XcmVersionedXcm.V4([
@@ -72,6 +65,11 @@ const message = XcmVersionedXcm.V4([
     call: Binary.fromHex(authorizeCallHexData),
   }),
 ]);
+
+const dest = XcmVersionedLocation.V4({
+  parents: 1,
+  interior: XcmV3Junctions.X1(XcmV3Junction.Parachain(1000)),
+});
 
 const xcmCall = RCApi.tx.XcmPallet.send({
   dest: dest,
