@@ -5,11 +5,11 @@ import assert from "assert";
 test("test migration run", async () => {
   const { polkadot, assetHub } = await setupNetworks({
     polkadot: {
-      endpoint: process.env.POLKADOT_ENDPOINT || "ws://localhost:9944",
+      endpoint: process.env.POLKADOT_ENDPOINT || `ws://localhost:${process.env.RELAY_NODE_RPC_PORT}`,
       // resumes from the highest block.
       // resume: true,
       // setupNetworks invokes dev.newBlock to override the wasm, so blocks in the db start from block+1
-      block: 25172409,
+      block: process.env.POLKADOT_BLOCK_NUMBER_PRE,
       "wasm-override": "runtime_wasm/polkadot_runtime.compact.compressed.wasm",
       // 'runtime-log-level': 5,
       "prefetch-storages": ["0x"], // universal prefix
@@ -18,11 +18,11 @@ test("test migration run", async () => {
     },
     assetHub: {
       endpoint:
-        process.env.POLKADOT_ASSET_HUB_ENDPOINT || "ws://localhost:9955",
+        process.env.POLKADOT_ASSET_HUB_ENDPOINT || `ws://localhost:${process.env.AH_NODE_RPC_PORT}`,
       // resumes from the highest block.
       // resume: true,
       // setupNetworks invokes dev.newBlock to override the wasm, so blocks in the db start from block+1
-      block: 8433079,
+      block: process.env.POLKADOT_ASSET_HUB_BLOCK_NUMBER_PRE,
       "wasm-override":
         "runtime_wasm/asset_hub_polkadot_runtime.compact.compressed.wasm",
       "prefetch-storages": ["0x"],
