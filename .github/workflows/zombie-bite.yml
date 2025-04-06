@@ -9,6 +9,9 @@ concurrency:
 
 permissions: {}
 
+env:
+  ZOMBIE_BITE_CI_PATH: "/tmp/ci"
+
 jobs:
   ci:
     runs-on: parity-default
@@ -28,13 +31,17 @@ jobs:
           cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite
       - name: zombie_bite
         env:
-          ZOMBIE_BITE_CI_PATH: "/tmp/ci"
           RUSTFLAGS: "-A warnings"
         run: |
           just run-zombie-bite
+      - name: read_rc_block
+        id: read_rc_block
+        run: |
+            RC_BLOCK= $(cat $ZOMBIE_BITE_CI_PATH/rc-info.txt)
+            echo "RC_BLOCK=$RC_BLOCK" >> $GITHUB_OUTPUT
       - name: upload_artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: zombienet-logs-${{ github.job }}-${{ github.sha }}
+          name: zombie-bite-rc_block_${{steps.read_rc_block.outputs.RC_BLOCK}}-${{ github.sha }}
           path: |
             /tmp/ci/*
