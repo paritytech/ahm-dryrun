@@ -59,7 +59,9 @@ build-westend:
 
 # Run zombie-bite to spawn polkadot(with sudo)/asset-hub
 run-zombie-bite:
-    which zombie-bite 2>&1 > /dev/null || cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite
+    just submodule-update
+
+    cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite --force
 
     just build-polkadot "--features zombie-bite-sudo"
 
@@ -72,6 +74,10 @@ run-zombie-bite:
 
     # run zombie-bite
     PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite polkadot:./runtime_wasm/polkadot_runtime.compact.compressed.wasm asset-hub
+
+# Run script to upgrade Asset Hub runtime
+run-ah-upgrade:
+    bun run ./zombie-bite-scripts/authorize_upgrade_ah.ts
 
 # Install dependencies for testing
 test-prepare:
