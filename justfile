@@ -45,7 +45,7 @@ build-kusama:
 
 # Build the polkadot runtimes and copy back
 build-polkadot *EXTRA:
-    cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --release --features=on-chain-release-build {{EXTRA}} -p asset-hub-polkadot-runtime -p polkadot-runtime -p collectives-polkadot-runtime
+    cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --features=on-chain-release-build {{EXTRA}} -p asset-hub-polkadot-runtime -p polkadot-runtime -p collectives-polkadot-runtime
     scp ${RUNTIMES_BUILD_ARTIFACTS_PATH}/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
 
 # Build the westend runtimes and copy back
