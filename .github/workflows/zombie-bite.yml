@@ -46,7 +46,7 @@ jobs:
       - name: read_rc_block
         id: read_rc_block
         run: |
-            RC_BLOCK= $(cat $ZOMBIE_BITE_CI_PATH/rc-info.txt)
+            RC_BLOCK=$(cat $ZOMBIE_BITE_CI_PATH/rc-info.txt)
             echo "RC_BLOCK=$RC_BLOCK" >> $GITHUB_OUTPUT
       - name: upload_artifacts
         uses: actions/upload-artifact@v4
