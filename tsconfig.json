@@ -10,9 +10,17 @@
     "outDir": "./dist",
     "rootDir": "./"
   },
+//  "TODO":
+//    -tsconfig needs papi,
+//    -running node to add ws provider and generate proper .papi then add .papi to the folder,
+//    - structure folders of chopsticks-script and zombie-bite-scripts,
+//    - unify package.json scripts,
+  // use only node, npm, npx,
+
+
   "include": [
-    "index.ts",
-    "zombie-bite-scripts/**/*.ts"
+    "zombie-bite-scripts/**/*.ts",
+    "index.ts"
   ],
   "exclude": ["node_modules", "dist"]
 }
