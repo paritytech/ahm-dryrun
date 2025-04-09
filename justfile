@@ -8,8 +8,9 @@ default:
 
 # Run the network migration
 run:
-    bun test ./index.ts --timeout=22000000
-    # 22000000 miliseconds ~ 6.1 hours which should be enough (in theory) to run accounts migration
+    npm install
+    npm run build
+    npm run chopsticks-migration
 
 # Run the network from the pre-migration state
 run-pre:
