@@ -2,6 +2,8 @@
   "name": "ahm",
   "version": "1.0.0",
   "type": "module",
+  "module": "index.ts",
+  "private": true,
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
@@ -18,13 +20,11 @@
     "polkadot-api": "^1.9.9"
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
+    "@types/bun": "latest",
     "prettier": "^3.5.3",
-    "@types/bun": "latest"
+    "typescript": "^5.0.0"
   },
   "peerDependencies": {
     "typescript": "^5"
-  },
-  "module": "index.ts",
-  "private": true
+  }
 }
