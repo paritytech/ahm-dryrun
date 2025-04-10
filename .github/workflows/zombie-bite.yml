@@ -3,8 +3,11 @@ on:
   workflow_dispatch:
     inputs:
       sudo-key:
-        description: 'Sudo key to use as override'
+        description: 'Sudo key to use as override (optional, default is //Alice)'
         required: false
+
+  schedule:
+    - cron:  '0 */6 * * *'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
