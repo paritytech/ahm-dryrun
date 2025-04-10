@@ -1,4 +1,4 @@
-# mod coverage
+mod coverage
 
 set dotenv-load
 
