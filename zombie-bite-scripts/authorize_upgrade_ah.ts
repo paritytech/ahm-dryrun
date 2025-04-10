@@ -60,7 +60,7 @@ const message = XcmVersionedXcm.V4([
   XcmV4Instruction.Transact({
     origin_kind: XcmV2OriginKind.Superuser(),
     require_weight_at_most: {
-      ref_time: 800000000,
+      ref_time: 800000000n,
       proof_size: 9999n,
     },
     call: Binary.fromHex(authorizeCallHexData),
