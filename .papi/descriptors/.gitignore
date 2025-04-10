@@ -1,3 +1,6 @@
 *
 !.gitignore
 !package.json
+!./dist/index.d.ts
+!./dist/index.mjs
+!./dist/index.js
