@@ -12,7 +12,7 @@ const { polkadot, assetHub } = await setupNetworks({
         block: process.env.POLKADOT_BLOCK_NUMBER_PRE,
         "wasm-override": "runtime_wasm/polkadot_runtime.compact.compressed.wasm",
         // 'runtime-log-level': 5,
-        "prefetch-storages": ["0x"], // universal prefix
+        // "prefetch-storages": ["0x"], // universal prefix
         db: "./dbs/polkadot.sqlite",
         port: 8000,
     },
@@ -26,7 +26,7 @@ const { polkadot, assetHub } = await setupNetworks({
         block: process.env.POLKADOT_ASSET_HUB_BLOCK_NUMBER_PRE,
         "wasm-override":
             "runtime_wasm/asset_hub_polkadot_runtime.compact.compressed.wasm",
-        "prefetch-storages": ["0x"],
+        // "prefetch-storages": ["0x"],
         // 'runtime-log-level': 5,
         db: "./dbs/polkadot-asset-hub.sqlite",
         port: 8001,
