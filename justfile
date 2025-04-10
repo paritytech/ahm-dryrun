@@ -8,8 +8,8 @@ default:
 
 # Run the network migration
 run:
-    just submodule init
-    just submodule update
+    just submodule-init
+    just submodule-update
     just build-polkadot
     npm install
     npm run build
