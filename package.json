@@ -9,7 +9,8 @@
     "chopsticks-migration": "node dist/chopsticks-scripts/run_migration.js",
     "authorize-upgrade": "node dist/zombie-bite-scripts/authorize_upgrade_ah.js",
     "prettier": "prettier --write .",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "postinstall": "papi"
   },
   "dependencies": {
     "@acala-network/chopsticks-testing": "^1.0.3",
