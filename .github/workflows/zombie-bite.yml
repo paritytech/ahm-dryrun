@@ -23,7 +23,7 @@ jobs:
     runs-on: parity-large
     container:
         image: docker.io/paritytech/ci-unified:bullseye-1.84.1-2025-01-28-v202502131220
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,6 +33,7 @@ jobs:
         run: |
           cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite
       - name: zombie_bite
+        shell: bash
         env:
           RUSTFLAGS: "-A warnings"
           SUDO: ${{ inputs.sudo-key }}
