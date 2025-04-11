@@ -11,8 +11,12 @@ default:
 
 # Run the network migration
 run:
-    bun test ./index.ts --timeout=22000000
-    # 22000000 miliseconds ~ 6.1 hours which should be enough (in theory) to run accounts migration
+    just submodule-init
+    just submodule-update
+    just build-polkadot
+    npm install
+    npm run build
+    npm run chopsticks-migration
 
 # Run the network from the pre-migration state
 run-pre:
@@ -48,8 +52,8 @@ build-kusama:
 
 # Build the polkadot runtimes and copy back
 build-polkadot *EXTRA:
-    cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --release --features=on-chain-release-build {{EXTRA}} -p asset-hub-polkadot-runtime -p polkadot-runtime -p collectives-polkadot-runtime
-    {{ cp_cmd }} ${RUNTIMES_BUILD_ARTIFACTS_PATH}/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
+    cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --release --features=metadata-hash {{EXTRA}} -p asset-hub-polkadot-runtime -p polkadot-runtime -p collectives-polkadot-runtime
+    scp ${RUNTIMES_BUILD_ARTIFACTS_PATH}/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
 
 # Build the westend runtimes and copy back
 # TODO: currently broken due to wasm compilation problem

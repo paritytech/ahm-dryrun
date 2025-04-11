@@ -60,15 +60,15 @@ const message = XcmVersionedXcm.V4([
   XcmV4Instruction.Transact({
     origin_kind: XcmV2OriginKind.Superuser(),
     require_weight_at_most: {
-      ref_time: 999999999n,
-      proof_size: 7777777n,
+      ref_time: 800000000n,
+      proof_size: 9999n,
     },
     call: Binary.fromHex(authorizeCallHexData),
   }),
 ]);
 
 const dest = XcmVersionedLocation.V4({
-  parents: 1,
+  parents: 0,
   interior: XcmV3Junctions.X1(XcmV3Junction.Parachain(1000)),
 });
 
