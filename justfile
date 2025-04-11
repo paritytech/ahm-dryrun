@@ -2,6 +2,9 @@ mod coverage
 
 set dotenv-load
 
+# In CI some image doesn't have scp and we can fallback to cp
+cp_cmd := `which scp || which cp`
+
 # Fork network and run tests for polkadot from the post-migration state
 default:
     just run
@@ -45,7 +48,7 @@ submodule-init:
 # Build the kusama runtimes and copy back
 build-kusama:
     cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --release --features=on-chain-release-build -p asset-hub-kusama-runtime -p kusama-runtime
-    scp ${RUNTIMES_BUILD_ARTIFACTS_PATH}/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
+    {{ cp_cmd }} ${RUNTIMES_BUILD_ARTIFACTS_PATH}/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
 
 # Build the polkadot runtimes and copy back
 build-polkadot *EXTRA:
@@ -56,7 +59,7 @@ build-polkadot *EXTRA:
 # TODO: currently broken due to wasm compilation problem
 build-westend:
     cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --release --features=on-chain-release-build -p asset-hub-westend-runtime -p westend-runtime -p collectives-westend-runtime
-    scp ${RUNTIMES_BUILD_ARTIFACTS_PATH}/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
+    {{ cp_cmd }} ${RUNTIMES_BUILD_ARTIFACTS_PATH}/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
 
 # Run zombie-bite to spawn polkadot(with sudo)/asset-hub
 run-zombie-bite:

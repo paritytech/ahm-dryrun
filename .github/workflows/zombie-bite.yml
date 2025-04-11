@@ -1,7 +1,13 @@
-name: CI
+name: Zombie-bite
 on:
   workflow_dispatch:
+    inputs:
+      sudo-key:
+        description: 'Sudo key to use as override (optional, default is //Alice)'
+        required: false
 
+  schedule:
+    - cron:  '0 0 * * *'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -9,32 +15,46 @@ concurrency:
 
 permissions: {}
 
+env:
+  ZOMBIE_BITE_CI_PATH: "/tmp/ci"
+
 jobs:
-  ci:
-    runs-on: parity-default
-    timeout-minutes: 60
+  run_zombie-bite:
+    runs-on: parity-large
+    container:
+        image: docker.io/paritytech/ci-unified:bullseye-1.84.1-2025-01-28-v202502131220
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
       - uses: extractions/setup-just@v2
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: 1.84.1
-          cache: false
-          components: rust-src
       - name: install_zombie-bite
         run: |
           cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite
       - name: zombie_bite
+        shell: bash
         env:
-          ZOMBIE_BITE_CI_PATH: "/tmp/ci"
           RUSTFLAGS: "-A warnings"
+          SUDO: ${{ inputs.sudo-key }}
         run: |
+          # override cargo cmd to use forklift
+          echo 'CARGO_CMD="forklift cargo"' >> .env
+          # create dst dir
+          mkdir -p ${ZOMBIE_BITE_CI_PATH}
+
+          # export sudo if is not empty
+           if [[ $SUDO != "" ]];then  export ZOMBIE_SUDO=$SUDO; else echo "no sudo key provided, using default '//Alice'";fi
+
           just run-zombie-bite
+      - name: read_rc_block
+        id: read_rc_block
+        run: |
+            RC_BLOCK=$(cat $ZOMBIE_BITE_CI_PATH/rc-info.txt)
+            echo "RC_BLOCK=$RC_BLOCK" >> $GITHUB_OUTPUT
       - name: upload_artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: zombienet-logs-${{ github.job }}-${{ github.sha }}
+          name: zombie-bite-rc_block_${{steps.read_rc_block.outputs.RC_BLOCK}}-${{ github.sha }}
           path: |
             /tmp/ci/*
