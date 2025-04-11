@@ -1,0 +1,7 @@
+*
+!.gitignore
+!package.json
+!dist/
+!dist/index.d.ts
+!dist/index.mjs
+!dist/index.js

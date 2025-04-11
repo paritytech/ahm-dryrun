@@ -1,5 +1,30 @@
 {
+  "name": "ahm",
+  "version": "1.0.0",
+  "type": "module",
+  "module": "ah-migration",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "chopsticks-migration": "node dist/chopsticks-scripts/run_migration.js",
+    "authorize-upgrade": "node dist/zombie-bite-scripts/authorize_upgrade_ah.js",
+    "prettier": "prettier --write .",
+    "clean": "rm -rf dist",
+    "postinstall": "papi"
+  },
   "dependencies": {
     "@acala-network/chopsticks-testing": "^1.0.3",
+    "@polkadot-api/descriptors": "file:.papi/descriptors",
+    "@polkadot-labs/hdkd": "^0.0.13",
+    "@polkadot/api": "^15.9.1",
+    "dotenv": "^16.4.7",
+    "polkadot-api": "^1.9.9"
+  },
+  "devDependencies": {
+    "prettier": "^3.5.3",
+    "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
   }
 }
