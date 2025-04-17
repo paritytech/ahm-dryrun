@@ -1,4 +1,6 @@
 import { setupNetworks } from "@acala-network/chopsticks-testing";
+import { fetchStorages } from '@acala-network/chopsticks/utils/fetch-storages'
+
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -31,6 +33,20 @@ const { polkadot, assetHub } = await setupNetworks({
         db: "./dbs/polkadot-asset-hub.sqlite",
         port: 8001,
     },
+});
+
+await fetchStorages({
+    block: process.env.POLKADOT_ASSET_HUB_BLOCK_NUMBER_PRE,
+    endpoint: process.env.POLKADOT_ASSET_HUB_ENDPOINT || `ws://localhost:${process.env.AH_NODE_RPC_PORT}`,
+    dbPath: "./dbs/polkadot-asset-hub.sqlite",
+    config: ['0x'],
+});
+
+await fetchStorages({
+    block: process.env.POLKADOT_BLOCK_NUMBER_PRE,
+    endpoint: process.env.POLKADOT_ENDPOINT || `ws://localhost:${process.env.RELAY_NODE_RPC_PORT}`,
+    dbPath: "./dbs/polkadot.sqlite",
+    config: ['0x'],
 });
 
 let rcAccBefore = (
