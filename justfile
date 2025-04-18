@@ -5,6 +5,20 @@ set dotenv-load
 # In CI some image doesn't have scp and we can fallback to cp
 cp_cmd := `which scp || which cp`
 
+# In order to install just run `sudo snap install just --classic`.
+# This command contains minimal required set of instructions for raw ubuntu machine required to run the migration.
+prepare-ubuntu:
+    sudo snap install cargo
+    sudo snap install rustup --classic
+    rustup default stable
+    sudo apt install build-essential
+    sudo apt install pkg-config libssl-dev
+    rustup target add wasm32-unknown-unknown --toolchain stable-x86_64-unknown-linux-gnu
+    rustup component add rust-src --toolchain stable-x86_64-unknown-linux-gnu
+    sudo apt-get install protobuf-compiler
+    sudo apt install -y nodejs
+    sudo apt install npm
+
 # Fork network and run tests for polkadot from the post-migration state
 default:
     just run
