@@ -1,23 +1,18 @@
 /*
-* Script runs right after ah_migrator.startMigration call
-* First thing:
+* Script runs right after starting the migration with rcMigrator pallet.
+* The script may run in the background and output the logs to a file.
+* 
+* Script flow:
 *   - preprocessing:
-*       - read all the accounts and create a reversed map {account_hex: number}
-*       - store accounts len
-*   - then run full script with:
-*       1. reading paginated accounts and add logging to it (to a file?)
-*       2. every 20 seconds reading rcMigrator.MigrationOngoing{account}
-*       3. prints curMigrationPos = reversed_map[account]/accounts.len
-*       4. makes sure that ^ is growing: e.g. prevPos = -1, compare curMigrationPos=() and prevPos, then swap
-*
-*
-* The script can be executed right after the migration starts. it takes around an hour to fetch all the account key.
-* Meanwhile update AH runtime and then call `sudo rcMigrator.startMigration.After(1)`
-*
-* The script might run in a background and output the logs to a file.
-*
+*       - reads all the accounts by batches of 1000 
+*       - reports progress
+*       - creates a reversed map {account_hex: position}
+*   - every 20 seconds:
+*       - fetches account from rcMigrator pallet - AccountsMigrationOngoing{lastKey: account}
+*       - looks for account's position in the reversed map
+*       - makes sure that the position is growing (and reversed map is working)
+*       - calculates accounts migration progress and prints it.  
 * */
-// TODO: add rc_port to.env and move to  config
 
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import type { StorageKey } from '@polkadot/types';
@@ -31,18 +26,19 @@ import {
 import { createClient } from "polkadot-api";
 import { getWsProvider } from "polkadot-api/ws-provider/web";
 import { withPolkadotSdkCompat } from "polkadot-api/polkadot-sdk-compat";
+import { decodeAddress, blake2AsU8a, xxhashAsU8a } from '@polkadot/util-crypto';
+import { u8aConcat, u8aToHex } from '@polkadot/util';
 
 config();
 
 const CACHE_FILE = 'reversedMap.json';
-
-const WS_URL = `ws://localhost:${rcPort}`;
+const WS_URL = `ws://localhost:${process.env.ZOMBIE_BITE_RC_PORT}`;
 
 async function main() {
     const wsProvider = new WsProvider(WS_URL);
     const api = await ApiPromise.create({ provider: wsProvider });
 
-    const reversedMap = await fetchAndCacheAccounts(api);
+    const reversedMap = {};// = await fetchAndCacheAccounts(api);
     await api.disconnect();
 
     await monitorProgress(reversedMap);
@@ -105,13 +101,14 @@ async function monitorProgress(reversedMap: Record<string, number>) {
             rcMigrationStage.value &&
             'last_key' in rcMigrationStage.value
         ) {
-            const lastKey = rcMigrationStage.value.last_key;
+            const lastKey = rcMigrationStage.value.last_key; // ss58-encoded
             console.log('last key', lastKey);
             if (lastKey) {
-                // ensure reversedMap works properly and position only grows
-                const position = reversedMap[lastKey];
+                // ensure reversedMap works properly and key position only grows
+                const storageKey = createStorageKeyFromSS58(lastKey);
+                const position = reversedMap[storageKey];
                 if (position === undefined) {
-                    console.warn(`${lastKey} is not present in reversedMap`);
+                    console.warn(`${storageKey} is not present in reversedMap`);
                 } else if (lastKeyPosition > position) {
                     console.warn(`bad key transition: lastKeyPosition > position: ${lastKeyPosition} > ${position}`);
                 } else {
@@ -130,5 +127,17 @@ async function monitorProgress(reversedMap: Record<string, number>) {
     }
 }
 
+function createStorageKeyFromSS58(lastKey: string): string {
+    const prefix = u8aConcat(
+        xxhashAsU8a('System', 128),
+        xxhashAsU8a('Account', 128)
+    );
+
+    const publicKey = decodeAddress(lastKey); // convert SS58 to raw public key
+    const hash = blake2AsU8a(publicKey, 128);
+    const key = u8aConcat(prefix, hash, publicKey);
+
+    return u8aToHex(key);
+}
 
 main().catch(console.error);
