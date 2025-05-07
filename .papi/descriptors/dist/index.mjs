@@ -1,30 +1,96 @@
 // .papi/descriptors/src/polkadot_rc.ts
 var toBinary = (() => {
   const table = new Uint8Array(128);
-  for (let i = 0; i < 64; i++) table[i < 26 ? i + 65 : i < 52 ? i + 71 : i < 62 ? i - 4 : i * 4 - 205] = i;
+  for (let i = 0; i < 64; i++)
+    table[i < 26 ? i + 65 : i < 52 ? i + 71 : i < 62 ? i - 4 : i * 4 - 205] = i;
   return (base64) => {
-    const n = base64.length, bytes = new Uint8Array((n - Number(base64[n - 1] === "=") - Number(base64[n - 2] === "=")) * 3 / 4 | 0);
+    const n = base64.length,
+      bytes = new Uint8Array(
+        (((n - Number(base64[n - 1] === "=") - Number(base64[n - 2] === "=")) *
+          3) /
+          4) |
+          0,
+      );
     for (let i2 = 0, j = 0; i2 < n; ) {
-      const c0 = table[base64.charCodeAt(i2++)], c1 = table[base64.charCodeAt(i2++)];
-      const c2 = table[base64.charCodeAt(i2++)], c3 = table[base64.charCodeAt(i2++)];
-      bytes[j++] = c0 << 2 | c1 >> 4;
-      bytes[j++] = c1 << 4 | c2 >> 2;
-      bytes[j++] = c2 << 6 | c3;
+      const c0 = table[base64.charCodeAt(i2++)],
+        c1 = table[base64.charCodeAt(i2++)];
+      const c2 = table[base64.charCodeAt(i2++)],
+        c3 = table[base64.charCodeAt(i2++)];
+      bytes[j++] = (c0 << 2) | (c1 >> 4);
+      bytes[j++] = (c1 << 4) | (c2 >> 2);
+      bytes[j++] = (c2 << 6) | c3;
     }
     return bytes;
   };
 })();
-var descriptorValues = import("./descriptors-XACHJNIR.mjs").then((module) => module["Polkadot_rc"]);
-var metadataTypes = import("./metadataTypes-7GQWXU3O.mjs").then(
-  (module) => toBinary("default" in module ? module.default : module)
+var descriptorValues = import("./descriptors-ORDTOH2N.mjs").then(
+  (module) => module["Polkadot_rc"],
+);
+var metadataTypes = import("./metadataTypes-U6EW56S3.mjs").then((module) =>
+  toBinary("default" in module ? module.default : module),
 );
 var asset = {};
-var getMetadata = () => import("./polkadot_rc_metadata-5G2WIW6L.mjs").then(
-  (module) => toBinary("default" in module ? module.default : module)
-);
-var genesis = "0x91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3";
-var _allDescriptors = { descriptors: descriptorValues, metadataTypes, asset, getMetadata, genesis };
+var getMetadata = () =>
+  import("./polkadot_rc_metadata-5G2WIW6L.mjs").then((module) =>
+    toBinary("default" in module ? module.default : module),
+  );
+var genesis =
+  "0x91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3";
+var _allDescriptors = {
+  descriptors: descriptorValues,
+  metadataTypes,
+  asset,
+  getMetadata,
+  genesis,
+};
 var polkadot_rc_default = _allDescriptors;
+
+// .papi/descriptors/src/rc_migrator_network.ts
+var toBinary2 = (() => {
+  const table = new Uint8Array(128);
+  for (let i = 0; i < 64; i++)
+    table[i < 26 ? i + 65 : i < 52 ? i + 71 : i < 62 ? i - 4 : i * 4 - 205] = i;
+  return (base64) => {
+    const n = base64.length,
+      bytes = new Uint8Array(
+        (((n - Number(base64[n - 1] === "=") - Number(base64[n - 2] === "=")) *
+          3) /
+          4) |
+          0,
+      );
+    for (let i2 = 0, j = 0; i2 < n; ) {
+      const c0 = table[base64.charCodeAt(i2++)],
+        c1 = table[base64.charCodeAt(i2++)];
+      const c2 = table[base64.charCodeAt(i2++)],
+        c3 = table[base64.charCodeAt(i2++)];
+      bytes[j++] = (c0 << 2) | (c1 >> 4);
+      bytes[j++] = (c1 << 4) | (c2 >> 2);
+      bytes[j++] = (c2 << 6) | c3;
+    }
+    return bytes;
+  };
+})();
+var descriptorValues2 = import("./descriptors-ORDTOH2N.mjs").then(
+  (module) => module["Rc_migrator_network"],
+);
+var metadataTypes2 = import("./metadataTypes-U6EW56S3.mjs").then((module) =>
+  toBinary2("default" in module ? module.default : module),
+);
+var asset2 = {};
+var getMetadata2 = () =>
+  import("./rc_migrator_network_metadata-F3G3BT3G.mjs").then((module) =>
+    toBinary2("default" in module ? module.default : module),
+  );
+var genesis2 =
+  "0x91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3";
+var _allDescriptors2 = {
+  descriptors: descriptorValues2,
+  metadataTypes: metadataTypes2,
+  asset: asset2,
+  getMetadata: getMetadata2,
+  genesis: genesis2,
+};
+var rc_migrator_network_default = _allDescriptors2;
 
 // .papi/descriptors/src/common-types.ts
 import { _Enum } from "polkadot-api";
@@ -315,5 +381,6 @@ export {
   XcmVersionedLocation,
   XcmVersionedResponse,
   XcmVersionedXcm,
-  polkadot_rc_default as polkadot_rc
+  polkadot_rc_default as polkadot_rc,
+  rc_migrator_network_default as rc_migrator_network,
 };
