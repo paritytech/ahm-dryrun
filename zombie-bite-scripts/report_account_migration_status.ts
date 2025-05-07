@@ -38,7 +38,7 @@ async function main() {
     const wsProvider = new WsProvider(WS_URL);
     const api = await ApiPromise.create({ provider: wsProvider });
 
-    const reversedMap = {};// = await fetchAndCacheAccounts(api);
+    const reversedMap = await fetchAndCacheAccounts(api);
     await api.disconnect();
 
     await monitorProgress(reversedMap);
