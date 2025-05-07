@@ -39,10 +39,14 @@ run-chain:
 build-omni-node:
     cd ${SDK_PATH} && cargo build --release -p polkadot-omni-node
 
-# Initialize and update submodules to latest remote
+# Update the runtimes submodule
 submodule-update:
-    git submodule update --init --recursive
+    git submodule update --recursive
     @echo '\nYou probably want to now run `just build-<runtime>` for westend, kusama or polkadot'
+
+# Initialize the submodules
+submodule-init:
+    git submodule update --init --recursive
 
 # Build the kusama runtimes and copy back
 build-kusama:
