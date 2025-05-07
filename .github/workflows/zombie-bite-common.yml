@@ -34,6 +34,7 @@ jobs:
           RUSTFLAGS: "-A warnings"
           SUDO: ${{ inputs.sudo-key }}
         run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           echo 'CARGO_CMD="forklift cargo"' >> .env
           mkdir -p ${ZOMBIE_BITE_CI_PATH}
 
