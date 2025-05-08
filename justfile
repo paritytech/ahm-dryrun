@@ -100,8 +100,8 @@ create-polkadot-pre-migration-snapshot: build-doppelganger install-zombie-bite
 create-westend-pre-migration-snapshot: build-westend build-doppelganger install-zombie-bite
     PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite westend:./runtime_wasm/westend_runtime.compact.compressed.wasm asset-hub
 
-report_account_migration_status:
-    npm run report_account_migration_status
+report-account-migration-status:
+    npm run report-account-migration-status
 
 # Run script to upgrade Asset Hub runtime
 run-ah-upgrade:
