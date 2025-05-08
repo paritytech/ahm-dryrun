@@ -23,8 +23,8 @@ jobs:
       network: polkadot
       sudo-key: ${{ inputs.sudo-key }}
 
-  zombie_bite_westend:
-    uses: ./.github/workflows/zombie-bite-common.yml
-    with:
-      network: westend
-      sudo-key: ${{ inputs.sudo-key }}
+  # zombie_bite_westend:
+  #   uses: ./.github/workflows/zombie-bite-common.yml
+  #   with:
+  #     network: westend
+  #     sudo-key: ${{ inputs.sudo-key }}
