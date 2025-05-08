@@ -7,6 +7,7 @@
 *       - reads all the accounts by batches of 1000 
 *       - reports progress
 *       - creates a reversed map {account_hex: position}
+*       - saves this map to back-up file
 *   - every 20 seconds:
 *       - fetches account from rcMigrator pallet - AccountsMigrationOngoing{lastKey: account}
 *       - looks for account's position in the reversed map
@@ -31,7 +32,7 @@ import { u8aConcat, u8aToHex } from '@polkadot/util';
 
 config();
 
-const CACHE_FILE = 'reversedMap.json';
+const BACKUP_FILE = 'reversedMap.json';
 const WS_URL = `ws://localhost:${process.env.ZOMBIE_BITE_RC_PORT}`;
 
 async function main() {
@@ -82,8 +83,8 @@ async function fetchAndCacheAccounts(api: ApiPromise): Promise<Record<string, nu
     console.timeEnd('Total fetching time');
     console.log(`Finished fetching. Total accounts fetched: ${totalFetched}`);
 
-    fs.writeFileSync(CACHE_FILE, JSON.stringify(reversedMap, null, 2));
-    console.log(`Saved reversedMap to ${CACHE_FILE}`);
+    fs.writeFileSync(BACKUP_FILE, JSON.stringify(reversedMap, null, 2));
+    console.log(`Saved reversedMap to ${BACKUP_FILE}`);
 
     return reversedMap;
 }
