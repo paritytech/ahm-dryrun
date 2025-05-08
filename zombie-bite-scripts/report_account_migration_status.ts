@@ -51,11 +51,8 @@ const aliceSigner = getPolkadotSigner(
     hdkdKeyPairAlice.sign,
 );
 
-config();
-
-
-
 const BACKUP_FILE = 'reversedMap.json';
+config();
 const WS_URL = `ws://localhost:${process.env.ZOMBIE_BITE_RC_PORT}`;
 
 async function main() {
@@ -64,6 +61,8 @@ async function main() {
 
     await scheduleMigration();
     const reversedMap = await fetchAndCacheAccounts(api);
+    await api.disconnect();
+
     await monitorProgress(reversedMap);
 }
 
