@@ -44,7 +44,7 @@ jobs:
           fi
 
           apt-get update && apt-get install -y lz4 rsync
-          just submodule-update
+
           just create-${{ inputs.network }}-pre-migration-snapshot
           
       - name: read_rc_block
