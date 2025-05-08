@@ -93,38 +93,58 @@ async function monitorProgress(reversedMap: Record<string, number>) {
     const RCApi = client.getTypedApi(rc_migrator_network);
 
     let lastKeyPosition = -1;
+    const delay_ms = 20000;
+
     while (true) {
         const rcMigrationStage = await RCApi.query.RcMigrator.RcMigrationStage.getValue();
-        if (
-            rcMigrationStage &&
-            rcMigrationStage.type === 'AccountsMigrationOngoing' &&
-            rcMigrationStage.value &&
-            'last_key' in rcMigrationStage.value
-        ) {
-            const lastKey = rcMigrationStage.value.last_key; // ss58-encoded
-            console.log('last key', lastKey);
-            if (lastKey) {
-                // ensure reversedMap works properly and key position only grows
-                const storageKey = createStorageKeyFromSS58(lastKey);
-                const position = reversedMap[storageKey];
-                if (position === undefined) {
-                    console.warn(`${storageKey} is not present in reversedMap`);
-                } else if (lastKeyPosition > position) {
-                    console.warn(`bad key transition: lastKeyPosition > position: ${lastKeyPosition} > ${position}`);
-                } else {
-                    console.log(`successful key transition: ${position}`);
 
-                    const progress = position / reversedMap.length * 100;
-                    console.log(`account migration progress:  ${progress.toFixed(3)}%`);
-                    lastKeyPosition = position;
-                }
-            }
-        } else {
+        if (!isValidMigrationStage(rcMigrationStage)) {
             console.log(`last_key is missing in the stage: ${JSON.stringify(rcMigrationStage)}`);
+            await delay(delay_ms);
+            continue;
         }
 
-        await new Promise((resolve) => setTimeout(resolve, 20000));
+        const lastKey = rcMigrationStage.value.last_key;
+        if (!lastKey) {
+            await delay(delay_ms);
+            continue;
+        }
+
+        console.log('last key', lastKey);
+        const storageKey = createStorageKeyFromSS58(lastKey);
+        console.log('looking for storage key: ', storageKey);
+
+        const position = reversedMap[storageKey];
+        if (position === undefined) {
+            console.warn(`${storageKey} is not present in reversedMap`);
+        } else if (lastKeyPosition > position) {
+            console.warn(`bad key transition: lastKeyPosition > position: ${lastKeyPosition} > ${position}`);
+        } else {
+            const totalAccounts = Object.keys(reversedMap).length;
+            const progress = (position / totalAccounts) * 100;
+            lastKeyPosition = position;
+            console.log(`current/total: ${position}/${totalAccounts}`)
+            console.log(`account migration progress: ${progress.toFixed(3)}%`);
+        }
+
+        await delay(delay_ms);
     }
+}
+
+function isValidMigrationStage(stage: any): stage is {
+    type: 'AccountsMigrationOngoing',
+    value: { last_key: string }
+} {
+    return (
+        stage &&
+        stage.type === 'AccountsMigrationOngoing' &&
+        stage.value &&
+        'last_key' in stage.value
+    );
+}
+
+function delay(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function createStorageKeyFromSS58(lastKey: string): string {
