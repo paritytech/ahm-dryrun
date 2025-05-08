@@ -3,6 +3,7 @@
 * The script may run in the background and output the logs to a file.
 * 
 * Script flow:
+*   - connects to zombie-bite RC which runs on port ${ZOMBIE_BITE_RC_PORT}
 *   - preprocessing:
 *       - reads all the accounts by batches of 1000 
 *       - reports progress
