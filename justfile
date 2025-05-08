@@ -95,7 +95,7 @@ install-zombie-bite:
 
 create-polkadot-pre-migration-snapshot: build-doppelganger install-zombie-bite
     just build-polkadot "--features zombie-bite-sudo"
-    PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite polkadot:./runtime_wasm/polkadot_runtime.compact.compressed.wasm asset-hub
+    PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite polkadot:./runtime_wasm/polkadot_runtime.compact.compressed.wasm asset-hub:./runtime_wasm/asset_hub_polkadot_runtime.compact.compressed.wasm
 
 create-westend-pre-migration-snapshot: build-westend build-doppelganger install-zombie-bite
     PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite westend:./runtime_wasm/westend_runtime.compact.compressed.wasm asset-hub

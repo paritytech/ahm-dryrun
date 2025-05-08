@@ -25,9 +25,6 @@ jobs:
         with:
           submodules: recursive
       - uses: extractions/setup-just@v2
-      - name: install_zombie-bite
-        run: |
-          cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite
       - name: zombie_bite
         shell: bash
         env:
@@ -46,7 +43,7 @@ jobs:
           apt-get update && apt-get install -y lz4 rsync
 
           just create-${{ inputs.network }}-pre-migration-snapshot
-          
+
       - name: read_rc_block
         id: read_rc_block
         run: |
