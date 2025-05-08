@@ -8,6 +8,7 @@
     "build": "tsc",
     "chopsticks-migration": "node dist/chopsticks-scripts/run_migration.js",
     "authorize-upgrade": "node dist/zombie-bite-scripts/authorize_upgrade_ah.js",
+    "report-account-migration-status": "node dist/zombie-bite-scripts/report_account_migration_status.js",
     "prettier": "prettier --write .",
     "clean": "rm -rf dist",
     "postinstall": "papi"
