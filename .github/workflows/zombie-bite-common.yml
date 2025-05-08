@@ -34,7 +34,6 @@ jobs:
           RUSTFLAGS: "-A warnings"
           SUDO: ${{ inputs.sudo-key }}
         run: |
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           echo 'CARGO_CMD="forklift cargo"' >> .env
           mkdir -p ${ZOMBIE_BITE_CI_PATH}
 
@@ -45,7 +44,7 @@ jobs:
           fi
 
           apt-get update && apt-get install -y lz4 rsync
-          just submodule-update
+
           just create-${{ inputs.network }}-pre-migration-snapshot
           
       - name: read_rc_block
