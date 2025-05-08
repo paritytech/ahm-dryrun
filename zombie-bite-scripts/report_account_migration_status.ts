@@ -24,14 +24,36 @@ import * as fs from 'fs';
 import { config } from "dotenv";
 import {
     rc_migrator_network,
+    TraitsScheduleDispatchTime
 } from "@polkadot-api/descriptors";
 import { createClient } from "polkadot-api";
 import { getWsProvider } from "polkadot-api/ws-provider/web";
 import { withPolkadotSdkCompat } from "polkadot-api/polkadot-sdk-compat";
 import { decodeAddress, blake2AsU8a, xxhashAsU8a } from '@polkadot/util-crypto';
 import { u8aConcat, u8aToHex } from '@polkadot/util';
+import { sr25519CreateDerive } from "@polkadot-labs/hdkd";
+import { getPolkadotSigner } from "polkadot-api/signer";
+import {
+    DEV_PHRASE,
+    entropyToMiniSecret,
+    mnemonicToEntropy,
+} from "@polkadot-labs/hdkd-helpers";
+
+// Initialize HDKD key pairs and signers
+const entropy = mnemonicToEntropy(DEV_PHRASE);
+const miniSecret = entropyToMiniSecret(entropy);
+const derive = sr25519CreateDerive(miniSecret);
+
+const hdkdKeyPairAlice = derive("//Alice");
+const aliceSigner = getPolkadotSigner(
+    hdkdKeyPairAlice.publicKey,
+    "Sr25519",
+    hdkdKeyPairAlice.sign,
+);
 
 config();
+
+
 
 const BACKUP_FILE = 'reversedMap.json';
 const WS_URL = `ws://localhost:${process.env.ZOMBIE_BITE_RC_PORT}`;
@@ -40,10 +62,22 @@ async function main() {
     const wsProvider = new WsProvider(WS_URL);
     const api = await ApiPromise.create({ provider: wsProvider });
 
+    await scheduleMigration();
     const reversedMap = await fetchAndCacheAccounts(api);
-    await api.disconnect();
-
     await monitorProgress(reversedMap);
+}
+
+async function scheduleMigration() {
+    const client = createClient(withPolkadotSdkCompat(getWsProvider(WS_URL)));
+    const RCApi = client.getTypedApi(rc_migrator_network);
+    const call = RCApi.tx.RcMigrator.schedule_migration({
+        start_moment: TraitsScheduleDispatchTime.After(1),
+    });
+
+    const sudoCall = RCApi.tx.Sudo.sudo({ call: call.decodedCall });
+    const result = await sudoCall.signAndSubmit(aliceSigner);
+
+    console.log('Migration scheduled:', result);
 }
 
 async function fetchAndCacheAccounts(api: ApiPromise): Promise<Record<string, number>> {
