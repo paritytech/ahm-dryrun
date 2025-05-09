@@ -2,10 +2,10 @@ mod coverage
 
 set dotenv-load
 
-# Getting root directory of this project even when in submodule context
-PROJECT_ROOT_PATH := `git -C "$(git rev-parse --show-superproject-working-tree || pwd)" rev-parse --show-toplevel`
+PROJECT_ROOT_PATH := `DIR="${JUSTFILE:-justfile}"; DIR="$(realpath "$DIR")"; echo "$(dirname "$DIR")"`
 
 # In CI some image doesn't have scp and we can fallback to cp
+
 cp_cmd := `which scp || which cp`
 
 # Fork network and run tests for polkadot from the post-migration state
@@ -107,29 +107,24 @@ build-kusama:
 
 # Build the polkadot runtimes and copy back
 build-polkadot *EXTRA:
-    cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --release --features=metadata-hash {{EXTRA}} -p asset-hub-polkadot-runtime -p polkadot-runtime -p collectives-polkadot-runtime
+    cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --release --features=metadata-hash {{ EXTRA }} -p asset-hub-polkadot-runtime -p polkadot-runtime -p collectives-polkadot-runtime
     {{ cp_cmd }} ${RUNTIMES_BUILD_ARTIFACTS_PATH}/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
-
 
 clean-westend:
     # cleanup is required for proper porting, as the porting procedure is not idempotent
     echo "Cleaning up any modifications to ${SDK_PATH}"
     cd "${SDK_PATH}" && case "${PWD}" in \
-        {{PROJECT_ROOT_PATH}}/polkadot-sdk) git reset --hard && git clean -fdx ;; \
+        {{ PROJECT_ROOT_PATH }}/polkadot-sdk) git reset --hard && git clean -fdx ;; \
         *) echo "ERROR: SDK_PATH must be a 'polkadot-sdk' directory but got ["${PWD}"] instead" && exit 1 ;; \
     esac
 
 init-westend:
-    command -v zepter || { echo "install zepter to proceed"; exit 1; }
-    command -v lz4 || { echo "install lz4 to proceed"; exit 1; }
-    command -v curl || { echo "install curl to proceed"; exit 1; }
-
     echo "Initializing Westend for building"
-    flag="{{PROJECT_ROOT_PATH}}/${SDK_PATH}/.initialized"; \
+    flag="{{ PROJECT_ROOT_PATH }}/${SDK_PATH}/.initialized"; \
     if [ ! -f "${flag}" ]; then \
       just clean-westend && \
       cd "${RUNTIMES_PATH}/integration-tests/ahm" && \
-        just port westend "{{PROJECT_ROOT_PATH}}/${SDK_PATH}" "cumulus/test/ahm" && \
+        just port westend "{{ PROJECT_ROOT_PATH }}/${SDK_PATH}" "cumulus/test/ahm" && \
           touch "${flag}"; \
     else \
       echo "Westend already initialized."; \
@@ -152,12 +147,10 @@ install-zombie-bite:
 
 create-polkadot-pre-migration-snapshot: build-doppelganger install-zombie-bite
     just build-polkadot "--features zombie-bite-sudo"
-
-    # run zombie-bite
-    PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite polkadot:./runtime_wasm/polkadot_runtime.compact.compressed.wasm asset-hub
+    PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite polkadot:./runtime_wasm/polkadot_runtime.compact.compressed.wasm asset-hub:./runtime_wasm/asset_hub_polkadot_runtime.compact.compressed.wasm
 
 create-westend-pre-migration-snapshot: build-westend build-doppelganger install-zombie-bite
-    PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite westend:./runtime_wasm/westend_runtime.compact.compressed.wasm asset-hub fork-off
+    PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite westend:./runtime_wasm/westend_runtime.compact.compressed.wasm asset-hub
 
 # Run script to upgrade Asset Hub runtime
 run-ah-upgrade:
@@ -168,7 +161,7 @@ test-prepare:
     npm install
 
 e2e-test *TEST:
-    cd ${PET_PATH} && yarn && yarn test {{TEST}}
+    cd ${PET_PATH} && yarn && yarn test {{ TEST }}
 
 e2e-westend-post-migration: build-westend
     cd ${PET_PATH} && yarn && yarn test westend

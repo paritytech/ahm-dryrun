@@ -1,0 +1,57 @@
+name: Zombie Bite Common
+
+on:
+  workflow_call:
+    inputs:
+      network:
+        required: true
+        type: string
+      sudo-key:
+        required: false
+        type: string
+
+env:
+  ZOMBIE_BITE_CI_PATH: "/tmp/ci"
+
+jobs:
+  run_zombie_bite:
+    runs-on: ubuntu-latest
+    container:
+      image: docker.io/paritytech/ci-unified:bullseye-1.84.1-2025-01-28-v202502131220
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: extractions/setup-just@v2
+      - name: zombie_bite
+        shell: bash
+        env:
+          RUSTFLAGS: "-A warnings"
+          SUDO: ${{ inputs.sudo-key }}
+        run: |
+          echo 'CARGO_CMD="forklift cargo"' >> .env
+          mkdir -p ${ZOMBIE_BITE_CI_PATH}
+
+          if [[ $SUDO != "" ]]; then
+            export ZOMBIE_SUDO=$SUDO
+          else
+            echo "no sudo key provided, using default '//Alice'"
+          fi
+
+          apt-get update && apt-get install -y lz4 rsync
+
+          just create-${{ inputs.network }}-pre-migration-snapshot
+
+      - name: read_rc_block
+        id: read_rc_block
+        run: |
+          RC_BLOCK=$(cat $ZOMBIE_BITE_CI_PATH/rc-info.txt)
+          echo "RC_BLOCK=$RC_BLOCK" >> $GITHUB_OUTPUT
+      - name: upload_artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.network }}-zombie-bite-rc_block_${{ steps.read_rc_block.outputs.RC_BLOCK }}-${{ github.sha }}
+          path: |
+            /tmp/ci/*
