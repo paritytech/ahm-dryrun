@@ -21,6 +21,58 @@ run:
     npm run build
     npm run chopsticks-migration
 
+get-latest-westend-relay-snapshot:
+    snapshot_dir=snapshots/db_westend \
+    && files_path=snapshots/files_westend.txt \
+    && if [ ! -d "${snapshot_dir}" ]; then \
+      snapshot_url=$(curl -s https://snapshots.polkadot.io | grep -oE 'https://snapshots\.polkadot\.io/westend-rocksdb-prune/[^<"]+') \
+      && mkdir -p snapshots \
+      && rclone copyurl "${snapshot_url}/files.txt" "${files_path}" \
+      && rclone copy --progress --transfers 20 --http-url "${snapshot_url}" \
+          --no-traverse --http-no-head --disable-http2 --inplace \
+          --no-gzip-encoding --size-only --retries 6 --retries-sleep 10s \
+          --files-from "${files_path}" :http: "${snapshot_dir}"; \
+    else \
+       echo "Snapshot dir detected. Skipping snapshot download"; \
+    fi
+
+get-latest-westend-asset-hub-snapshot:
+    snapshot_dir=snapshots/db_westend_asset_hub \
+    && files_path=snapshots/files_westend.txt \
+    && if [ ! -d "${snapshot_dir}" ]; then \
+      snapshot_url=$(curl -s https://snapshots.polkadot.io | grep -oE 'https://snapshots\.polkadot\.io/westend-asset-hub-rocksdb-archive/[^<"]+') \
+      && mkdir -p snapshots \
+      && rclone copyurl "${snapshot_url}/files.txt" "${files_path}" \
+      && rclone copy --progress --transfers 20 --http-url "${snapshot_url}" \
+          --no-traverse --http-no-head --disable-http2 --inplace \
+          --no-gzip-encoding --size-only --retries 6 --retries-sleep 10s \
+          --files-from "${files_path}" :http: "${snapshot_dir}"; \
+    else \
+       echo "Snapshot dir detected. Skipping snapshot download"; \
+    fi
+
+run-westend-relay-local-node-docker: get-latest-westend-relay-snapshot
+    docker run --user root -it -p"${RELAY_NODE_RPC_PORT}:9944" --platform linux/amd64 --rm \
+      -v {{ PROJECT_ROOT_PATH }}/snapshots/db_westend:/db/chains/westend2/db ${POLKADOT_DOCKER} \
+      --chain westend --no-hardware-benchmarks --rpc-max-request-size 100000000 \
+      --rpc-max-response-size 100000000 --rpc-external --rpc-cors all \
+      --in-peers 0 --out-peers 0 --base-path /db
+
+run-westend-assethub-local-node-docker: get-latest-westend-asset-hub-snapshot
+    docker run --user root -it -p"${AH_NODE_RPC_PORT}:9944" --platform linux/amd64 --rm \
+      -v {{ PROJECT_ROOT_PATH }}/snapshots/db_westend_asset_hub:/db/chains/asset-hub-westend/db ${POLKADOT_PARACHAIN_DOCKER} \
+      --chain asset-hub-westend --no-hardware-benchmarks --rpc-max-request-size 100000000 \
+      --rpc-max-response-size 100000000 --rpc-external --rpc-cors all \
+      --in-peers 0 --out-peers 0 --base-path /db
+
+run-westend-migration:
+    nc -z -v localhost "${RELAY_NODE_RPC_PORT}" >/dev/null 2>&1 || { echo "Local Relay node unreachable, run 'just run-westend-relay-local-node-docker' in different tab"; exit 1; }
+    nc -z -v localhost "${AH_NODE_RPC_PORT}" >/dev/null 2>&1 || { echo "Local Asset Hub node unreachable, run 'just run-westend-assethub-local-node-docker' in different tab"; exit 1; }
+    just build-westend
+    npm install
+    npm run build
+    npm run chopsticks-migration-westend
+
 # Run the network from the pre-migration state
 run-pre:
     POLKADOT_BLOCK_NUMBER=${POLKADOT_BLOCK_NUMBER_PRE} POLKADOT_ASSET_HUB_BLOCK_NUMBER=${POLKADOT_ASSET_HUB_BLOCK_NUMBER_PRE} POLKADOT_COLLECTIVES_BLOCK_NUMBER=${POLKADOT_COLLECTIVES_BLOCK_NUMBER_PRE} npx @acala-network/chopsticks@latest xcm -r ./configs/polkadot.yml -p ./configs/polkadot-asset-hub.yml -p ./configs/polkadot-collectives.yml
@@ -110,6 +162,9 @@ test-prepare:
 
 e2e-test *TEST:
     cd ${PET_PATH} && yarn && yarn test {{ TEST }}
+
+e2e-westend-post-migration: build-westend
+    cd ${PET_PATH} && yarn && yarn test westend
 
 # Run the tests
 test:
