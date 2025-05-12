@@ -27,7 +27,7 @@ import {
     TraitsScheduleDispatchTime
 } from "@polkadot-api/descriptors";
 import { createClient } from "polkadot-api";
-import { getWsProvider } from "polkadot-api/ws-provider/web";
+import { getWsProvider } from "polkadot-api/ws-provider/node";
 import { withPolkadotSdkCompat } from "polkadot-api/polkadot-sdk-compat";
 import { decodeAddress, blake2AsU8a, xxhashAsU8a } from '@polkadot/util-crypto';
 import { u8aConcat, u8aToHex } from '@polkadot/util';
