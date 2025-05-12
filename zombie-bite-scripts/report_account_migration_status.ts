@@ -182,15 +182,14 @@ function delay(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+const system_account_prefix = u8aConcat(
+    xxhashAsU8a('System', 128),
+    xxhashAsU8a('Account', 128)
+);
 function createStorageKeyFromSS58(lastKey: string): string {
-    const prefix = u8aConcat(
-        xxhashAsU8a('System', 128),
-        xxhashAsU8a('Account', 128)
-    );
-
     const publicKey = decodeAddress(lastKey); // convert SS58 to raw public key
     const hash = blake2AsU8a(publicKey, 128);
-    const key = u8aConcat(prefix, hash, publicKey);
+    const key = u8aConcat(system_account_prefix, hash, publicKey);
 
     return u8aToHex(key);
 }
