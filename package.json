@@ -16,7 +16,8 @@
     "@acala-network/chopsticks-testing": "^1.0.3",
     "@polkadot-api/descriptors": "file:.papi/descriptors",
     "@polkadot-labs/hdkd": "^0.0.13",
-    "@polkadot/api": "^15.9.1",
+    "@polkadot/api": "^15.9.3",
+    "@polkadot/util-crypto": "^13.4.4",
     "dotenv": "^16.4.7",
     "polkadot-api": "^1.9.9"
   },
