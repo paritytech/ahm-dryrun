@@ -15,7 +15,7 @@ env:
 
 jobs:
   run_zombie_bite:
-    runs-on: ubuntu-latest
+    runs-on: parity-large
     container:
       image: docker.io/paritytech/ci-unified:bullseye-1.84.1-2025-01-28-v202502131220
     timeout-minutes: 90
