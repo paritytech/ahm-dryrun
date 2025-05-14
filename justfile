@@ -68,6 +68,7 @@ clean-westend:
 
 init-westend:
     echo "Initializing Westend for building"
+    cargo install --locked zepter
     flag="{{ PROJECT_ROOT_PATH }}/${SDK_PATH}/.initialized"; \
     if [ ! -f "${flag}" ]; then \
       just clean-westend && \
