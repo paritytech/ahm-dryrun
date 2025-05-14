@@ -6,6 +6,11 @@
       "wsUrl": "ws://localhost:60856",
       "metadata": ".papi/metadata/polkadot_rc.scale",
       "genesis": "0x91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3"
+    },
+    "rc_migrator_network": {
+      "wsUrl": "ws://localhost:59847",
+      "metadata": ".papi/metadata/rc_migrator_network.scale",
+      "genesis": "0x91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3"
     }
   }
 }
