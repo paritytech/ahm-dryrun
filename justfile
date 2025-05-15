@@ -79,9 +79,9 @@ init-westend:
       echo "Westend already initialized."; \
     fi
 
-build-westend: init-westend
-    echo "Buidling Westend"
-    cd "${SDK_PATH}" && "${CARGO_CMD}" build --release --features=metadata-hash -p asset-hub-westend-runtime -p westend-runtime -p collectives-westend-runtime
+build-westend:
+    echo "Building Westend"
+    cd "${SDK_PATH}" && git checkout oty-donal-ahm-builds && "${CARGO_CMD}" build --release --features=metadata-hash,fast-runtime -p asset-hub-westend-runtime -p westend-runtime
     find "${SDK_BUILD_ARTIFACTS_PATH}/wbuild" -name '*westend*.compact.compressed.wasm' -exec {{ cp_cmd }} {} ./runtime_wasm/ \;
 
 build-doppelganger:
@@ -99,7 +99,7 @@ create-polkadot-pre-migration-snapshot: build-doppelganger install-zombie-bite
     PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite polkadot:./runtime_wasm/polkadot_runtime.compact.compressed.wasm asset-hub:./runtime_wasm/asset_hub_polkadot_runtime.compact.compressed.wasm
 
 create-westend-pre-migration-snapshot: build-westend build-doppelganger install-zombie-bite
-    PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite westend:./runtime_wasm/westend_runtime.compact.compressed.wasm asset-hub
+    PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite westend:./runtime_wasm/westend_runtime.compact.compressed.wasm asset-hub:./runtime_wasm/asset_hub_westend_runtime.compact.compressed.wasm
 
 report-account-migration-status:
     npm run build
