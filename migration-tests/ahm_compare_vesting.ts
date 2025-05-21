@@ -59,6 +59,15 @@ const tests: TestCase[] = [
                 assert(matchingEntry !== undefined, `Unexpected vesting entry found after migration for account ${accountId}`);
             }
         }
+    },
+    {
+        name: 'Vesting storage version check',
+        run: async ({ rc_api_before, ah_api_after }) => {
+            console.log('Checking vesting storage version...');
+            const rc_vestingStorageVersion = await rc_api_before.query.vesting.storageVersion();
+            const ah_vestingStorageVersion = await ah_api_after.query.vesting.storageVersion();
+            assert.equal(rc_vestingStorageVersion.toHex(), ah_vestingStorageVersion.toHex(), 'Vesting storage versions should be the same');
+        }
     }
 ];
 
