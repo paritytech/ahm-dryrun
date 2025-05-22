@@ -4,9 +4,10 @@ import '@polkadot/types-augment';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { TestContext, PalletTest } from './types.js';
 import { vestingTests } from './pallets/vesting.js';
+import { indicesTests } from './pallets/indices.js';
 
 // Array of all pallet tests
-const palletTests: PalletTest[] = [vestingTests];
+const palletTests: PalletTest[] = [vestingTests, indicesTests];
 
 async function runTests(context: TestContext) {
     console.log('Starting migration verification tests...\n');
@@ -60,6 +61,7 @@ async function setupTestContext(): Promise<{ context: TestContext; apis: ApiProm
 
     const assetHubConfig: ChainConfig = {
         endpoint: 'wss://asset-hub-westend-rpc.dwellir.com',
+        // https://assethub-westend.subscan.io/event?page=1&time_dimension=date&module=ahmigrator&event_id=assethubmigrationstarted
         before_block: 11716733, // wah before first migration started
         after_block: 11736597, // wah after second migration ended
     };
