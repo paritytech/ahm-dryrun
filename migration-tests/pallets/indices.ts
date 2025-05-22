@@ -22,7 +22,10 @@ export const indicesTests: PalletTest = {
         const indices = await ah_api_before.query.indices.accounts.entries();
         assert(indices.length === 0, "[AH] Assert storage indices.accounts() is empty before migration");
     },
-    post_check: async ({ rc_api_before, ah_api_before, ah_api_after }) => {
+    post_check: async ({ rc_api_before, rc_api_after, ah_api_before, ah_api_after }) => {
+        const indices = await rc_api_after.query.indices.accounts.entries();
+        assert(indices.length === 0, "[RC] Assert storage indices.accounts() is empty after migration");
+
         // Get RC indices before migration
         const rc_indices_before = await rc_api_before.query.indices.accounts.entries();
         const rc_before_formatted = rc_indices_before
