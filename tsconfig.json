@@ -12,7 +12,8 @@
   },
   "include": [
     "zombie-bite-scripts/**/*.ts",
-    "chopsticks-scripts/**/*.ts"
+    "chopsticks-scripts/**/*.ts",
+    "migration-tests/**/*.ts"
   ],
   "exclude": ["node_modules", "dist"]
 }

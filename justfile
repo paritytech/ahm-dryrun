@@ -128,3 +128,8 @@ help:
 clean:
     rm -rf node_modules
     rm -f package-lock.json
+
+# Run the migration tests on westend
+run-westend-migration-tests:
+    npm run build
+    npm run ahm-compare
