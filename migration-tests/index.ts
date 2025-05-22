@@ -60,7 +60,7 @@ async function setupTestContext(): Promise<{ context: TestContext; apis: ApiProm
 
     const assetHubConfig: ChainConfig = {
         endpoint: 'wss://asset-hub-westend-rpc.dwellir.com',
-        before_block: 11736080, // wah before second migration started
+        before_block: 11716733, // wah before first migration started
         after_block: 11736597, // wah after second migration ended
     };
 

@@ -5,6 +5,9 @@ import assert from 'assert';
 export const vestingTests: PalletTest = {
     pallet_name: 'vesting',
     pre_check: async ({ ah_api_before }) => {
+        const ah_vestingStorageVersion = await ah_api_before.query.vesting.storageVersion();
+        assert.equal(ah_vestingStorageVersion.toHuman(), 'V0', 'Vesting storage version should be V0 before migration');
+
         // Check if vesting entries are empty before migration
         const vestingEntries_before = await ah_api_before.query.vesting.vesting([]);
         assert(vestingEntries_before.isEmpty, 'Vesting entries before migration should be empty');
@@ -42,11 +45,12 @@ export const vestingTests: PalletTest = {
         }
 
         // Check storage version consistency
-        const rc_vestingStorageVersion = await rc_api_before.query.vesting.storageVersion();
-        const ah_vestingStorageVersion = await ah_api_after.query.vesting.storageVersion();
+        const rc_vesting_storage_version_after = await rc_api_before.query.vesting.storageVersion();
+        const ah_vesting_storage_version_after = await ah_api_after.query.vesting.storageVersion();
+        assert.equal(ah_vesting_storage_version_after, 'V1', 'vesting storage version should be V1 after migration');
         assert.equal(
-            rc_vestingStorageVersion.toHex(), 
-            ah_vestingStorageVersion.toHex(), 
+            rc_vesting_storage_version_after.toHex(), 
+            ah_vesting_storage_version_after.toHex(), 
             'Vesting storage versions should be the same'
         );
     }
