@@ -4,9 +4,9 @@ import '@polkadot/types-augment';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { TestContext, PalletTest } from './types.js';
 import { vestingTests } from './pallets/vesting.js';
-
+import { assetRateTests } from './pallets/asset_rate.js';
 // Array of all pallet tests
-const palletTests: PalletTest[] = [vestingTests];
+const palletTests: PalletTest[] = [vestingTests, assetRateTests];
 
 async function runTests(context: TestContext) {
     console.log('Starting migration verification tests...\n');
