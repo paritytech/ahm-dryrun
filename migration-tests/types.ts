@@ -1,11 +1,16 @@
 import { ApiDecoration } from '@polkadot/api/types';
 
+export type PreCheckResult = {
+    rc_pre_payload?: any;
+    ah_pre_payload?: any;
+};
+
 export interface PreCheckContext {
     rc_api_before: ApiDecoration<'promise'>;
     ah_api_before: ApiDecoration<'promise'>;
 }
 
-export interface PostCheckContext extends PreCheckContext {
+export interface PostCheckContext {
     rc_api_after: ApiDecoration<'promise'>;
     ah_api_after: ApiDecoration<'promise'>;
 }
@@ -15,8 +20,14 @@ export interface TestContext {
     post: PostCheckContext;
 }
 
-export interface PalletTest {
-    pallet_name: string;
-    pre_check: (context: PreCheckContext) => Promise<void>;
-    post_check: (context: PostCheckContext) => Promise<void>;
+export interface MigrationTest {
+    name: string;
+    pre_check: (
+        context: PreCheckContext
+    ) => Promise<PreCheckResult>;
+    
+    post_check: (
+        context: PostCheckContext,
+        pre_payload: PreCheckResult
+    ) => Promise<void>;
 } 

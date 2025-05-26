@@ -2,43 +2,48 @@ import '@polkadot/api-augment';
 import '@polkadot/types-augment';
 
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { TestContext, PalletTest } from './types.js';
+import { MigrationTest, TestContext } from './types.js';
 import { vestingTests } from './pallets/vesting.js';
+// import { bountiesTests } from './pallets/bounties.js';
 
-// Array of all pallet tests
-const palletTests: PalletTest[] = [vestingTests];
+export const tests: MigrationTest[] = [
+    // bountiesTests,
+    vestingTests
+];
 
-async function runTests(context: TestContext) {
-    console.log('Starting migration verification tests...\n');
-    let passed = 0;
-    let failed = 0;
-
-    for (const test of palletTests) {
-        console.log(`Running tests for ${test.pallet_name} pallet:`);
+export async function runTests(context: TestContext) {
+    for (const test of tests) {
+        let stage = 'pre-check';
         
         try {
-            await test.pre_check(context.pre);
-            
-            await test.post_check(context.post);
-            
-            passed++;
-        } catch (error) {
-            console.error(`❌ ${test.pallet_name} pallet tests failed:`);
+            const pre_payload = await test.pre_check(context.pre);
+            stage = 'post-check';
+            await test.post_check(context.post, pre_payload);
+
+            console.log(`✅ Test ${test.name} test completed successfully`);
+        } catch (error: unknown) {
+            console.error(`❌ Test '${test.name}' failed during ${stage}:`);
             console.error(error);
-            console.error('\n');
-            failed++;
         }
     }
-
-    console.log('Test Summary:');
-    console.log(`Total pallets tested: ${palletTests.length}`);
-    console.log(`Passed: ${passed}`);
-    console.log(`Failed: ${failed}`);
-
-    if (failed > 0) {
-        process.exit(1);
-    }
 }
+
+async function main() {
+    const { context, apis } = await setupTestContext();
+
+    // to correctly state assert, the best is to take Westend before 1st and WAH after 2nd, 
+    // though knowing that between 1st and 2nd migration in WAH, few users might have added few things 
+    // so a small mismatch might be expected.
+    await runTests(context);
+
+    // Disconnect all APIs
+    await Promise.all(apis.map(api => api.disconnect()));
+}
+
+main().catch((error) => {
+    console.error(error);
+    process.exit(1);
+}); 
 
 interface ChainConfig {
     endpoint: string;
@@ -86,8 +91,6 @@ async function setupTestContext(): Promise<{ context: TestContext; apis: ApiProm
             ah_api_before,
         },
         post: {
-            rc_api_before,
-            ah_api_before,
             rc_api_after,
             ah_api_after,
         }
@@ -95,20 +98,3 @@ async function setupTestContext(): Promise<{ context: TestContext; apis: ApiProm
 
     return { context, apis: [rc_api, ah_api] };
 }
-
-async function main() {
-    const { context, apis } = await setupTestContext();
-
-    // to correctly state assert, the best is to take Westend before 1st and WAH after 2nd, 
-    // though knowing that between 1st and 2nd migration in WAH, few users might have added few things 
-    // so a small mismatch might be expected.
-    await runTests(context);
-
-    // Disconnect all APIs
-    await Promise.all(apis.map(api => api.disconnect()));
-}
-
-main().catch((error) => {
-    console.error(error);
-    process.exit(1);
-}); 
