@@ -55,14 +55,14 @@ async function setupTestContext(): Promise<{ context: TestContext; apis: ApiProm
     config();
     const relayChainConfig: ChainConfig = {
         endpoint: process.env.WESTEND_ENDPOINT || 'wss://westend-rpc.dwellir.com',
-        before_block: process.env.WESTEND_BLOCK_NUMBER_PRE ? parseInt(process.env.WESTEND_BLOCK_NUMBER_PRE) : 26041702,
-        after_block: process.env.WESTEND_BLOCK_NUMBER ? parseInt(process.env.WESTEND_BLOCK_NUMBER) : 26071771,
+        before_block: process.env.WESTEND_BLOCK_NUMBER_PRE ? parseInt(process.env.WESTEND_BLOCK_NUMBER_PRE) : 0,
+        after_block: process.env.WESTEND_BLOCK_NUMBER ? parseInt(process.env.WESTEND_BLOCK_NUMBER) : 0,
     };
 
     const assetHubConfig: ChainConfig = {
         endpoint: process.env.WESTEND_ASSET_HUB_ENDPOINT || 'wss://asset-hub-westend-rpc.dwellir.com',
-        before_block: process.env.WESTEND_ASSET_HUB_BLOCK_NUMBER_PRE ? parseInt(process.env.WESTEND_ASSET_HUB_BLOCK_NUMBER_PRE) : 11716733,
-        after_block: process.env.WESTEND_ASSET_HUB_BLOCK_NUMBER ? parseInt(process.env.WESTEND_ASSET_HUB_BLOCK_NUMBER) : 11736597, 
+        before_block: process.env.WESTEND_ASSET_HUB_BLOCK_NUMBER_PRE ? parseInt(process.env.WESTEND_ASSET_HUB_BLOCK_NUMBER_PRE) : 0,
+        after_block: process.env.WESTEND_ASSET_HUB_BLOCK_NUMBER ? parseInt(process.env.WESTEND_ASSET_HUB_BLOCK_NUMBER) : 0, 
     };
 
     // Setup Relay Chain API
