@@ -132,4 +132,4 @@ clean:
 # Run the migration tests on westend
 run-westend-migration-tests:
     npm run build
-    npm run ahm-compare
+    npm run compare-state
