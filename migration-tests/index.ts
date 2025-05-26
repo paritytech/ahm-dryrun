@@ -1,5 +1,6 @@
 import '@polkadot/api-augment';
 import '@polkadot/types-augment';
+import { config } from 'dotenv';
 
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { TestContext, PalletTest } from './types.js';
@@ -51,17 +52,17 @@ interface ChainConfig {
 }
 
 async function setupTestContext(): Promise<{ context: TestContext; apis: ApiPromise[] }> {
+    config();
     const relayChainConfig: ChainConfig = {
-        endpoint: 'wss://westend-rpc.dwellir.com',
-        before_block: 26041702, // westend RC before first migration
-        // https://westend.subscan.io/event?page=1&time_dimension=date&module=rcmigrator&event_id=assethubmigrationfinished
-        after_block: 26071771, // westend RC after migration
+        endpoint: process.env.WESTEND_ENDPOINT || 'wss://westend-rpc.dwellir.com',
+        before_block: process.env.WESTEND_BLOCK_NUMBER_PRE ? parseInt(process.env.WESTEND_BLOCK_NUMBER_PRE) : 26041702,
+        after_block: process.env.WESTEND_BLOCK_NUMBER ? parseInt(process.env.WESTEND_BLOCK_NUMBER) : 26071771,
     };
 
     const assetHubConfig: ChainConfig = {
-        endpoint: 'wss://asset-hub-westend-rpc.dwellir.com',
-        before_block: 11716733, // wah before first migration started
-        after_block: 11736597, // wah after second migration ended
+        endpoint: process.env.WESTEND_ASSET_HUB_ENDPOINT || 'wss://asset-hub-westend-rpc.dwellir.com',
+        before_block: process.env.WESTEND_ASSET_HUB_BLOCK_NUMBER_PRE ? parseInt(process.env.WESTEND_ASSET_HUB_BLOCK_NUMBER_PRE) : 11716733,
+        after_block: process.env.WESTEND_ASSET_HUB_BLOCK_NUMBER ? parseInt(process.env.WESTEND_ASSET_HUB_BLOCK_NUMBER) : 11736597, 
     };
 
     // Setup Relay Chain API
