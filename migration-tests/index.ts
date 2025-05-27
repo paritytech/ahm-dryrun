@@ -4,11 +4,13 @@ import '@polkadot/types-augment';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { MigrationTest, TestContext } from './types.js';
 import { vestingTests } from './pallets/vesting.js';
+import { proxyTests } from './pallets/proxy.js';
 // import { bountiesTests } from './pallets/bounties.js';
 
 export const tests: MigrationTest[] = [
     // bountiesTests,
-    vestingTests
+    vestingTests,
+    proxyTests
 ];
 
 export async function runTests(context: TestContext) {
