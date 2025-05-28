@@ -61,43 +61,39 @@ export const referendaTests: MigrationTest = {
         context: PostCheckContext,
         pre_payload: PreCheckResult
     ): Promise<void> => {
-        // TODO: try to create anonymous functions for rc_post_check and ah_post_check
         const { rc_api_after, ah_api_after } = context;
 
         // Check RC is empty after migration
-        const rc_referendumCount_after = await rc_api_after.query.referenda.referendumCount();
-        assert.equal(
-            rc_referendumCount_after.toNumber(),
-            0,
-            'Referendum count should be 0 after migration'
-        );
+        const rc_post_checks = async () => {
+            assert.equal(
+                (await rc_api_after.query.referenda.referendumCount()).toNumber(),
+                0,
+                'Referendum count should be 0 after migration'
+            );
 
-        const rc_decidingCount_after = await rc_api_after.query.referenda.decidingCount.entries();
-        assert(
-            rc_decidingCount_after.length === 0,
-            'Deciding count should be empty after migration'
-        );
+            assert(
+                (await rc_api_after.query.referenda.decidingCount.entries()).length === 0,
+                'Deciding count should be empty after migration'
+            );
 
-        const rc_trackQueue_after = await rc_api_after.query.referenda.trackQueue.entries();
-        assert(
-            rc_trackQueue_after.length === 0,
-            'Track queue should be empty after migration'
-        );
+            assert(
+                (await rc_api_after.query.referenda.trackQueue.entries()).length === 0,
+                'Track queue should be empty after migration'
+            );
 
-        const rc_metadata_after = await rc_api_after.query.referenda.metadataOf.entries();
-        assert(
-            rc_metadata_after.length === 0,
-            'Metadata should be empty after migration'
-        );
+            assert(
+                (await rc_api_after.query.referenda.metadataOf.entries()).length === 0,
+                'Metadata should be empty after migration'
+            );
 
-        const rc_referendumInfo_after = await rc_api_after.query.referenda.referendumInfoFor.entries();
-        assert(
-            rc_referendumInfo_after.length === 0,
-            'Referendum info should be empty after migration'
-        );
+            assert(
+                (await rc_api_after.query.referenda.referendumInfoFor.entries()).length === 0,
+                'Referendum info should be empty after migration'
+            );
+        };
+        await rc_post_checks();
 
         // Check AH consistency with RC pre-migration state
-
         const { 
             referendumCount: rc_referendumCount,
             decidingCount: rc_decidingCount,
