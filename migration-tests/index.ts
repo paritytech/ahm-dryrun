@@ -8,7 +8,7 @@ import { vestingTests } from './pallets/vesting.js';
 
 export const tests: MigrationTest[] = [
     // bountiesTests,
-    vestingTests
+    vestingTests,
 ];
 
 export async function runTests(context: TestContext) {
@@ -66,8 +66,7 @@ async function setupTestContext(): Promise<{ context: TestContext; apis: ApiProm
     };
 
     // Setup Relay Chain API
-    const rc_provider = new WsProvider(relayChainConfig.endpoint);
-    const rc_api = await ApiPromise.create({ provider: rc_provider });
+    const rc_api = await ApiPromise.create({ provider: new WsProvider(relayChainConfig.endpoint) });
 
     const rc_block_hash_before = await rc_api.rpc.chain.getBlockHash(relayChainConfig.before_block);
     const rc_api_before = await rc_api.at(rc_block_hash_before);
@@ -76,8 +75,7 @@ async function setupTestContext(): Promise<{ context: TestContext; apis: ApiProm
     const rc_api_after = await rc_api.at(rc_block_hash_after);
 
     // Setup Asset Hub API
-    const ah_provider = new WsProvider(assetHubConfig.endpoint);
-    const ah_api = await ApiPromise.create({ provider: ah_provider });
+    const ah_api = await ApiPromise.create({ provider: new WsProvider(assetHubConfig.endpoint) });
 
     const ah_block_hash_before = await ah_api.rpc.chain.getBlockHash(assetHubConfig.before_block);
     const ah_api_before = await ah_api.at(ah_block_hash_before);
