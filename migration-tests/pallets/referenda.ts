@@ -10,51 +10,48 @@ export const referendaTests: MigrationTest = {
         const { rc_api_before, ah_api_before } = context;
 
         // AH pre-check assertions
-        const ah_referendumCount = await ah_api_before.query.referenda.referendumCount();
-        assert.equal(
-            ah_referendumCount.toNumber(),
-            0,
-            'Referendum count should be 0 on AH before the migration'
-        );
+        const ah_pre_checks = async () => {
+            const ah_referendumCount = await ah_api_before.query.referenda.referendumCount();
+            assert.equal(
+                ah_referendumCount.toNumber(),
+                0,
+                'Referendum count should be 0 on AH before the migration'
+            );
 
-        const ah_decidingCount = await ah_api_before.query.referenda.decidingCount.entries();
-        assert(
-            ah_decidingCount.length === 0,
-            'Deciding count map should be empty on AH before the migration'
-        );
+            const ah_decidingCount = await ah_api_before.query.referenda.decidingCount.entries();
+            assert(
+                ah_decidingCount.length === 0,
+                'Deciding count map should be empty on AH before the migration'
+            );
 
-        const ah_trackQueue = await ah_api_before.query.referenda.trackQueue.entries();
-        assert(
-            ah_trackQueue.length === 0,
-            'Track queue map should be empty on AH before the migration'
-        );
+            const ah_trackQueue = await ah_api_before.query.referenda.trackQueue.entries();
+            assert(
+                ah_trackQueue.length === 0,
+                'Track queue map should be empty on AH before the migration'
+            );
 
-        const ah_metadata = await ah_api_before.query.referenda.metadataOf.entries();
-        assert(
-            ah_metadata.length === 0,
-            'MetadataOf map should be empty on AH before the migration'
-        );
+            const ah_metadata = await ah_api_before.query.referenda.metadataOf.entries();
+            assert(
+                ah_metadata.length === 0,
+                'MetadataOf map should be empty on AH before the migration'
+            );
 
-        const ah_referendumInfo = await ah_api_before.query.referenda.referendumInfoFor.entries();
-        assert(
-            ah_referendumInfo.length === 0,
-            'Referendum info for map should be empty on AH before the migration'
-        );
+            const ah_referendumInfo = await ah_api_before.query.referenda.referendumInfoFor.entries();
+            assert(
+                ah_referendumInfo.length === 0,
+                'Referendum info for map should be empty on AH before the migration'
+            );
+        };
+        await ah_pre_checks();
 
         // Collect RC data
-        const rc_referendumCount = await rc_api_before.query.referenda.referendumCount();
-        const rc_decidingCount = await rc_api_before.query.referenda.decidingCount.entries();
-        const rc_trackQueue = await rc_api_before.query.referenda.trackQueue.entries();
-        const rc_metadata = await rc_api_before.query.referenda.metadataOf.entries();
-        const rc_referendumInfo = await rc_api_before.query.referenda.referendumInfoFor.entries();
-
         return {
             rc_pre_payload: {
-                referendumCount: rc_referendumCount,
-                decidingCount: rc_decidingCount,
-                trackQueue: rc_trackQueue,
-                metadata: rc_metadata,
-                referendumInfo: rc_referendumInfo
+                referendumCount: await rc_api_before.query.referenda.referendumCount(),
+                decidingCount: await rc_api_before.query.referenda.decidingCount.entries(),
+                trackQueue: await rc_api_before.query.referenda.trackQueue.entries(),
+                metadata: await rc_api_before.query.referenda.metadataOf.entries(),
+                referendumInfo: await rc_api_before.query.referenda.referendumInfoFor.entries()
             },
             ah_pre_payload: undefined
         };
