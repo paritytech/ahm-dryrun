@@ -10,7 +10,7 @@ import { referendaTests } from './pallets/referenda.js';
 export const tests: MigrationTest[] = [
     // bountiesTests,
     vestingTests,
-    // referendaTests,
+    referendaTests,
 ];
 
 export async function runTests(context: TestContext) {
