@@ -5,10 +5,12 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { MigrationTest, TestContext } from './types.js';
 import { vestingTests } from './pallets/vesting.js';
 // import { bountiesTests } from './pallets/bounties.js';
+import { referendaTests } from './pallets/referenda.js';
 
 export const tests: MigrationTest[] = [
     // bountiesTests,
     vestingTests,
+    // referendaTests,
 ];
 
 export async function runTests(context: TestContext) {
