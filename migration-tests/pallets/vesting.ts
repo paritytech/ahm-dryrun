@@ -16,7 +16,7 @@ export const vestingTests: MigrationTest = {
         // AH Pre-check assertions
         const ah_vestingStorageVersion = await ah_api_before.query.vesting.storageVersion();
         assert.equal(
-            ah_vestingStorageVersion.toHuman(),
+            ah_vestingStorageVersion.toString(),
             'V0',
             'Vesting storage version should be V0 before migration'
         );
@@ -89,7 +89,7 @@ export const vestingTests: MigrationTest = {
         // Check storage version consistency
         const ah_vesting_storage_version_after = await ah_api_after.query.vesting.storageVersion();
         assert.equal(
-            ah_vesting_storage_version_after.toHuman(),
+            ah_vesting_storage_version_after.toString(),
             'V1',
             'vesting storage version should be V1 after migration'
         );
