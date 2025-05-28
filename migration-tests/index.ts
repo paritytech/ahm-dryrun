@@ -53,14 +53,14 @@ interface ChainConfig {
 
 async function setupTestContext(): Promise<{ context: TestContext; apis: ApiPromise[] }> {
     const relayChainConfig: ChainConfig = {
-        endpoint: 'wss://westend-rpc.dwellir.com',
+        endpoint: 'wss://westend-rpc.polkadot.io',
         before_block: 26041702, // westend RC before first migration
         // https://westend.subscan.io/event?page=1&time_dimension=date&module=rcmigrator&event_id=assethubmigrationfinished
         after_block: 26071771, // westend RC after migration
     };
 
     const assetHubConfig: ChainConfig = {
-        endpoint: 'wss://asset-hub-westend-rpc.dwellir.com',
+        endpoint: 'wss://westend-asset-hub-rpc.polkadot.io',
         before_block: 11716733, // wah before first migration started
         after_block: 11736597, // wah after second migration ended
     };
