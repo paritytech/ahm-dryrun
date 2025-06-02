@@ -1,11 +1,14 @@
 import '@polkadot/api-augment';
 import assert from 'assert';
 import { PreCheckContext, PostCheckContext, MigrationTest, PreCheckResult } from '../types.js';
-import type { PalletSchedulerScheduled } from '@polkadot/types/lookup';
+import type { PalletSchedulerScheduled, PalletSchedulerRetryConfig } from '@polkadot/types/lookup';
 import type { Option } from '@polkadot/types/codec';
 import type { Vec } from '@polkadot/types/codec';
 import { ApiDecoration } from '@polkadot/api/types';
 import type { Bytes } from '@polkadot/types/primitive';
+import type { ITuple } from '@polkadot/types/types';
+import type { u32 } from '@polkadot/types/primitive';
+import type { StorageKey } from '@polkadot/types/primitive';
 
 async function getTaskCallEncodings(
     api: ApiDecoration<'promise'>,
@@ -110,31 +113,27 @@ export const schedulerTests: MigrationTest = {
         context: PostCheckContext,
         pre_payload: PreCheckResult
     ): Promise<void> => {
-        const { rc_api_after } = context;
+        const { rc_api_after, ah_api_after } = context;
 
-        async function rc_check(api: ApiDecoration<'promise'>) {
-            // Check IncompleteSince is None after migration
+        async function check_rc(api: ApiDecoration<'promise'>) {
             const incompleteSinceAfter = await api.query.scheduler.incompleteSince();
             assert(
                 incompleteSinceAfter.isNone,
                 'IncompleteSince should be None on RC after migration'
             );
 
-            // Check Agenda is empty after migration
             const agendaEntriesAfter = await api.query.scheduler.agenda.entries();
             assert(
                 agendaEntriesAfter.length === 0,
                 'Agenda map should be empty on RC after migration'
             );
 
-            // Check Retries is empty after migration
             const retriesAfter = await api.query.scheduler.retries.entries();
             assert(
                 retriesAfter.length === 0,
                 'Retries map should be empty on RC after migration'
             );
 
-            // Check Lookup is empty after migration
             const lookupAfter = await api.query.scheduler.lookup.entries();
             assert(
                 lookupAfter.length === 0,
@@ -142,6 +141,65 @@ export const schedulerTests: MigrationTest = {
             );
         }
 
-        await rc_check(rc_api_after);
+        async function check_ah(api: ApiDecoration<'promise'>, rc_payload: PreCheckResult['rc_pre_payload']) {
+            // Check IncompleteSince
+            const incompleteSinceAfter = await api.query.scheduler.incompleteSince();
+            assert.deepEqual(
+                incompleteSinceAfter.toJSON(),
+                rc_payload.incompleteSince.toJSON(),
+                'IncompleteSince on Asset Hub should match the RC value'
+            );
+
+            // Collect and check Agenda
+            // const ahAgendaEntries = await api.query.scheduler.agenda.entries();
+            // const ahAgenda = ahAgendaEntries.map(([key, tasks]) => [
+            //     key.args[0].toNumber(),
+            //     tasks.toJSON()
+            // ]);
+
+            // assert.equal(
+            //     ahAgenda.length,
+            //     rc_payload.agendaEntries.length,
+            //     'Agenda map length on Asset Hub should match converted RC value'
+            // );
+
+            // ahAgenda.sort(([a], [b]) => Number(a) - Number(b));
+            // rc_payload.agendaEntries.sort(([a], [b]) => Number(a) - Number(b));
+
+            // assert.deepEqual(
+            //     ahAgenda,
+            //     expectedAhAgenda,
+            //     'Agenda map value on Asset Hub should match the converted RC value'
+            // );
+
+            // Check Lookup
+            const ahLookupEntries = await api.query.scheduler.lookup.entries();
+            assert.equal(
+                ahLookupEntries.length,
+                rc_payload.lookup.length,
+                'Lookup map length on Asset Hub should match the RC value'
+            );
+            assert.deepEqual(
+                ahLookupEntries.map(([key, value]: [StorageKey, Option<ITuple<[u32, u32]>>]) => [key.toJSON(), value.toJSON()]),
+                rc_payload.lookup.map(([key, value]: [StorageKey, Option<ITuple<[u32, u32]>>]) => [key.toJSON(), value.toJSON()]),
+                'Lookup map value on Asset Hub should match the RC value'
+            );
+
+            // Check Retries
+            const ahRetriesEntries = await api.query.scheduler.retries.entries();
+            assert.equal(
+                ahRetriesEntries.length,
+                rc_payload.retries.length,
+                'Retries map length on Asset Hub should match the RC value'
+            );
+            assert.deepEqual(
+                ahRetriesEntries.map(([key, value]: [StorageKey, Option<PalletSchedulerRetryConfig>]) => [key.toJSON(), value.toJSON()]),
+                rc_payload.retries.map(([key, value]: [StorageKey, Option<PalletSchedulerRetryConfig>]) => [key.toJSON(), value.toJSON()]),
+                'Retries map value on Asset Hub should match the RC value'
+            );
+        }
+
+        await check_rc(rc_api_after);
+        await check_ah(ah_api_after, pre_payload.rc_pre_payload);
     }
 };
