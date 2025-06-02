@@ -46,7 +46,33 @@ async function getTaskCallEncodings(
 export const schedulerTests: MigrationTest = {
     name: 'scheduler_pallet',
     pre_check: async (context: PreCheckContext): Promise<PreCheckResult> => {
-        const { rc_api_before } = context;
+        const { rc_api_before, ah_api_before } = context;
+
+        async function check_ah(api: ApiDecoration<'promise'>) {
+            const incompleteSince = await api.query.scheduler.incompleteSince();
+            assert(
+                incompleteSince.isNone,
+                'IncompleteSince should be empty on asset hub before migration'
+            );
+
+            const agendaEntries = await api.query.scheduler.agenda.entries();
+            assert(
+                agendaEntries.length === 0,
+                'Agenda map should be empty on asset hub before migration'
+            );
+
+            const lookupEntries = await api.query.scheduler.lookup.entries();
+            assert(
+                lookupEntries.length === 0,
+                'Lookup map should be empty on asset hub before migration'
+            );
+
+            const retriesEntries = await api.query.scheduler.retries.entries();
+            assert(
+                retriesEntries.length === 0,
+                'Retries map should be empty on asset hub before migration'
+            );
+        }
 
         async function collect_rc(api: ApiDecoration<'promise'>) {
             const incompleteSince = await api.query.scheduler.incompleteSince();
@@ -73,6 +99,7 @@ export const schedulerTests: MigrationTest = {
             };
         }
 
+        await check_ah(ah_api_before);
         return {
             rc_pre_payload: await collect_rc(rc_api_before),
             ah_pre_payload: undefined
