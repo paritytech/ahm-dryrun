@@ -9,6 +9,7 @@ import type { Bytes } from '@polkadot/types/primitive';
 import type { ITuple } from '@polkadot/types/types';
 import type { u32 } from '@polkadot/types/primitive';
 import type { StorageKey } from '@polkadot/types/primitive';
+// importfrom '@polkadot/types/codec';
 
 async function getTaskCallEncodings(
     api: ApiDecoration<'promise'>,
@@ -88,7 +89,7 @@ export const schedulerTests: MigrationTest = {
                     const blockNumber = key.args[0].toNumber();
                     return [
                         blockNumber,
-                        tasks.toJSON(),
+                        tasks,
                         await getTaskCallEncodings(api, tasks)
                     ];
                 })
@@ -150,28 +151,6 @@ export const schedulerTests: MigrationTest = {
                 'IncompleteSince on Asset Hub should match the RC value'
             );
 
-            // Collect and check Agenda
-            // const ahAgendaEntries = await api.query.scheduler.agenda.entries();
-            // const ahAgenda = ahAgendaEntries.map(([key, tasks]) => [
-            //     key.args[0].toNumber(),
-            //     tasks.toJSON()
-            // ]);
-
-            // assert.equal(
-            //     ahAgenda.length,
-            //     rc_payload.agendaEntries.length,
-            //     'Agenda map length on Asset Hub should match converted RC value'
-            // );
-
-            // ahAgenda.sort(([a], [b]) => Number(a) - Number(b));
-            // rc_payload.agendaEntries.sort(([a], [b]) => Number(a) - Number(b));
-
-            // assert.deepEqual(
-            //     ahAgenda,
-            //     expectedAhAgenda,
-            //     'Agenda map value on Asset Hub should match the converted RC value'
-            // );
-
             // Check Lookup
             const ahLookupEntries = await api.query.scheduler.lookup.entries();
             assert.equal(
@@ -197,8 +176,89 @@ export const schedulerTests: MigrationTest = {
                 rc_payload.retries.map(([key, value]: [StorageKey, Option<PalletSchedulerRetryConfig>]) => [key.toJSON(), value.toJSON()]),
                 'Retries map value on Asset Hub should match the RC value'
             );
+            
+            // Mirror the agenda conversion from RC to AH
+            const expectedAhAgenda = rc_payload.agendaEntries
+                .filter(([blockNumber, rcTasks, rcTaskCallEncodings]: [number, Option<PalletSchedulerScheduled>[], (Bytes | null)[]]) => {
+                    const ahTasks: Option<PalletSchedulerScheduled>[] = [];
+
+                    // Iterate over task and its corresponding encoded call
+                    for (let i = 0; i < rcTasks.length; i++) {
+                        const rcTask = rcTasks[i];
+                        const encodedCall = rcTaskCallEncodings[i];
+
+                        // Skip if no scheduled task for block number
+                        if (!rcTask) continue;
+
+                        // Skip if call for scheduled task didn't come through
+                        if (!encodedCall) {
+                            console.log(`Call for task scheduled at block number ${blockNumber} didn't come through.`);
+                            continue;
+                        }
+
+                        // Attempt origin conversion
+                        let ahOrigin;
+                        try {
+                            ahOrigin = convertRcToAhOrigin(rcTask.isSome ? rcTask.unwrap().origin : null);
+                        } catch (e) {
+                            console.log(`Origin for task scheduled at block number ${blockNumber} couldn't be converted.`);
+                            continue;
+                        }
+
+                        // Attempt call conversion
+                        let ahCall;
+                        try {
+                            ahCall = convertRcToAhCall(encodedCall);
+                        } catch (e) {
+                            console.error(`Call for task scheduled at block number ${blockNumber} couldn't be converted.`);
+                            continue;
+                        }
+
+                        // Build new task
+                        const ahTask = {
+                            maybeId: rcTask.maybeId,
+                            priority: rcTask.priority,
+                            call: ahCall,
+                            maybePeriodic: rcTask.maybePeriodic,
+                            origin: ahOrigin
+                        };
+                        ahTasks.push(Some(ahTask));
+                    }
+
+                    // Filter out blocks that end up with no valid tasks after conversion
+                    if (ahTasks.length > 0) {
+                        return [blockNumber, ahTasks];
+                    }
+                    return null;
+                })
+                .filter((entry): entry is [number, Option<PalletSchedulerScheduled>[]] => entry !== null)
+                .sort(([a], [b]) => Number(a) - Number(b));
+
+            // const ahAgendaEntries = await api.query.scheduler.agenda.entries();
+            // const ahAgenda = ahAgendaEntries.map(([key, tasks]) => [
+            //     key.args[0].toNumber(),
+            //     tasks.toJSON()
+            // ]);
+
+            // // Check length
+            // assert.equal(
+            //     ahAgenda.length,
+            //     expectedAhAgenda.length,
+            //     'Agenda map length on Asset Hub should match converted RC value'
+            // );
+
+            // // Check values
+            // assert.deepEqual(
+            //     ahAgenda,
+            //     expectedAhAgenda.map(([bn, tasks]) => [bn, tasks.map(t => t.toJSON())]),
+            //     'Agenda map value on Asset Hub should match the converted RC value'
+            // );
         }
 
+        // console.log('RC_agendaEntries:');
+        // console.log(pre_payload.rc_pre_payload.agendaEntries);
+        console.log('AH_agendaEntries:');
+        console.log((await ah_api_after.query.scheduler.agenda.entries()));
         await check_rc(rc_api_after);
         await check_ah(ah_api_after, pre_payload.rc_pre_payload);
     }
