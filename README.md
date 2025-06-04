@@ -26,20 +26,27 @@ just build-runtimes
 just run
 ```
 
-### E2E Tests on Asset Hub Next
+### E2E Tests on Westend Asset Hub
 
-To run PET'S currently existing E2E test suites on the AHNW, use
+Polkadot Ecosystem Tests offers, among other things, a suite of E2E tests that run against
+live networks.
+The PET submodule in this repository is set to branch `ahm-tests`, which adapts the (originally) relaychain E2E suites
+to run in post-migration Westend Asset Hub.
+
+To run these E2E tests:
 
 ```sh
-#runs all of them, AHNW and beyond
+# runs every PET test
+# this will run the adapted test suites on Polkadot/Kusama, and **cause failures** as test suites for AH are
+# incompatible with relaychain
 just e2e-tests
 
-# runs all suites from current E2E suites that have been adapted to the AHNW
-just e2e-tests assetHubNext
+# runs all E2E suites that have been adapted to WAH
+just wah-e2e-tests
 
-# specific test suite(s)
-just e2e-tests assetHubNext.scheduler
-just e2e-tests assetHubNext.staking assetHubNext.nominationPools
+# run specific test suite(s)
+just e2e-tests scheduler
+just e2e-tests staking nominationPools
 ...
 ```
 

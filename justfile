@@ -113,8 +113,17 @@ run-ah-upgrade:
 test-prepare:
     npm install
 
-e2e-test *TEST:
+e2e-tests *TEST:
     cd ${PET_PATH} && yarn && yarn test {{ TEST }}
+
+wah-e2e-tests *TEST:
+    #!/usr/bin/env bash
+    # if no test modules are provided, run all of them
+    tests="assetHubWestend."
+    for test in {{ TEST }}; do
+        tests="$tests assetHubWestend.$test"
+    done
+    just e2e-tests $tests
 
 # Run the tests
 test:
