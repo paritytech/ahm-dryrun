@@ -12,37 +12,36 @@
    cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite
    ```
 
-- Patch and compile polkadot runtime to add sudo
+ - Update code
 
-Apply the patch `polkadot_sudo.patch` on top of the polkadot code in `runtimes` directory and then compile the runtime.
+    ```
+    git submodule update --recursive
+    ```
+  - Run zombie-bite through `just`
 
-```
-cd ../runtimes
-git apply ../zombie-bite/polkadot_sudo.patch
-cargo build --release -p polkadot-runtime
-cd -
-```
+    ```
+    just create-polkadot-pre-migration-snapshot
+    ```
 
-- Compile the needed binaries (from `polkadot-sdk-doppelganger`)
+    And you will have a new network spawned 🚀
 
-```
-cd polkadot-sdk-doppelganger
-SKIP_WASM_BUILD=1 cargo build --release -p polkadot-doppelganger-node --bin doppelganger
-SKIP_WASM_BUILD=1 cargo build --release -p polkadot-parachain-bin --features doppelganger --bin doppelganger-parachain
-SKIP_WASM_BUILD=1 cargo build --release -p polkadot-parachain-bin --bin polkadot-parachain
-SKIP_WASM_BUILD=1 cargo build --release --bin polkadot --bin polkadot-prepare-worker --bin polkadot-execute-worker
-```
+### Run migration
 
-- Make them available in your `PATH`
+Then you can kickoff the migration with this script
 
- ```
- export PATH=$(pwd)/target/release:$PATH
- ```
+https://github.com/paritytech/ahm-dryrun/blob/main/zombie-bite-scripts/rc_migrator_schedule_migration.js
 
-- Run `zombie-bite`
+Or you can use this one
+
+https://github.com/paritytech/ahm-dryrun/blob/main/zombie-bite-scripts/report_account_migration_status.ts (kickoff the migration and monitor the progress)
+
+by running
 
 ```
-zombie-bite polkadot:<path_to_polkadot_wasm> asset-hub
+just report-account-migration-status
 ```
+
+For both you need to set the _env var_ `ZOMBIE_BITE_RC_PORT` from the rpc port of alice.
+
 
 You should get a new network with the `live state` running locally.
