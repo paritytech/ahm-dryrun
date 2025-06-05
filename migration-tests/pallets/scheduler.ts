@@ -9,7 +9,13 @@ import type { Bytes } from '@polkadot/types/primitive';
 import type { ITuple } from '@polkadot/types/types';
 import type { u32 } from '@polkadot/types/primitive';
 import type { StorageKey } from '@polkadot/types/primitive';
-// importfrom '@polkadot/types/codec';
+import type { H256 } from '@polkadot/types/interfaces';
+
+type AgendaEntry = [
+    blockNumber: number,
+    tasks: Vec<Option<PalletSchedulerScheduled>>,
+    callEncodings: (Bytes | null)[]
+];
 
 async function getTaskCallEncodings(
     api: ApiDecoration<'promise'>,
@@ -22,13 +28,16 @@ async function getTaskCallEncodings(
                 return null;
             }
 
+            // 1 - inline, 4 lookups. All lookups have empty preimage, however hash and len are not empty.
             const call = maybeSchedule.unwrap().call;
             if (call.isInline) {
                 return call.asInline;
             } else if (call.isLookup) {
                 const { hash, len } = call.asLookup;
                 try {
-                    const preimage = await api.query.preimage.preimageFor([hash, len]) as Option<any>;
+                    const preimage = await api.query.preimage.preimageFor(
+                        [hash, len] as ITuple<[H256, u32]>
+                    );
                     return preimage.isSome ? preimage.unwrap() : null;
                 } catch {
                     return null;
@@ -36,7 +45,7 @@ async function getTaskCallEncodings(
             } else if (call.isLegacy) {
                 const { hash } = call.asLegacy;
                 try {
-                    const preimage = await api.query.preimage.preimageFor([hash, null]) as Option<any>;
+                    const preimage = await api.query.preimage.preimageFor(hash) as Option<Bytes>;
                     return preimage.isSome ? preimage.unwrap() : null;
                 } catch {
                     return null;
@@ -83,21 +92,29 @@ export const schedulerTests: MigrationTest = {
             const retries = await api.query.scheduler.retries.entries();        
             const lookup = await api.query.scheduler.lookup.entries();
             
-            const rawAgendaEntries = await api.query.scheduler.agenda.entries();
-            const agendaEntriesWithEncodings = await Promise.all(
-                rawAgendaEntries.map(async ([key, tasks]) => {
+            // For Westend there are 5 agenda entries, each agenda has 1 task.
+            // Among those 5 tasks, 4 are lookups and 1 is inline.
+            // 
+            // Inline is encoded properly. 
+            // All lookups don't have pre_images so they are converted to null. Later on agendas with null encodings are filtered out.
+            //
+            // All lookups have empty preimage, however hash and len are not empty.
+            // `ah_post` state contains 3 agenda entries, 1 is lookup, 2 are new system events.
+            const agenda_entries = await api.query.scheduler.agenda.entries();
+            const agenda_and_call_encodings = await Promise.all(
+                agenda_entries.map(async ([key, tasks]): Promise<AgendaEntry> => {
                     const blockNumber = key.args[0].toNumber();
                     return [
                         blockNumber,
                         tasks,
-                        await getTaskCallEncodings(api, tasks)
+                        (await getTaskCallEncodings(api, tasks))
                     ];
                 })
             );
 
             return {
                 incompleteSince,
-                agendaEntries: agendaEntriesWithEncodings,
+                agenda_and_call_encodings: agenda_and_call_encodings,
                 retries,
                 lookup
             };
@@ -178,51 +195,44 @@ export const schedulerTests: MigrationTest = {
             );
             
             // Mirror the agenda conversion from RC to AH
-            const expectedAhAgenda = rc_payload.agendaEntries
-                .filter(([blockNumber, rcTasks, rcTaskCallEncodings]: [number, Option<PalletSchedulerScheduled>[], (Bytes | null)[]]) => {
-                    const ahTasks: Option<PalletSchedulerScheduled>[] = [];
-
+            const expected_ah_agenda = rc_payload.agenda_and_call_encodings
+                .map(([blockNumber, rcTasks, rcTaskCallEncodings]: AgendaEntry) => {
+                    if (rcTasks.length !== rcTaskCallEncodings.length) {
+                        return null;
+                    }
+                    
+                    const ahTasks: PalletSchedulerScheduled[] = [];
                     // Iterate over task and its corresponding encoded call
                     for (let i = 0; i < rcTasks.length; i++) {
                         const rcTask = rcTasks[i];
                         const encodedCall = rcTaskCallEncodings[i];
 
                         // Skip if no scheduled task for block number
-                        if (!rcTask) continue;
+                        if (!rcTask) {
+                            console.log(`Task for block number ${blockNumber} didn't come through.`);
+                            continue;
+                        }
 
                         // Skip if call for scheduled task didn't come through
                         if (!encodedCall) {
                             console.log(`Call for task scheduled at block number ${blockNumber} didn't come through.`);
                             continue;
                         }
-
-                        // Attempt origin conversion
-                        let ahOrigin;
-                        try {
-                            ahOrigin = convertRcToAhOrigin(rcTask.isSome ? rcTask.unwrap().origin : null);
-                        } catch (e) {
-                            console.log(`Origin for task scheduled at block number ${blockNumber} couldn't be converted.`);
-                            continue;
-                        }
-
-                        // Attempt call conversion
-                        let ahCall;
-                        try {
-                            ahCall = convertRcToAhCall(encodedCall);
-                        } catch (e) {
-                            console.error(`Call for task scheduled at block number ${blockNumber} couldn't be converted.`);
-                            continue;
-                        }
-
+                    
                         // Build new task
-                        const ahTask = {
-                            maybeId: rcTask.maybeId,
-                            priority: rcTask.priority,
-                            call: ahCall,
-                            maybePeriodic: rcTask.maybePeriodic,
-                            origin: ahOrigin
-                        };
-                        ahTasks.push(Some(ahTask));
+                        const ahTask = api.registry.createType('PalletSchedulerScheduled', {
+                            maybeId: rcTask.unwrap().maybeId.toJSON(),
+                            priority: rcTask.unwrap().priority.toNumber(),
+                            // TODO: This had a separate conversion logic, I tried to replace it with JSON conversion, might work.
+                            origin: rcTask.unwrap().origin.toJSON(),
+                            // TODO: This had a separate conversion logic too. For sure won't work, needs proper conversion.
+                            call: {
+                                Inline: encodedCall
+                            },
+                            maybePeriodic: rcTask.unwrap().maybePeriodic.toJSON(),
+                        });
+
+                        ahTasks.push(ahTask);
                     }
 
                     // Filter out blocks that end up with no valid tasks after conversion
@@ -231,21 +241,24 @@ export const schedulerTests: MigrationTest = {
                     }
                     return null;
                 })
-                .filter((entry): entry is [number, Option<PalletSchedulerScheduled>[]] => entry !== null)
-                .sort(([a], [b]) => Number(a) - Number(b));
+                .filter((entry: [number, PalletSchedulerScheduled[]] | null) => 
+                    entry !== null
+                );
+                
+                
 
-            // const ahAgendaEntries = await api.query.scheduler.agenda.entries();
-            // const ahAgenda = ahAgendaEntries.map(([key, tasks]) => [
-            //     key.args[0].toNumber(),
-            //     tasks.toJSON()
-            // ]);
+            const ah_agenda_entries = await api.query.scheduler.agenda.entries();
+            const ah_agenda = ah_agenda_entries.map(([key, tasks]) => [
+                key.args[0].toNumber(),
+                tasks.toJSON()
+            ]);
 
-            // // Check length
-            // assert.equal(
-            //     ahAgenda.length,
-            //     expectedAhAgenda.length,
-            //     'Agenda map length on Asset Hub should match converted RC value'
-            // );
+            // Check length
+            assert.equal(
+                ah_agenda.length,
+                expected_ah_agenda.length,
+                'Agenda map length on Asset Hub should match converted RC value'
+            );
 
             // // Check values
             // assert.deepEqual(
@@ -255,10 +268,6 @@ export const schedulerTests: MigrationTest = {
             // );
         }
 
-        // console.log('RC_agendaEntries:');
-        // console.log(pre_payload.rc_pre_payload.agendaEntries);
-        console.log('AH_agendaEntries:');
-        console.log((await ah_api_after.query.scheduler.agenda.entries()));
         await check_rc(rc_api_after);
         await check_ah(ah_api_after, pre_payload.rc_pre_payload);
     }
