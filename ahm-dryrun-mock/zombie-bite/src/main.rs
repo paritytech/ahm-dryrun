@@ -39,7 +39,7 @@ fn main() {
         ah_finish_block, rc_finish_block
     );
     fs::write(".env", blocks_env).expect("Failed to write blocks");
-    println!("Blocks written: ah_start={}, rc_start={}, ah_finish={}, rc_finish={}", 
+    println!("🧟Blocks written: ah_start={}, rc_start={}, ah_finish={}, rc_finish={}", 
         ah_start_block, rc_start_block, ah_finish_block, rc_finish_block);
 
     println!("🧟Zombie-bite running");
