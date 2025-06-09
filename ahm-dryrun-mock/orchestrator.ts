@@ -30,6 +30,17 @@ class Orchestrator {
             }
 
             console.log('🧑‍🔧Starting migration process...');
+
+            // Start westend migration tests
+            console.log('🧑‍🔧Starting westend migration tests in parallel...');
+            const westendTests = spawn('just', ['run-westend-migration-tests'], {
+                stdio: 'inherit'
+            });
+
+            westendTests.on('error', (err) => {
+                console.error('🧑‍🔧Failed to start westend migration tests:', err);
+                process.exit(1);
+            });
             
 
             // Start zombie-bite process
