@@ -5,6 +5,72 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { MigrationTest, TestContext } from './types.js';
 import { vestingTests } from './pallets/vesting.js';
 // import { bountiesTests } from './pallets/bounties.js';
+import yargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
+
+const argv = yargs(hideBin(process.argv))
+    .option('zb-rc-port', {
+        type: 'number',
+        description: 'Zombie-bite Relay Chain port',
+    })
+    .option('zb-ah-port', {
+        type: 'number',
+        description: 'Zombie-bite Asset Hub port',
+    })
+    .option('rc-before-block', {
+        type: 'number',
+        description: 'Relay Chain before block',
+    })
+    .option('rc-after-block', {
+        type: 'number',
+        description: 'Relay Chain after block',
+    })
+    .option('ah-before-block', {
+        type: 'number',
+        description: 'Asset Hub before block',
+    })
+    .option('ah-after-block', {
+        type: 'number',
+        description: 'Asset Hub after block',
+    })
+    .check((argv: { 
+        'zb-rc-port'?: number, 
+        'zb-ah-port'?: number,
+        'rc-before-block'?: number,
+        'rc-after-block'?: number,
+        'ah-before-block'?: number,
+        'ah-after-block'?: number 
+    }) => {
+        // Validate ports if provided
+        if (argv['zb-rc-port'] && (argv['zb-rc-port'] < 1 || argv['zb-rc-port'] > 65535)) {
+            argv['zb-rc-port'] = undefined;
+            console.warn('Invalid RC port, falling back to default endpoint');
+        }
+        if (argv['zb-ah-port'] && (argv['zb-ah-port'] < 1 || argv['zb-ah-port'] > 65535)) {
+            argv['zb-ah-port'] = undefined;
+            console.warn('Invalid AH port, falling back to default endpoint');
+        }
+
+        // Validate block order and use `undefined` (or default) if invalid
+        if (argv['rc-before-block'] !== undefined && argv['rc-after-block'] !== undefined) {
+            if (argv['rc-before-block'] >= argv['rc-after-block']) {
+                argv['rc-before-block'] = undefined;
+                argv['rc-after-block'] = undefined;
+                console.warn('Invalid RC block order, falling back to defaults');
+            }
+        }
+
+        if (argv['ah-before-block'] !== undefined && argv['ah-after-block'] !== undefined) {
+            if (argv['ah-before-block'] >= argv['ah-after-block']) {
+                argv['ah-before-block'] = undefined;
+                argv['ah-after-block'] = undefined;
+                console.warn('Invalid AH block order, falling back to defaults');
+            }
+        }
+
+        return true;
+    })
+    .parseSync();
 
 export const tests: MigrationTest[] = [
     // bountiesTests,
@@ -43,7 +109,7 @@ async function main() {
 main().catch((error) => {
     console.error(error);
     process.exit(1);
-}); 
+});
 
 interface ChainConfig {
     endpoint: string;
@@ -51,36 +117,45 @@ interface ChainConfig {
     after_block: number;
 }
 
-async function setupTestContext(): Promise<{ context: TestContext; apis: ApiPromise[] }> {
+function getChainConfigs(): { relay: ChainConfig, assetHub: ChainConfig } {
     const relayChainConfig: ChainConfig = {
-        endpoint: 'wss://westend-rpc.polkadot.io',
-        before_block: 26041702, // westend RC before first migration
-        // https://westend.subscan.io/event?page=1&time_dimension=date&module=rcmigrator&event_id=assethubmigrationfinished
-        after_block: 26071771, // westend RC after migration
+        endpoint: argv['zb-rc-port'] 
+            ? `ws://localhost:${argv['zb-rc-port']}`
+            : 'wss://westend-rpc.polkadot.io',
+        before_block: argv['rc-before-block'] ?? 26041702,
+        after_block: argv['rc-after-block'] ?? 26071771,
     };
 
     const assetHubConfig: ChainConfig = {
-        endpoint: 'wss://westend-asset-hub-rpc.polkadot.io',
-        before_block: 11716733, // wah before first migration started
-        after_block: 11736597, // wah after second migration ended
+        endpoint: argv['zb-ah-port'] 
+            ? `ws://localhost:${argv['zb-ah-port']}`
+            : 'wss://westend-asset-hub-rpc.polkadot.io',
+        before_block: argv['ah-before-block'] ?? 11716733,
+        after_block: argv['ah-after-block'] ?? 11736597,
     };
 
-    // Setup Relay Chain API
-    const rc_api = await ApiPromise.create({ provider: new WsProvider(relayChainConfig.endpoint) });
+    return { relay: relayChainConfig, assetHub: assetHubConfig };
+}
 
-    const rc_block_hash_before = await rc_api.rpc.chain.getBlockHash(relayChainConfig.before_block);
+async function setupTestContext(): Promise<{ context: TestContext; apis: ApiPromise[] }> {
+    const { relay, assetHub } = getChainConfigs();
+
+    // Setup Relay Chain API
+    const rc_api = await ApiPromise.create({ provider: new WsProvider(relay.endpoint) });
+
+    const rc_block_hash_before = await rc_api.rpc.chain.getBlockHash(relay.before_block);
     const rc_api_before = await rc_api.at(rc_block_hash_before);
 
-    const rc_block_hash_after = await rc_api.rpc.chain.getBlockHash(relayChainConfig.after_block);
+    const rc_block_hash_after = await rc_api.rpc.chain.getBlockHash(relay.after_block);
     const rc_api_after = await rc_api.at(rc_block_hash_after);
 
     // Setup Asset Hub API
-    const ah_api = await ApiPromise.create({ provider: new WsProvider(assetHubConfig.endpoint) });
+    const ah_api = await ApiPromise.create({ provider: new WsProvider(assetHub.endpoint) });
 
-    const ah_block_hash_before = await ah_api.rpc.chain.getBlockHash(assetHubConfig.before_block);
+    const ah_block_hash_before = await ah_api.rpc.chain.getBlockHash(assetHub.before_block);
     const ah_api_before = await ah_api.at(ah_block_hash_before);
 
-    const ah_block_hash_after = await ah_api.rpc.chain.getBlockHash(assetHubConfig.after_block);
+    const ah_block_hash_after = await ah_api.rpc.chain.getBlockHash(assetHub.after_block);
     const ah_api_after = await ah_api.at(ah_block_hash_after);
 
     const context: TestContext = {
