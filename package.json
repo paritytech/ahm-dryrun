@@ -10,6 +10,7 @@
     "authorize-upgrade": "node dist/zombie-bite-scripts/authorize_upgrade_ah.js",
     "report-account-migration-status": "node dist/zombie-bite-scripts/report_account_migration_status.js",
     "compare-state": "node dist/migration-tests/index.js",
+    "polkadot-migration": "RUST_LOG=zombie=debug node dist/zombie-bite-scripts/orchestrator.js",
     "prettier": "prettier --write .",
     "clean": "rm -rf dist",
     "postinstall": "papi"
@@ -20,8 +21,12 @@
     "@polkadot-labs/hdkd": "^0.0.13",
     "@polkadot/api": "^15.9.3",
     "@polkadot/util-crypto": "^13.4.4",
+    "@types/node": "^22.15.30",
     "dotenv": "^16.4.7",
-    "polkadot-api": "^1.9.9"
+    "polkadot-api": "^1.9.9",
+    "chokidar": "^4.0.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
   },
   "devDependencies": {
     "prettier": "^3.5.3",
