@@ -1,9 +1,9 @@
-// Monit migration finished
+// Monitor migration finished
 
 /*
  * Wrapper to call the `scheduleMigration` fn (defined in helpers)
  * accept 1 positional argument
- * rc_port: The port to use to connect to alice
+ * rc_port: the port to use to connect to Alice
 */
 
 
