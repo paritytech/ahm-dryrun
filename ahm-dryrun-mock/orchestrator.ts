@@ -10,73 +10,14 @@ interface Ports {
     collator_port: number;
 }
 
-interface StarBlocks {
+interface Blocks {
     ah_start_block: number;
     rc_start_block: number;
-}
-
-interface EndBlocks {
     ah_finish_block: number;
     rc_finish_block: number;
 }
 
-interface ReadyInfo extends Ports, StarBlocks {}
-
 class Orchestrator {
-    private readyWatcher: any;
-
-    async run(base_path: string) {
-        console.log('🧑‍🔧Starting migration process...');
-
-        // Start zombie-bite process
-        console.log('🧑‍🔧Starting zombie-bite in parallel...');
-        const zombieBitePath = path.join(__dirname, 'zombie-bite', 'target', 'debug', 'zombie-bite');
-        const zombieBite = spawn(zombieBitePath, [], {
-            stdio: 'inherit'
-        });
-
-        zombieBite.on('error', (err) => {
-            console.error('🧑‍🔧Failed to start zombie-bite:', err);
-            process.exit(1);
-        });
-
-        console.log('🧑‍🔧 Waiting for ready info from the spawned network...');
-        let ready_info = await this.waitForReadyInfo(base_path);
-        console.log('📩 Ready info received:', ready_info);
-
-        // Mock: Trigger migration
-        console.log(`\n🧑‍🔧 Triggering migration with alice_port: ${ready_info.alice_port}`);
-
-
-            // Mock: Start monitoring
-            console.log(`🧑‍🔧 Starting monitoring with ports: ${ports.alice_port}, ${ports.collator_port}`);
-
-
-
-    }
-
-    private async waitForReadyInfo(base_path: string): Promise<ReadyInfo> {
-        let ready_file = `${base_path}/ready.json`;
-        return new Promise((resolve) => {
-            this.readyWatcher = watch(ready_file, {
-                persistent: true,
-                awaitWriteFinish: {
-                    stabilityThreshold: 100,
-                    pollInterval: 1000
-                }
-            });
-
-            this.readyWatcher.on('add',  () => {
-                const ready_info = JSON.parse(fs.readFileSync(ready_file).toString());
-                this.readyWatcher.close();
-                resolve(ready_info);
-            });
-        });
-    }
-
-
-}
-class OrchestratorOld {
     private readonly envFile = '.env';
     private portsWatcher: any;
     private blocksWatcher: any;
@@ -89,7 +30,7 @@ class OrchestratorOld {
             }
 
             console.log('🧑‍🔧Starting migration process...');
-
+            
 
             // Start zombie-bite process
             console.log('🧑‍🔧Starting zombie-bite in parallel...');
@@ -110,10 +51,10 @@ class OrchestratorOld {
 
             // Mock: Trigger migration
             console.log(`\n🧑‍🔧 Triggering migration with alice_port: ${ports.alice_port}`);
-
+            
             // Mock: Start monitoring
             console.log(`🧑‍🔧 Starting monitoring with ports: ${ports.alice_port}, ${ports.collator_port}`);
-
+            
             // Wait for blocks
             console.log('\n🧑‍🔧 Waiting for blocks...');
             const blocks = await this.waitForBlocks();
@@ -124,10 +65,10 @@ class OrchestratorOld {
 
             // Mock: Run migration tests
             console.log('🧑‍🔧 Running migration tests with ports and blocks...');
-
+            
             // Mock: Run PET tests
             console.log('🧑‍🔧  Running final PET tests...');
-
+            
             console.log('\n✅ Migration completed successfully');
 
         } catch (error) {
@@ -207,7 +148,6 @@ class OrchestratorOld {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 }
-
 
 // Create just command
 async function main() {
