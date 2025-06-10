@@ -1,9 +1,0 @@
-set dotenv-load
-
-run-migration-polkadot:
-    # Build zombie-bite
-    cd zombie-bite && cargo build
-    # Install dependencies if needed
-    npm install
-    # Run orchestrator directly with ts-node (no need for separate build)
-    ts-node orchestrator.ts
