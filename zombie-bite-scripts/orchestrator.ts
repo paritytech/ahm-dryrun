@@ -8,7 +8,7 @@ import { scheduleMigration, monitMigrationFinish } from "./helpers.js";
 
 const READY_FILE = "ready.json";
 const PORTS_FILE = "ports.json";
-const DONE_FILE = "migration_done";
+const DONE_FILE = "migration_done.json";
 
 interface Ports {
     alice_port: number;
@@ -38,7 +38,7 @@ class Orchestrator {
             // Start zombie-bite process
             console.log('\t 🧑‍🔧 Starting zombie-bite...');
             // TODO: needs to get the runtimes for override
-            const zombieBite = spawn("/Users/pepo/parity/zombie-bite/target/release/zombie-bite", [
+            const zombieBite = spawn("zombie-bite", [
                 `polkadot:${process.env.RUNTIME_WASM}/polkadot_runtime.compact.compressed.wasm`,
                 `asset-hub:${process.env.RUNTIME_WASM}/asset_hub_polkadot_runtime.compact.compressed.wasm`
             ],
