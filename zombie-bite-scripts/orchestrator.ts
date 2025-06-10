@@ -107,7 +107,6 @@ class Orchestrator {
     private async waitForReadyInfo(base_path: string): Promise<[StarBlocks, Ports]> {
         let ready_file = `${base_path}/${READY_FILE}`;
         let ports_file = `${base_path}/${PORTS_FILE}`;
-        // console.log("watching file creation for ", ready_file);
         return new Promise((resolve) => {
             this.readyWatcher = watch(base_path, {
                 persistent: true,
@@ -118,7 +117,6 @@ class Orchestrator {
             });
 
             this.readyWatcher.on('all',  (event: any, info: string) => {
-                // console.log("event", event, "info", info);
                 if(event == 'add' && info.includes(PORTS_FILE)) {
                     const start_info = JSON.parse(fs.readFileSync(ready_file).toString());
                     const ports = JSON.parse(fs.readFileSync(ports_file).toString());
