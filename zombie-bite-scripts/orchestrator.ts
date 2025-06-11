@@ -5,6 +5,7 @@ import { watch } from 'chokidar';
 import * as dotenv from 'dotenv';
 
 import { scheduleMigration, monitMigrationFinish } from "./helpers.js";
+import { main as migrationTestMain, ChainConfig } from "../migration-tests/lib.js";
 
 const READY_FILE = "ready.json";
 const PORTS_FILE = "ports.json";
@@ -66,17 +67,28 @@ class Orchestrator {
 
 
             console.log('\t 🧑‍🔧 Waiting for migration info...');
-            let migration_info = await this.waitForMigrationInfo(base_path);
-            console.log('\t\t 📩 Migration info received:', migration_info);
-
-            // TODO: this tests needs a living network or I can shutdown the network and
-            // create the post migration snaps?
+            let end_blocks = await this.waitForMigrationInfo(base_path);
+            console.log('\t\t 📩 Migration info received:', end_blocks);
 
             // Mock: Run migration tests
             console.log('🧑‍🔧 Running migration tests with ports and blocks...');
+            const rc_chain_config: ChainConfig = {
+                endpoint: `ws://localhost:${alice_port}`,
+                before_block: start_blocks.rc_start_block,
+                after_block: end_blocks.rc_finish_block
+            };
 
+            const ah_chain_config: ChainConfig = {
+                endpoint: `ws://localhost:${collator_port}`,
+                before_block: start_blocks.ah_start_block,
+                after_block: end_blocks.ah_finish_block
+            };
+
+            await migrationTestMain(rc_chain_config, ah_chain_config);
+
+            // TODO: wait for Alex.
             // Mock: Run PET tests
-            console.log('🧑‍🔧  Running final PET tests...');
+            // console.log('🧑‍🔧  Running final PET tests...');
 
             console.log('\n✅ Migration completed successfully');
 
@@ -118,7 +130,12 @@ class Orchestrator {
 
             this.readyWatcher.on('all',  (event: any, info: string) => {
                 if(event == 'add' && info.includes(PORTS_FILE)) {
-                    const start_info = JSON.parse(fs.readFileSync(ready_file).toString());
+                    // NOTE: zombie-bite inform the block number where the network was
+                    // `forked`, so we use the next block as start of the migration
+                    // since the forked one will not be in the db.
+                    let start_info: StarBlocks = JSON.parse(fs.readFileSync(ready_file).toString());
+                    start_info.ah_start_block += 1;
+                    start_info.rc_start_block += 1;
                     const ports = JSON.parse(fs.readFileSync(ports_file).toString());
                     this.readyWatcher.close();
                     return resolve([start_info, ports]);
@@ -156,6 +173,12 @@ async function main() {
     const base_path_arg = process.argv[2];
     const base_path_env = process.env["AHM_BASE_PATH"];
     let base_path = base_path_arg || base_path_env || `./migration-run-${Date.now()}`;
+
+    // ensure base path exist
+    try { await fs.promises.mkdir(base_path, { recursive: true });
+    } catch(e) {
+        console.log(e);
+    }
 
     await orchestrator.run(base_path);
 }
