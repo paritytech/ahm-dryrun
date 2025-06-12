@@ -8,8 +8,10 @@
 
 import { scheduleMigration } from "./helpers.js";
 
-(async () => {
-  let rc_port = process.argv[2];
+const main = async () => {
+  let rc_port = parseInt(process.argv[2],10);
   await scheduleMigration(rc_port);
   process.exit(0);
-})();
+};
+
+main().catch(console.log);

@@ -28,15 +28,13 @@ export async function monitMigrationFinish(
   ah_port?: string | number,
 ) {
   const base_path_to_use = base_path || ".";
-
   const rc_uri = `ws://localhost:${rc_port || rcPort}`;
   const ah_uri = `ws://localhost:${ah_port || ahPort}`;
 
-  const migration_is_mocked = process.env.ZOMBIE_BITE_AHM_MOCKED ? true : false;
   let r = await Promise.all([
     rc_check(rc_uri),
     ah_check(ah_uri),
-    mock_finish(20 * 1000, migration_is_mocked),
+    mock_finish(20 * 1000, !!process.env.ZOMBIE_BITE_AHM_MOCKED),
   ]);
 
   const content = {
@@ -48,13 +46,12 @@ export async function monitMigrationFinish(
     `${base_path_to_use}/migration_done.json`,
     JSON.stringify(content),
   );
-
   return content;
 }
 
 async function mock_finish(delay_ms: number, is_mocked: boolean) {
-  await delay(delay_ms);
   mock_finish_flag = is_mocked;
+  if(is_mocked) await delay(delay_ms);
 }
 
 async function rc_check(uri: string) {
@@ -63,8 +60,6 @@ async function rc_check(uri: string) {
     const unsub = await api.query.rcMigrator.rcMigrationStage(
       async (raw: any) => {
         let stage = raw.toHuman();
-        // TODO: remove it
-        console.debug("stage", stage);
         const finished =
           Object.keys(stage)[0] == "MigrationDone" || mock_finish_flag;
         if (finished) {
@@ -88,8 +83,6 @@ async function ah_check(uri: string) {
     const unsub = await api.query.ahMigrator.ahMigrationStage(
       async (raw: any) => {
         let stage = raw.toHuman();
-        // TODO: remove it
-        console.debug("stage", stage);
         const finished =
           Object.keys(stage)[0] == "MigrationDone" || mock_finish_flag;
         if (finished) {
@@ -107,7 +100,7 @@ async function ah_check(uri: string) {
   });
 }
 
-export async function scheduleMigration(rc_port?: string | number) {
+export async function scheduleMigration(rc_port?: number) {
   const rc_uri = `ws://localhost:${rc_port || rcPort}`;
   await cryptoWaitReady();
 

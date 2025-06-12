@@ -9,7 +9,7 @@ import { main as migrationTestMain } from "../migration-tests/lib.js";
  *
  */
 
-(async () => {
+const main = async () => {
   let base_path = process.argv[2];
 
   let ports = JSON.parse(fs.readFileSync(`${base_path}/ports.json`, "utf-8"));
@@ -39,4 +39,6 @@ import { main as migrationTestMain } from "../migration-tests/lib.js";
     ah_after,
   );
   process.exit(0);
-})();
+};
+
+main().catch(console.log);
