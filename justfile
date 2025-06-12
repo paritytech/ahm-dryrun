@@ -92,7 +92,7 @@ build-doppelganger:
     SKIP_WASM_BUILD=1 cargo build --release --bin polkadot --bin polkadot-prepare-worker --bin polkadot-execute-worker
 
 install-zombie-bite:
-    cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite --force
+    cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite --force --locked
 
 create-polkadot-pre-migration-snapshot: build-doppelganger install-zombie-bite
     just build-polkadot "--features zombie-bite-sudo"
@@ -100,6 +100,13 @@ create-polkadot-pre-migration-snapshot: build-doppelganger install-zombie-bite
 
 create-westend-pre-migration-snapshot: build-westend build-doppelganger install-zombie-bite
     PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite westend:./runtime_wasm/westend_runtime.compact.compressed.wasm asset-hub:./runtime_wasm/asset_hub_westend_runtime.compact.compressed.wasm
+
+# run orchestrator for polkadot (fork live network, run migration and post migration tests)
+run-orchestrator-polkadot: submodule-init submodule-update build-doppelganger install-zombie-bite
+    just build-polkadot "--features zombie-bite-sudo"
+    npm install
+    npm run build
+    PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH npm run polkadot-migration
 
 report-account-migration-status:
     npm run build
