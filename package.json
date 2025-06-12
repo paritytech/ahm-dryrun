@@ -4,6 +4,9 @@
   "type": "module",
   "module": "ah-migration",
   "private": true,
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "build": "tsc",
     "chopsticks-migration": "node dist/chopsticks-scripts/run_migration.js",

@@ -101,6 +101,12 @@ create-polkadot-pre-migration-snapshot: build-doppelganger install-zombie-bite
 create-westend-pre-migration-snapshot: build-westend build-doppelganger install-zombie-bite
     PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite westend:./runtime_wasm/westend_runtime.compact.compressed.wasm asset-hub:./runtime_wasm/asset_hub_westend_runtime.compact.compressed.wasm
 
+# run orchestrator for polkadot (fork live network, run migration and post migration tests)
+run-orchestrator-polkadot: submodule-init submodule-update build-doppelganger install-zombie-bite
+    npm install
+    npm run build
+    npm run polkadot-migration
+
 report-account-migration-status:
     npm run build
     npm run report-account-migration-status
