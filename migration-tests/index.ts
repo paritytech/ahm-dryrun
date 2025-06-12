@@ -6,6 +6,7 @@ import { MigrationTest, TestContext } from './types.js';
 import { vestingTests } from './pallets/vesting.js';
 import { indicesTests } from './pallets/indices.js';
 // import { bountiesTests } from './pallets/bounties.js';
+import { treasury_spend } from './chopsticks.js';
 
 export const tests: MigrationTest[] = [
     // bountiesTests,
@@ -32,6 +33,7 @@ export async function runTests(context: TestContext) {
 
 async function main() {
     const { context, apis } = await setupTestContext();
+    await treasury_spend(apis[1]);
 
     // to correctly state assert, the best is to take Westend before 1st and WAH after 2nd, 
     // though knowing that between 1st and 2nd migration in WAH, few users might have added few things 
