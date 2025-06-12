@@ -92,7 +92,7 @@ build-doppelganger:
     SKIP_WASM_BUILD=1 cargo build --release --bin polkadot --bin polkadot-prepare-worker --bin polkadot-execute-worker
 
 install-zombie-bite:
-    cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite --force --locked
+    cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite --locked --force
 
 create-polkadot-pre-migration-snapshot: build-doppelganger install-zombie-bite
     just build-polkadot "--features zombie-bite-sudo"
