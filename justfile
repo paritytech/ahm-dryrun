@@ -103,9 +103,10 @@ create-westend-pre-migration-snapshot: build-westend build-doppelganger install-
 
 # run orchestrator for polkadot (fork live network, run migration and post migration tests)
 run-orchestrator-polkadot: submodule-init submodule-update build-doppelganger install-zombie-bite
+    just build-polkadot "--features zombie-bite-sudo"
     npm install
     npm run build
-    npm run polkadot-migration
+    PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH npm run polkadot-migration
 
 report-account-migration-status:
     npm run build
