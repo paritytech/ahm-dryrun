@@ -1,4 +1,3 @@
-// orchestrator.ts
 import { spawn } from 'child_process';
 import * as fs from 'fs';
 import { watch } from 'chokidar';
