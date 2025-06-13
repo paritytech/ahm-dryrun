@@ -1,4 +1,4 @@
-name: Zombie-bite
+name: Run-Orchestrator-polkadot
 
 on:
   workflow_dispatch:
@@ -22,6 +22,10 @@ jobs:
           submodules: recursive
 
       - uses: extractions/setup-just@v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22      
 
       - name: run_orchestrator
         shell: bash
