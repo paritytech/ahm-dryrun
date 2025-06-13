@@ -70,7 +70,7 @@ async function rc_check(uri: string) {
           await finish(unsub, api);
           return resolve(number);
         } else {
-          console.debug(`[RC] Migration in stage ${stage}, keep waiting`);
+          console.debug(`[RC] Migration in stage ${JSON.stringify(stage)}, keep waiting`);
         }
       },
     );
@@ -93,7 +93,7 @@ async function ah_check(uri: string) {
           await finish(unsub, api);
           return resolve(number);
         } else {
-          console.debug(`[AH] Migration in stage ${stage}, keep waiting`);
+          console.debug(`[AH] Migration in stage ${JSON.stringify(stage)}, keep waiting`);
         }
       },
     );
