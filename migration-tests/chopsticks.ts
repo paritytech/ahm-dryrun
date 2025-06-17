@@ -34,35 +34,68 @@ export async function treasury_spend(ah_api_after: ApiPromise): Promise<void> {
         assetHub: {
             endpoint: 'wss://westend-asset-hub-rpc.polkadot.io',
             port: 8008,
+            'runtime-log-level': 5,
         },
     });
 
-    const number = (await assetHub.api.rpc.chain.getHeader()).number.toNumber()
-    console.log('latest block number', number);
+    console.log('Reciever balance before:');
+    console.log((await assetHub.api.query.system.account('5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY')).data.toString());
 
-    await assetHub.api.rpc('dev_setStorage', {
-        scheduler: {
-            agenda: [
-                [
-                    [number + 1], [{
-                        call: {
-                            Inline: "0x0a08001cbd2d43530a44705ad088af313e18f80b53ef16b36177cd4b77b846f2a5f07cfed05a02",  // balances.forceSetBalance(Ferdie, 987654321)
-                        },
-                        origin: {
-                            System: 'Root'
-                        }
-                    }]
+    
+    console.log('Events before');
+    const events_before = await assetHub.api.query.system.events();
+    events_before.forEach(event => {
+        console.log('Event_before:', event.event.method, event.event.section);
+        console.log('Data_before:', event.event.data.toHuman());
+      });
+
+    for (let i = 0; i < 3; i++) {
+        const codec = await assetHub.api.query.parachainSystem.lastRelayChainBlockNumber();
+        const number = parseInt(codec.toString(), 10);
+        console.log(`Setting agenda for ${i} with number ${number}`);
+
+    
+        await assetHub.api.rpc('dev_setStorage', {
+            scheduler: {
+                agenda: [
+                    [
+                        [number], [{
+                            call: {
+                                Inline: "0x5e030b00c0bcf7e90a00d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d",  // balances.forceSetBalance(Ferdie, 987654321)
+                            },
+                            origin: {
+                                System: 'Root'
+                            }
+                        }]
+                    ]
                 ]
-            ]
-        }
-    });
+            }
+        });
 
-    // Just in case two extra blocks.
-    await assetHub.api.rpc('dev_newBlock', { count: 3 });
+    // assetHub.api.tx.assets.forceTransfer
+        // const agenda = await assetHub.api.query.scheduler.agenda(number);
+        // console.log('Agenda before:');
+        // console.log(agenda.toHuman());
 
-    // Check events
-    const events = await assetHub.api.query.system.events();
-    console.log('events: ', events.toHuman());
+      await assetHub.api.rpc('dev_newBlock', { count: 1 });
+
+      // Get the latest block hash
+      const headHash = await assetHub.api.rpc.chain.getBlockHash();
+
+      // Create an API instance at the latest block
+      const apiAt = await assetHub.api.at(headHash);
+
+      // Query and print events
+      const events = await apiAt.query.system.events();
+      console.log(`Events after block ${i + 1}:`);
+      events.forEach(event => {
+        console.log('Event:', event.event.method, event.event.section);
+        console.log('Data:', event.event.data.toHuman());
+      });
+
+      console.log('Reciever balance after:');
+      console.log((await apiAt.query.system.account('5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY')).data.toString());
+    }
 }
 
 async function spend_kusama(): Promise<void> {
