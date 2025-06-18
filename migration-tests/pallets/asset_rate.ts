@@ -58,7 +58,7 @@ export const assetRateTests: MigrationTest = {
         // Check values match
         for (const [rcKey, rcValue] of rc_before_entries) {
             const matchingEntry = ah_after_entries.find(
-                ([ahKey, _]: [StorageKey<[FrameSupportTokensFungibleUnionOfNativeOrWithId]>, IOption<u128>]) => ahKey.toHex() === rcKey.toHex()
+                ([ahKey, _]) => ahKey.toHex() === rcKey.toHex()
             );
             
             assert(
