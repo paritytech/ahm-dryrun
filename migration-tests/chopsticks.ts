@@ -40,16 +40,8 @@ export async function treasury_spend(ah_api_after: ApiPromise): Promise<void> {
         },
     });
 
-    console.log('Reciever balance before:');
-    console.log((await assetHub.api.query.system.account('5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY')).data.toString());
-
-    
-    console.log('Events before');
-    const events_before = await assetHub.api.query.system.events();
-    events_before.forEach(event => {
-        console.log('Event_before:', event.event.method, event.event.section);
-        console.log('Data_before:', event.event.data.toHuman());
-      });
+    console.log('POT balance before:');
+    console.log((await assetHub.api.query.system.account(POT_ACCOUNT)).data.toString());
 
     for (let i = 0; i < 3; i++) {
         const codec = await assetHub.api.query.parachainSystem.lastRelayChainBlockNumber();
@@ -63,7 +55,8 @@ export async function treasury_spend(ah_api_after: ApiPromise): Promise<void> {
                     [
                         [number], [{
                             call: {
-                                Inline: "0x5e030b00c0bcf7e90a00d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d",  // balances.forceSetBalance(Ferdie, 987654321)
+                                // Treasury.spendLocal(12, Alice)
+                                Inline: "0x5e030b00c0bcf7e90a00d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d", 
                             },
                             origin: {
                                 System: 'Root'
@@ -74,31 +67,28 @@ export async function treasury_spend(ah_api_after: ApiPromise): Promise<void> {
             }
         });
 
-    // assetHub.api.tx.assets.forceTransfer
-        // const agenda = await assetHub.api.query.scheduler.agenda(number);
-        // console.log('Agenda before:');
-        // console.log(agenda.toHuman());
-
       await assetHub.api.rpc('dev_newBlock', { count: 1 });
 
       // Get the latest block hash
       const headHash = await assetHub.api.rpc.chain.getBlockHash();
-
       // Create an API instance at the latest block
       const apiAt = await assetHub.api.at(headHash);
 
       // Query and print events
       const events = await apiAt.query.system.events();
-      console.log(`Events after block ${i + 1}:`);
+      console.log(`Events after ${i} iteration:`);
       events.forEach(event => {
         console.log('Event:', event.event.method, event.event.section);
         console.log('Data:', event.event.data.toHuman());
       });
 
-      console.log('Reciever balance after:');
-      console.log((await apiAt.query.system.account('5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY')).data.toString());
+      console.log('POT balance after:');
+      console.log((await apiAt.query.system.account(POT_ACCOUNT)).data.toString());
     }
 }
+
+
+// DO NOT REVIEW THIS FUNCTIONS
 
 async function spend_kusama(): Promise<void> {
     const {kusama} = await setupNetworks({
