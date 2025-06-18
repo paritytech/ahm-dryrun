@@ -1,0 +1,33 @@
+name: Run-Orchestrator-polkadot
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  run_orchestrator_polkadot:
+    runs-on: parity-large
+    container:
+      image: docker.io/paritytech/ci-unified:bullseye-1.84.1-2025-01-28-v202502131220
+    timeout-minutes: 2880 # 2 days
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: extractions/setup-just@v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22      
+
+      - name: run_orchestrator
+        shell: bash
+        run: |
+            just run-orchestrator-polkadot
