@@ -24,6 +24,8 @@ const aliceSigner = getPolkadotSigner(
   hdkdKeyPairAlice.sign,
 );
 
+const POT_ACCOUNT = '5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z';
+
 export async function treasury_spend(ah_api_after: ApiPromise): Promise<void> {
     
     // _NOTE_:uncomment if you want to test kusama
@@ -130,3 +132,23 @@ async function spend_kusama(): Promise<void> {
     // Make blocks to include the scheduled call
     await kusama.api.rpc('dev_newBlock', { count: 3 });
 }
+
+const getInitStorages = () => ({
+    System: {
+      account: [
+        [[POT_ACCOUNT], { providers: 1, data: { free: 1000e10 } }],
+      ],
+    },
+    Assets: {
+      account: [
+        // maybe supply is missing
+        [[1984, POT_ACCOUNT], { balance: 1000e6 }], // USDT
+      ],
+    },
+    // ForeignAssets: {
+    //   account: [
+    //     [[config.eth, defaultAccounts.alice.address], { balance: 10n ** 18n }], // 1 ETH
+    //     [[config.eth, '13cKp89Msu7M2PiaCuuGr1BzAsD5V3vaVbDMs3YtjMZHdGwR'], { balance: 10n ** 20n }], // 100 ETH for Sibling 2000
+    //   ],
+    // },
+  })
