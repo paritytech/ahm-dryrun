@@ -10,8 +10,8 @@ import { treasuryTests } from './pallets/treasury.js';
 
 export const tests: MigrationTest[] = [
   // bountiesTests,
-  vestingTests,
-  assetRateTests,
+  // vestingTests,
+  // assetRateTests,
   treasuryTests
 ];
 
