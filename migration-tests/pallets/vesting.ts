@@ -57,7 +57,7 @@ export const vestingTests: MigrationTest = {
         for (const [key, value] of rc_vestingEntries_before) {
             const accountId = key.args[0].toString();
             const matchingEntry = ah_vestingEntries_after.find(
-                ([k, _]: [StorageKey, Codec]) => k.args[0].toString() === accountId
+                ([k, _]) => k.args[0].toString() === accountId
             );
 
             assert(

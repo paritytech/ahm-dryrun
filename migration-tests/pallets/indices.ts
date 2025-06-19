@@ -20,11 +20,11 @@ export const indicesTests: MigrationTest = {
         // Collect RC data
         const rc_indicesEntries = await rc_api_before.query.indices.accounts.entries();
         const rc_indices: IndicesEntry[] = rc_indicesEntries.map(([key, value]) => {
-            const entryValue = value as IOption<ITuple<[AccountId32, Codec, Codec]>>;
+            const entryValue = value as unknown as IOption<ITuple<[AccountId32, Codec, Codec]>>;
             if (entryValue.isSome) {
                 const [who, deposit, frozen] = entryValue.unwrap();
                 return {
-                    index: key.args[0].toNumber(),
+                    index: (key.args[0] as any).toNumber(),
                     who: who.toString(),
                     deposit: deposit.toString(),
                     frozen: frozen.eq(true)
@@ -68,7 +68,7 @@ export const indicesTests: MigrationTest = {
         // Check if each entry from RC exists in AH after migration with same values
         for (const rcEntry of rc_indices_before) {
             const matchingEntry = ah_indices_after.find(
-                ([key, _]) => key.args[0].toNumber() === rcEntry.index
+                ([key, _]) => (key.args[0] as any).toNumber() === rcEntry.index
             );
 
             assert(
@@ -77,7 +77,7 @@ export const indicesTests: MigrationTest = {
             );
 
             const [_, value] = matchingEntry;
-            const entryValue = value as IOption<ITuple<[AccountId32, Codec, Codec]>>;
+            const entryValue = value as unknown as IOption<ITuple<[AccountId32, Codec, Codec]>>;
             assert(entryValue.isSome, `Value for index ${rcEntry.index} is None`);
             
             const [who, deposit, frozen] = entryValue.unwrap();
@@ -101,7 +101,7 @@ export const indicesTests: MigrationTest = {
 
         // Check no extra entries in AH after migration
         for (const [key, _] of ah_indices_after) {
-            const index = key.args[0].toNumber();
+            const index = (key.args[0] as any).toNumber();
             const matchingEntry = rc_indices_before.find(
                 (entry: IndicesEntry) => entry.index === index
             );
