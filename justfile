@@ -92,7 +92,7 @@ build-doppelganger:
     SKIP_WASM_BUILD=1 cargo build --release --bin polkadot --bin polkadot-prepare-worker --bin polkadot-execute-worker
 
 install-zombie-bite:
-    cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite --force
+    cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite --locked --force
 
 create-polkadot-pre-migration-snapshot: build-doppelganger install-zombie-bite
     just build-polkadot "--features zombie-bite-sudo"
@@ -100,6 +100,13 @@ create-polkadot-pre-migration-snapshot: build-doppelganger install-zombie-bite
 
 create-westend-pre-migration-snapshot: build-westend build-doppelganger install-zombie-bite
     PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite westend:./runtime_wasm/westend_runtime.compact.compressed.wasm asset-hub:./runtime_wasm/asset_hub_westend_runtime.compact.compressed.wasm
+
+# run orchestrator for polkadot (fork live network, run migration and post migration tests)
+run-orchestrator-polkadot: submodule-init submodule-update build-doppelganger install-zombie-bite
+    just build-polkadot "--features zombie-bite-sudo"
+    npm install
+    npm run build
+    PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH npm run polkadot-migration
 
 report-account-migration-status:
     npm run build
@@ -113,8 +120,17 @@ run-ah-upgrade:
 test-prepare:
     npm install
 
-e2e-test *TEST:
+e2e-tests *TEST:
     cd ${PET_PATH} && yarn && yarn test {{ TEST }}
+
+wah-e2e-tests *TEST:
+    #!/usr/bin/env bash
+    # if no test modules are provided, run all of them
+    tests="assetHubWestend."
+    for test in {{ TEST }}; do
+        tests="$tests assetHubWestend.$test"
+    done
+    just e2e-tests $tests
 
 # Run the tests
 test:
