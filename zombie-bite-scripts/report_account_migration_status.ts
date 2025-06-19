@@ -92,12 +92,11 @@ async function fetchAndCacheAccounts(
   console.time("Total fetching time");
   while (true) {
     const pageStart = performance.now();
-    const entries: Array<[StorageKey, AccountInfo]> =
-      await api.query.system.account.entriesPaged({
-        args: [],
-        pageSize,
-        startKey,
-      });
+    const entries = await api.query.system.account.entriesPaged({
+      args: [],
+      pageSize,
+      startKey,
+    }) as unknown as Array<[StorageKey, AccountInfo]>;
     const pageEnd = performance.now();
     const pageDuration = pageEnd - pageStart;
     totalElapsed += pageDuration;
