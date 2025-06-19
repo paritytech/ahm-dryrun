@@ -10,6 +10,7 @@ import type { ITuple } from '@polkadot/types/types';
 import type { u32 } from '@polkadot/types/primitive';
 import type { StorageKey } from '@polkadot/types/primitive';
 import type { H256 } from '@polkadot/types/interfaces';
+import type { Codec } from '@polkadot/types/types';
 
 type AgendaEntry = [
     blockNumber: number,
@@ -37,7 +38,7 @@ async function getTaskCallEncodings(
                 try {
                     const preimage = await api.query.preimage.preimageFor(
                         [hash, len] as ITuple<[H256, u32]>
-                    );
+                    ) as unknown as Option<Bytes>;
                     return preimage.isSome ? preimage.unwrap() : null;
                 } catch {
                     return null;
@@ -45,7 +46,7 @@ async function getTaskCallEncodings(
             } else if (call.isLegacy) {
                 const { hash } = call.asLegacy;
                 try {
-                    const preimage = await api.query.preimage.preimageFor(hash) as Option<Bytes>;
+                    const preimage = await api.query.preimage.preimageFor(hash) as unknown as Option<Bytes>;
                     return preimage.isSome ? preimage.unwrap() : null;
                 } catch {
                     return null;
@@ -62,7 +63,7 @@ export const schedulerTests: MigrationTest = {
         const { rc_api_before, ah_api_before } = context;
 
         async function check_ah(api: ApiDecoration<'promise'>) {
-            const incompleteSince = await api.query.scheduler.incompleteSince();
+            const incompleteSince = await api.query.scheduler.incompleteSince() as unknown as Option<u32>;
             assert(
                 incompleteSince.isNone,
                 'IncompleteSince should be empty on asset hub before migration'
@@ -88,7 +89,7 @@ export const schedulerTests: MigrationTest = {
         }
 
         async function collect_rc(api: ApiDecoration<'promise'>) {
-            const incompleteSince = await api.query.scheduler.incompleteSince();
+            const incompleteSince = await api.query.scheduler.incompleteSince() as unknown as Option<u32>;
             const retries = await api.query.scheduler.retries.entries();        
             const lookup = await api.query.scheduler.lookup.entries();
             
@@ -103,11 +104,11 @@ export const schedulerTests: MigrationTest = {
             const agenda_entries = await api.query.scheduler.agenda.entries();
             const agenda_and_call_encodings = await Promise.all(
                 agenda_entries.map(async ([key, tasks]): Promise<AgendaEntry> => {
-                    const blockNumber = key.args[0].toNumber();
+                    const blockNumber = (key.args[0] as any).toNumber();
                     return [
                         blockNumber,
-                        tasks,
-                        (await getTaskCallEncodings(api, tasks))
+                        tasks as unknown as Vec<Option<PalletSchedulerScheduled>>,
+                        (await getTaskCallEncodings(api, tasks as unknown as Vec<Option<PalletSchedulerScheduled>>))
                     ];
                 })
             );
@@ -134,7 +135,7 @@ export const schedulerTests: MigrationTest = {
         const { rc_api_after, ah_api_after } = context;
 
         async function check_rc(api: ApiDecoration<'promise'>) {
-            const incompleteSinceAfter = await api.query.scheduler.incompleteSince();
+            const incompleteSinceAfter = await api.query.scheduler.incompleteSince() as unknown as Option<u32>;
             assert(
                 incompleteSinceAfter.isNone,
                 'IncompleteSince should be None on RC after migration'
@@ -161,7 +162,7 @@ export const schedulerTests: MigrationTest = {
 
         async function check_ah(api: ApiDecoration<'promise'>, rc_payload: PreCheckResult['rc_pre_payload']) {
             // Check IncompleteSince
-            const incompleteSinceAfter = await api.query.scheduler.incompleteSince();
+            const incompleteSinceAfter = await api.query.scheduler.incompleteSince() as unknown as Option<u32>;
             assert.deepEqual(
                 incompleteSinceAfter.toJSON(),
                 rc_payload.incompleteSince.toJSON(),
@@ -176,8 +177,8 @@ export const schedulerTests: MigrationTest = {
                 'Lookup map length on Asset Hub should match the RC value'
             );
             assert.deepEqual(
-                ahLookupEntries.map(([key, value]: [StorageKey, Option<ITuple<[u32, u32]>>]) => [key.toJSON(), value.toJSON()]),
-                rc_payload.lookup.map(([key, value]: [StorageKey, Option<ITuple<[u32, u32]>>]) => [key.toJSON(), value.toJSON()]),
+                ahLookupEntries.map(([key, value]: any) => [key.toJSON(), value.toJSON()]),
+                rc_payload.lookup.map(([key, value]: any) => [key.toJSON(), value.toJSON()]),
                 'Lookup map value on Asset Hub should match the RC value'
             );
 
@@ -189,8 +190,8 @@ export const schedulerTests: MigrationTest = {
                 'Retries map length on Asset Hub should match the RC value'
             );
             assert.deepEqual(
-                ahRetriesEntries.map(([key, value]: [StorageKey, Option<PalletSchedulerRetryConfig>]) => [key.toJSON(), value.toJSON()]),
-                rc_payload.retries.map(([key, value]: [StorageKey, Option<PalletSchedulerRetryConfig>]) => [key.toJSON(), value.toJSON()]),
+                ahRetriesEntries.map(([key, value]: any) => [key.toJSON(), value.toJSON()]),
+                rc_payload.retries.map(([key, value]: any) => [key.toJSON(), value.toJSON()]),
                 'Retries map value on Asset Hub should match the RC value'
             );
             
@@ -232,7 +233,7 @@ export const schedulerTests: MigrationTest = {
                             maybePeriodic: rcTask.unwrap().maybePeriodic.toJSON(),
                         });
 
-                        ahTasks.push(ahTask);
+                        ahTasks.push(ahTask as unknown as PalletSchedulerScheduled);
                     }
 
                     // Filter out blocks that end up with no valid tasks after conversion
@@ -249,7 +250,7 @@ export const schedulerTests: MigrationTest = {
 
             const ah_agenda_entries = await api.query.scheduler.agenda.entries();
             const ah_agenda = ah_agenda_entries.map(([key, tasks]) => [
-                key.args[0].toNumber(),
+                (key.args[0] as any).toNumber(),
                 tasks.toJSON()
             ]);
 
