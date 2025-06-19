@@ -55,8 +55,8 @@ export async function treasury_spend(ah_api_after: ApiPromise): Promise<void> {
                     [
                         [number], [{
                             call: {
-                                // Treasury.spendLocal(12, Alice)
-                                Inline: "0x5e030b00c0bcf7e90a00d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d", 
+                                // Treasury.spend() - https://github.com/polkadot-fellows/runtimes/blob/6048e1c18f36a9e00ea396d39b456f5e92ba1552/pallets/rc-migrator/src/treasury.md#spend-call-api
+                                Inline: "0x5e05050000010049130500010100d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d00", 
                             },
                             origin: {
                                 System: 'Root'
@@ -79,7 +79,7 @@ export async function treasury_spend(ah_api_after: ApiPromise): Promise<void> {
       console.log(`Events after ${i} iteration:`);
       events.forEach(event => {
         console.log('Event:', event.event.method, event.event.section);
-        console.log('Data:', event.event.data.toHuman());
+        console.log('Data:', JSON.stringify(event.event.data, null, 2));
       });
 
       console.log('POT balance after:');
@@ -100,6 +100,8 @@ async function spend_kusama(): Promise<void> {
 
     const number = (await kusama.api.rpc.chain.getHeader()).number.toNumber()
     console.log('latest block number', number);
+    console.log('POT balance before:');
+    console.log((await kusama.api.query.system.account('HNZata7iMYWmk5RvZRTiAsSDhV8366zq2YGb3tLH5Upf74F')).data.toString());
 
     await kusama.api.rpc('dev_setStorage', {
         scheduler: {
@@ -108,7 +110,7 @@ async function spend_kusama(): Promise<void> {
                     [number + 1], [{
                         call: {
                             // works and emits events
-                            Inline: "0x00090000000000000000000000000000000000000000000000000000000000000000",  // authorize upgrated
+                            Inline: "0x12030f00101336ed590f00d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d",  // authorize upgrated
                         },
                         origin: {
                             System: 'Root'
@@ -120,7 +122,17 @@ async function spend_kusama(): Promise<void> {
     });
 
     // Make blocks to include the scheduled call
-    await kusama.api.rpc('dev_newBlock', { count: 3 });
+    await kusama.api.rpc('dev_newBlock', { count: 2 });
+
+    console.log('POT balance after:');
+    console.log((await kusama.api.query.system.account('HNZata7iMYWmk5RvZRTiAsSDhV8366zq2YGb3tLH5Upf74F')).data.toString());
+
+    const events = await kusama.api.query.system.events();
+      console.log(`Events after spend block:`);
+      events.forEach(event => {
+        console.log('Event:', event.event.method, event.event.section);
+        console.log('Data:', JSON.stringify(event.event.data, null, 2));
+      });
 }
 
 const getInitStorages = () => ({
