@@ -194,15 +194,11 @@ function compare_voting_for_messages(rc_voting_for_messages: VotingForMessage[],
             `Voting mismatch at index ${i} for account ${rc_msg.accountId.toString()}`
         );
     }
-
-    // Log the difference in voting messages
-    console.log('RC voting messages length:', rc_voting_for_messages.length);
-    console.log('AH voting messages length:', ah_voting_for_messages.length);
-
-    log_diff(rc_voting_for_messages, ah_voting_for_messages);
 }
 
 function log_diff(rc_voting_for_messages: VotingForMessage[], ah_voting_for_messages: VotingForMessage[]) {
+    console.log('RC voting messages length:', rc_voting_for_messages.length);
+    console.log('AH voting messages length:', ah_voting_for_messages.length);
     // Find messages that exist in RC but not in AH
     const rcOnly = rc_voting_for_messages.filter(rcMsg => 
         !ah_voting_for_messages.some(ahMsg => 
