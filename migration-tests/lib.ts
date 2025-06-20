@@ -6,11 +6,13 @@ import { MigrationTest, TestContext } from "./types.js";
 import { vestingTests } from "./pallets/vesting.js";
 import { assetRateTests } from './pallets/asset_rate.js';
 // import { bountiesTests } from './pallets/bounties.js';
+import { convictionVotingTests } from './pallets/conviction_voting.js';
 
 export const tests: MigrationTest[] = [
   // bountiesTests,
   vestingTests,
-  assetRateTests
+  assetRateTests,
+  convictionVotingTests
 ];
 
 export async function runTests(context: TestContext) {
