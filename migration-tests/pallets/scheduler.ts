@@ -220,12 +220,13 @@ export const schedulerTests: MigrationTest = {
                             continue;
                         }
                     
+                        console.log('unwrapped origin is ', rcTask.unwrap().origin.type);
                         // Build new task
                         const ahTask = api.registry.createType('PalletSchedulerScheduled', {
                             maybeId: rcTask.unwrap().maybeId.toJSON(),
                             priority: rcTask.unwrap().priority.toNumber(),
                             // TODO: This had a separate conversion logic, I tried to replace it with JSON conversion, might work.
-                            origin: rcTask.unwrap().origin.toJSON(),
+                            origin: rcTask.unwrap().origin.type,
                             // TODO: This had a separate conversion logic too. For sure won't work, needs proper conversion.
                             call: {
                                 Inline: encodedCall
