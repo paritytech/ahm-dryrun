@@ -31,7 +31,15 @@ export const voterListTests: MigrationTest = {
         pre_payload:    PreCheckResult
     ): Promise<void> => {
         const { rc_api_after, ah_api_after } = context;
-        const { 
+        
+        // Check RC is empty after migration
+        const rc_nodes_after = await rc_api_after.query.voterList.listNodes.entries();
+        const rc_bags_after = await rc_api_after.query.voterList.listBags.entries();
+        assert(rc_nodes_after.length === 0, 'Assert RC storage voterList.listNodes() is empty after migration');
+        assert(rc_bags_after.length === 0, 'Assert RC storage voterList.listBags() is empty after migration');
+
+        // Check rc_pre is properly converted in ah_post
+        const {
             nodes_before, 
             bags_before 
         }: {
@@ -39,10 +47,7 @@ export const voterListTests: MigrationTest = {
             bags_before: [StorageKey, Codec][];
         } = pre_payload.rc_pre_payload;
 
-        const rc_nodes_after = await rc_api_after.query.voterList.listNodes.entries();
-        const rc_bags_after = await rc_api_after.query.voterList.listBags.entries();
-        assert(rc_nodes_after.length === 0, 'Assert RC storage voterList.listNodes() is empty after migration');
-        assert(rc_bags_after.length === 0, 'Assert RC storage voterList.listBags() is empty after migration');
+        // Check NODE entries
 
         const nodes_after = await ah_api_after.query.voterList.listNodes.entries();
         assert(nodes_before.length > 0, 'Assert storage voterList.listNodes() is not empty before migration');
@@ -52,17 +57,14 @@ export const voterListTests: MigrationTest = {
         const nodes_before_map = new Map(nodes_before.map(([key, value]) => [key.toString(), value.toJSON()]));
         const nodes_after_map = new Map(nodes_after.map(([key, value]) => [key.toString(), value.toJSON()]));
 
-        // Check that all node entries match
+        // Since lengths are equal, just check all before entries exist in after
         for (const [key, beforeValue] of nodes_before_map) {
             const afterValue = nodes_after_map.get(key);
             assert(afterValue !== undefined, `Missing node key ${key} in post-migration nodes`);
             assert.deepStrictEqual(beforeValue, afterValue, `Node value mismatch for key ${key}`);
         }
 
-        // Check no extra node entries exist
-        for (const [key] of nodes_after_map) {
-            assert(nodes_before_map.has(key), `Unexpected node key ${key} in post-migration nodes`);
-        }
+        // Check BAG entries
 
         const bags_after = await ah_api_after.query.voterList.listBags.entries();
         assert(bags_before.length > 0, 'Assert storage voterList.listBags() is not empty before migration');
@@ -72,16 +74,11 @@ export const voterListTests: MigrationTest = {
         const bags_before_map = new Map(bags_before.map(([key, value]) => [key.toString(), value.toJSON()]));
         const bags_after_map = new Map(bags_after.map(([key, value]) => [key.toString(), value.toJSON()]));
 
-        // Check that all bag entries match
+        // Since lengths are equal, just check all before entries exist in after
         for (const [key, beforeValue] of bags_before_map) {
             const afterValue = bags_after_map.get(key);
             assert(afterValue !== undefined, `Missing bag key ${key} in post-migration bags`);
             assert.deepStrictEqual(beforeValue, afterValue, `Bag value mismatch for key ${key}`);
-        }
-
-        // Check no extra bag entries exist
-        for (const [key] of bags_after_map) {
-            assert(bags_before_map.has(key), `Unexpected bag key ${key} in post-migration bags`);
         }
     }
 }; 
