@@ -18,13 +18,9 @@ async function runTests(context: TestContext) {
         console.log(`Running tests for ${test.pallet_name} pallet:`);
         
         try {
-            console.log(`Running pre-migration checks...`);
             await test.pre_check(context.pre);
-            console.log(`✅ Pre-migration checks passed\n`);
             
-            console.log(`Running post-migration checks...`);
             await test.post_check(context.post);
-            console.log(`✅ Post-migration checks passed\n`);
             
             passed++;
         } catch (error) {
