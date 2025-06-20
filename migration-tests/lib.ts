@@ -5,15 +5,32 @@ import { ApiPromise, WsProvider } from "@polkadot/api";
 import { MigrationTest, TestContext } from "./types.js";
 import { vestingTests } from "./pallets/vesting.js";
 import { assetRateTests } from './pallets/asset_rate.js';
-// import { bountiesTests } from './pallets/bounties.js';
 
-export const tests: MigrationTest[] = [
-  // bountiesTests,
+// when updating this, also update the testsByNetwork below
+type Network = "Westend" | "Paseo" | "Polkadot";
+
+// All available tests
+const allTests = [
   vestingTests,
-  assetRateTests
+  assetRateTests,
 ];
 
-export async function runTests(context: TestContext) {
+// Excludes tests from all available tests
+const excludedTestsByNetwork: Record<Network, MigrationTest[]> = {
+  Westend: [],
+  Paseo: [],
+  Polkadot: [],
+};
+
+// Function to get tests for a specific network
+function getTestsForNetwork(network: Network): MigrationTest[] {
+  const excludedTests = excludedTestsByNetwork[network];
+  return allTests.filter(test => !excludedTests.includes(test));
+}
+
+export async function runTests(context: TestContext, network: Network) {
+  const tests = getTestsForNetwork(network);
+
   for (const test of tests) {
     let stage = "pre-check";
 
@@ -37,6 +54,7 @@ export async function main(
   ah_endpoint: string,
   ah_before: number,
   ah_after: number,
+  network: Network = "Westend",
 ) {
   const relayChainConfig: ChainConfig = {
     endpoint: rc_endpoint,
@@ -77,10 +95,24 @@ export async function main(
   // to correctly state assert, the best is to take Westend before 1st and WAH after 2nd,
   // though knowing that between 1st and 2nd migration in WAH, few users might have added few things
   // so a small mismatch might be expected.
-  await runTests(context);
+  await runTests(context, network);
 
   // Disconnect all APIs
   await Promise.all(apis.map((api) => api.disconnect()));
+
+  // Later you can use it as a key-value mapping
+  const testsByNetwork: Record<Network, MigrationTest[]> = {
+    Westend: [vestingTests, assetRateTests],
+    Paseo: [vestingTests],
+    Polkadot: [vestingTests, assetRateTests]
+  };
+
+  // Or as a Map
+  const testsMap = new Map<Network, MigrationTest[]>([
+    ["Westend", [vestingTests, assetRateTests]],
+    ["Paseo", [vestingTests]],
+    ["Polkadot", [vestingTests, assetRateTests]]
+  ]);
 }
 
 export interface ChainConfig {
