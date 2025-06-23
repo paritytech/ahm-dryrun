@@ -82,8 +82,8 @@ export const proxyTests: MigrationTest = {
 
         for (const delegator of delegators) {
             const ah_pre_delegations = ah_pre.get(delegator) || [];
-            const ah_post_delegations = ah_post.get(delegator) || [];
             const rc_pre_delegations = rc_pre.get(delegator) || [];
+            const ah_post_delegations = ah_post.get(delegator) || [];
 
             // Check all AH pre-delegations still exist
             for (const pre_d of ah_pre_delegations) {
@@ -103,7 +103,7 @@ export const proxyTests: MigrationTest = {
                 // Skip the deleted types which are still present, at least on Westend
                 if (rcProxyType === RcProxyType.IdentityJudgement ||
                     rcProxyType === RcProxyType.SudoBalances) {
-                        console.warn(`Skipping ${rc_d.proxyType.toString()} for ${delegator}`);
+                        console.debug(`Skipping ${rc_d.proxyType.toString()} for ${delegator}`);
                         continue;
                 }
 
