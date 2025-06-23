@@ -6,18 +6,51 @@ import type { Vec, u128 } from '@polkadot/types';
 import type { AccountId32 } from '@polkadot/types/interfaces';
 import type { PalletProxyProxyDefinition } from '@polkadot/types/lookup';
 
-// borrowed from https://github.com/polkadot-fellows/runtimes/blob/main/relay/polkadot/constants/src/lib.rs#L182
+// Relay Chain Proxy Types (before migration)
 enum RcProxyType {
     Any = 0,
     NonTransfer = 1,
     Governance = 2,
     Staking = 3,
-    SudoBalances = 4, // was SudoBalances (removed)
-    IdentityJudgement = 5, // was IdentityJudgement (removed)
+    SudoBalances = 4, // removed
+    IdentityJudgement = 5, // removed
     CancelProxy = 6,
     Auction = 7,
     NominationPools = 8,
     ParaRegistration = 9
+}
+
+// Asset Hub Proxy Types (after migration)
+enum AhProxyType {
+    Any = 0,
+    NonTransfer = 1,
+    CancelProxy = 2,
+    Assets = 3,
+    AssetOwner = 4,
+    AssetManager = 5,
+    Collator = 6,
+    Governance = 7,
+    Staking = 8,
+    NominationPools = 9
+}
+
+// Mapping from Relay Chain to Asset Hub proxy types
+const proxyTypeMapping: Record<RcProxyType, AhProxyType | null> = {
+    [RcProxyType.Any]: AhProxyType.Any,
+    [RcProxyType.NonTransfer]: AhProxyType.NonTransfer,
+    [RcProxyType.Governance]: AhProxyType.Governance,
+    [RcProxyType.Staking]: AhProxyType.Staking,
+    [RcProxyType.SudoBalances]: null, // removed
+    [RcProxyType.IdentityJudgement]: null, // removed
+    [RcProxyType.CancelProxy]: AhProxyType.CancelProxy,
+    [RcProxyType.Auction]: null, // not supported in AH
+    [RcProxyType.NominationPools]: AhProxyType.NominationPools,
+    [RcProxyType.ParaRegistration]: null, // not supported in AH
+};
+
+// Helper function to convert RC proxy type to AH proxy type
+function convertProxyType(rcProxyType: number): number | null {
+    return proxyTypeMapping[rcProxyType as RcProxyType] ?? null;
 }
 
 type ProxyEntry = {
@@ -99,27 +132,23 @@ export const proxyTests: MigrationTest = {
             // Check translated RC delegations exist
             for (const rc_d of rc_pre_delegations) {
                 const rcProxyType = rc_d.proxyType.toNumber();
+                const expectedAhProxyType = convertProxyType(rcProxyType);
 
-                // Skip the deleted types which are still present, at least on Westend
-                if (rcProxyType === RcProxyType.IdentityJudgement ||
-                    rcProxyType === RcProxyType.SudoBalances) {
-                        console.debug(`Skipping ${rc_d.proxyType.toString()} for ${delegator}`);
-                        continue;
-                }
-
-                // Skip Auction and ParaRegistration types
-                if (rcProxyType === RcProxyType.Auction || 
-                    rcProxyType === RcProxyType.ParaRegistration
-                ) {
+                // Skip unsupported proxy types
+                if (expectedAhProxyType === null) {
+                    console.debug(`Skipping unsupported RC proxy type ${RcProxyType[rcProxyType]} for ${delegator}`);
                     continue;
                 }
 
+                // Check if the converted proxy type exists in AH post-migration
+                const found = ah_post_delegations.some(post_d => {
+                    const postProxyType = post_d.proxyType.toNumber();
+                    return post_d.delegate === rc_d.delegate && postProxyType === expectedAhProxyType;
+                });
+
                 assert(
-                    ah_post_delegations.some(post_d =>
-                        post_d.delegate === rc_d.delegate 
-                        && post_d.proxyType.toString() === rc_d.proxyType.toString()
-                    ),
-                    `Missing translated RC delegation for ${delegator}: ${JSON.stringify(rc_d)}`
+                    found,
+                    `Missing translated RC delegation for ${delegator}: RC type ${rcProxyType} (${RcProxyType[rcProxyType]}) should be converted to AH type ${expectedAhProxyType} (${AhProxyType[expectedAhProxyType]})`
                 );
             }
         }

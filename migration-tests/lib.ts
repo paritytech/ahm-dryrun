@@ -13,8 +13,8 @@ export const tests: MigrationTest[] = [
   // bountiesTests,
   vestingTests,
   assetRateTests,
+  proxyTests,
   voterListTests,
-  proxyTests
 ];
 
 export async function runTests(context: TestContext) {
