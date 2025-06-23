@@ -6,7 +6,7 @@ import type { Vec, u128 } from '@polkadot/types';
 import type { AccountId32 } from '@polkadot/types/interfaces';
 import type { PalletProxyProxyDefinition } from '@polkadot/types/lookup';
 
-// Relay Chain Proxy Types (before migration)
+// Origin: https://github.com/polkadot-fellows/runtimes/blob/6048e1c18f36a9e00ea396d39b456f5e92ba1552/relay/polkadot/constants/src/lib.rs#L177
 enum RcProxyType {
     Any = 0,
     NonTransfer = 1,
@@ -20,7 +20,7 @@ enum RcProxyType {
     ParaRegistration = 9
 }
 
-// Asset Hub Proxy Types (after migration)
+// Origin: https://github.com/polkadot-fellows/runtimes/blob/6048e1c18f36a9e00ea396d39b456f5e92ba1552/system-parachains/asset-hubs/asset-hub-polkadot/src/lib.rs#L487
 enum AhProxyType {
     Any = 0,
     NonTransfer = 1,
@@ -48,7 +48,6 @@ const proxyTypeMapping: Record<RcProxyType, AhProxyType | null> = {
     [RcProxyType.ParaRegistration]: null, // not supported in AH
 };
 
-// Helper function to convert RC proxy type to AH proxy type
 function convertProxyType(rcProxyType: number): number | null {
     return proxyTypeMapping[rcProxyType as RcProxyType] ?? null;
 }
