@@ -163,11 +163,11 @@ function compare_class_locks_for_messages(rc_class_locks_for_messages: ClassLock
 }
 
 function compare_voting_for_messages(rc_voting_for_messages: VotingForMessage[], ah_voting_for_messages: VotingForMessage[]) {
-    if (rc_voting_for_messages.length !== ah_voting_for_messages.length) {
-        // TODO: change to assert once discrepancy is fixed
-        log_diff(rc_voting_for_messages, ah_voting_for_messages);
-        return;
-    }
+    assert.equal(
+        rc_voting_for_messages.length,
+        ah_voting_for_messages.length,
+        "Length mismatch in voting for messages"
+    );
 
     for (let i = 0; i < rc_voting_for_messages.length; i++) {
         const rc_msg = rc_voting_for_messages[i];
