@@ -149,3 +149,7 @@ clean:
 run-westend-migration-tests:
     npm run build
     npm run compare-state
+
+test-schedule-migration:
+    npm run build
+    npm run scheduler-test
