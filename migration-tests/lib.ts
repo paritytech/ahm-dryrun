@@ -5,6 +5,9 @@ import { ApiPromise, WsProvider } from "@polkadot/api";
 import { MigrationTest, TestContext } from "./types.js";
 import { vestingTests } from "./pallets/vesting.js";
 import { assetRateTests } from './pallets/asset_rate.js';
+import { proxyTests } from "./pallets/proxies.js";
+// import { bountiesTests } from './pallets/bounties.js';
+
 import { voterListTests } from './pallets/staking/voter_list.js';
 import { convictionVotingTests } from "./pallets/conviction_voting.js";
 
@@ -14,8 +17,9 @@ export const tests: MigrationTest[] = [
   // bountiesTests,
   vestingTests,
   assetRateTests,
-  voterListTests,
   convictionVotingTests
+  proxyTests,
+  voterListTests,
 ];
 
 export async function runTests(context: TestContext) {
