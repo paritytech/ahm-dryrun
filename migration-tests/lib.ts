@@ -11,7 +11,7 @@ import { convictionVotingTests } from "./pallets/conviction_voting.js";
 import { indicesTests } from "./pallets/indices.js";
 
 // when updating this, also update the testsByNetwork below
-type Network = "Westend" | "Paseo" | "Polkadot";
+type Network = "Westend" | "Paseo" | "Kusama" | "Polkadot";
 
 // All available tests
 const allTests = [
@@ -27,6 +27,7 @@ const allTests = [
 const excludedTestsByNetwork: Record<Network, MigrationTest[]> = {
   Westend: [],
   Paseo: [],
+  Kusama: [],
   Polkadot: [],
 };
 
