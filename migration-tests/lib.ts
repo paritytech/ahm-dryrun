@@ -5,6 +5,7 @@ import { ApiPromise, WsProvider } from "@polkadot/api";
 import { MigrationTest, TestContext } from "./types.js";
 import { vestingTests } from "./pallets/vesting.js";
 import { assetRateTests } from './pallets/asset_rate.js';
+import { treasury_spend } from "./chopsticks.js";
 // import { bountiesTests } from './pallets/bounties.js';
 
 export const tests: MigrationTest[] = [
@@ -74,6 +75,7 @@ export async function main(
     assetHubConfig,
   );
 
+  await treasury_spend(apis[1]);
   // to correctly state assert, the best is to take Westend before 1st and WAH after 2nd,
   // though knowing that between 1st and 2nd migration in WAH, few users might have added few things
   // so a small mismatch might be expected.
