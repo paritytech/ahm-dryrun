@@ -7,12 +7,17 @@ import { vestingTests } from "./pallets/vesting.js";
 import { assetRateTests } from './pallets/asset_rate.js';
 import { proxyTests } from "./pallets/proxies.js";
 // import { bountiesTests } from './pallets/bounties.js';
+
 import { voterListTests } from './pallets/staking/voter_list.js';
+import { convictionVotingTests } from "./pallets/conviction_voting.js";
+
+// import { bountiesTests } from './pallets/bounties.js';
 
 export const tests: MigrationTest[] = [
   // bountiesTests,
   vestingTests,
   assetRateTests,
+  convictionVotingTests
   proxyTests,
   voterListTests,
 ];
