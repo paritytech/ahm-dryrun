@@ -6,53 +6,53 @@ import type { AccountId32 } from '@polkadot/types/interfaces/runtime';
 import type { u16, u128 } from '@polkadot/types';
 import { ApiDecoration } from '@polkadot/api/types';
 
-interface VotingForMessage {
+interface VotingFor {
     accountId: AccountId32;
     class: u16;
     voting: PalletConvictionVotingVoteVoting;
 }
 
-interface ClassLocksForMessage {
+interface ClassLocksFor {
     accountId: AccountId32;
     balancePerClass: [u16, u128][];
 }
 
-async function collect_voting_for_messages(api: ApiDecoration<'promise'>): Promise<VotingForMessage[]> {
-    const voting_for_messages: VotingForMessage[] = [];
+async function collectVotingForMessages(api: ApiDecoration<'promise'>): Promise<VotingFor[]> {
+    const votingForMessages: VotingFor[] = [];
     const votingForEntries = await api.query.convictionVoting.votingFor.entries();
     for (const [key, voting] of votingForEntries) {
         const [accountId, class_] = key.args;
 
         if (!voting.isEmpty) {
-            voting_for_messages.push({ 
+            votingForMessages.push({ 
                 accountId: accountId as unknown as AccountId32, 
                 class: class_ as unknown as u16, 
                 voting: voting as unknown as PalletConvictionVotingVoteVoting 
             });
         }
     }
-    return voting_for_messages.sort((a, b) => {
+    return votingForMessages.sort((a, b) => {
         const accountCompare = a.accountId.toString().localeCompare(b.accountId.toString());
         if (accountCompare !== 0) return accountCompare;
         return a.class.toNumber() - b.class.toNumber();
     });
 }
 
-async function collect_class_locks_for_messages(api: ApiDecoration<'promise'>): Promise<ClassLocksForMessage[]> {
-    const class_locks_for_messages: ClassLocksForMessage[] = [];
+async function collectClassLocksForMessages(api: ApiDecoration<'promise'>): Promise<ClassLocksFor[]> {
+    const classLocksForMessages: ClassLocksFor[] = [];
     const classLocksEntries = await api.query.convictionVoting.classLocksFor.entries();
     for (const [key, balancePerClass] of classLocksEntries) {
         const accountId = key.args[0] as unknown as AccountId32;
         const filteredBalances = (balancePerClass as unknown as [u16, u128][]).filter(([_, balance]: [u16, u128]) => !balance.isZero());
 
         if (filteredBalances.length > 0) {
-            class_locks_for_messages.push({ 
+            classLocksForMessages.push({ 
                 accountId, 
-                balancePerClass: filteredBalances.sort(([a_class, _a]: [u16, u128], [b_class, _b]: [u16, u128]) => a_class.toNumber() - b_class.toNumber())
+                balancePerClass: filteredBalances.sort(([aClass, _a]: [u16, u128], [bClass, _b]: [u16, u128]) => aClass.toNumber() - bClass.toNumber())
             });
         }
     }
-    return class_locks_for_messages.sort((a, b) => a.accountId.toString().localeCompare(b.accountId.toString()));
+    return classLocksForMessages.sort((a, b) => a.accountId.toString().localeCompare(b.accountId.toString()));
 }
 
 export const convictionVotingTests: MigrationTest = {
@@ -61,22 +61,22 @@ export const convictionVotingTests: MigrationTest = {
         const { rc_api_before, ah_api_before } = context;
 
         // AH Pre-check assertions
-        const ah_votingForEntries = await ah_api_before.query.convictionVoting.votingFor.entries();
+        const ahVotingForEntries = await ah_api_before.query.convictionVoting.votingFor.entries();
         assert(
-            ah_votingForEntries.length === 0,
+            ahVotingForEntries.length === 0,
             "Assert storage 'ah_api_before.query.convictionVoting.votingFor.entries() is empty'"
         );
 
-        const ah_classLocksEntries = await ah_api_before.query.convictionVoting.classLocksFor.entries();
+        const ahClassLocksEntries = await ah_api_before.query.convictionVoting.classLocksFor.entries();
         assert(
-            ah_classLocksEntries.length === 0,
+            ahClassLocksEntries.length === 0,
             "Assert storage 'ah_api_before.query.convictionVoting.classLocksFor.entries() is empty'"
         );
 
-        const voting_for_messages = await collect_voting_for_messages(rc_api_before);
-        const class_locks_for_messages = await collect_class_locks_for_messages(rc_api_before);
+        const votingForMessages = await collectVotingForMessages(rc_api_before);
+        const classLocksForMessages = await collectClassLocksForMessages(rc_api_before);
         return {
-            rc_pre_payload: { voting_for_messages, class_locks_for_messages },
+            rc_pre_payload: { votingForMessages, classLocksForMessages },
             ah_pre_payload: undefined
         };
     },
@@ -88,128 +88,128 @@ export const convictionVotingTests: MigrationTest = {
         const { rc_api_after, ah_api_after } = context;
 
         // RC Post-check - Verify RC storages are empty
-        const rc_votingForEntries = await rc_api_after.query.convictionVoting.votingFor.entries();
+        const rcVotingForEntries = await rc_api_after.query.convictionVoting.votingFor.entries();
         assert(
-            rc_votingForEntries.length === 0,
+            rcVotingForEntries.length === 0,
             "rc_api_after.query.convictionVoting.votingFor.entries() is empty"
         );
 
-        const rc_classLocksEntries = await rc_api_after.query.convictionVoting.classLocksFor.entries();
+        const rcClassLocksEntries = await rc_api_after.query.convictionVoting.classLocksFor.entries();
         assert(
-            rc_classLocksEntries.length === 0,
+            rcClassLocksEntries.length === 0,
             "rc_api_after.query.convictionVoting.classLocksFor.entries() is empty"
         );
 
         // AH Post-check - Collect and verify migrated data
-        const ah_voting_for_messages = await collect_voting_for_messages(ah_api_after);
-        const ah_class_locks_for_messages = await collect_class_locks_for_messages(ah_api_after);
+        const ahVotingForMessages = await collectVotingForMessages(ah_api_after);
+        const ahClassLocksForMessages = await collectClassLocksForMessages(ah_api_after);
 
         const { 
-            voting_for_messages: rc_voting_for_messages, 
-            class_locks_for_messages: rc_class_locks_for_messages 
+            votingForMessages: rcVotingForMessages, 
+            classLocksForMessages: rcClassLocksForMessages 
         }: { 
-            voting_for_messages: VotingForMessage[], 
-            class_locks_for_messages: ClassLocksForMessage[] 
+            votingForMessages: VotingFor[], 
+            classLocksForMessages: ClassLocksFor[] 
         } = pre_payload.rc_pre_payload;
 
-        compare_class_locks_for_messages(rc_class_locks_for_messages, ah_class_locks_for_messages);
-        compare_voting_for_messages(rc_voting_for_messages, ah_voting_for_messages);
+        compareClassLocksForMessages(rcClassLocksForMessages, ahClassLocksForMessages);
+        compareVotingForMessages(rcVotingForMessages, ahVotingForMessages);
     }
 };
 
-function compare_class_locks_for_messages(rc_class_locks_for_messages: ClassLocksForMessage[], ah_class_locks_for_messages: ClassLocksForMessage[]) {
+function compareClassLocksForMessages(rcClassLocksForMessages: ClassLocksFor[], ahClassLocksForMessages: ClassLocksFor[]) {
     assert.equal(
-        rc_class_locks_for_messages.length,
-        ah_class_locks_for_messages.length,
+        rcClassLocksForMessages.length,
+        ahClassLocksForMessages.length,
         "Length mismatch in class locks messages"
     );
 
-    for (let i = 0; i < rc_class_locks_for_messages.length; i++) {
-        const rc_msg = rc_class_locks_for_messages[i];
-        const ah_msg = ah_class_locks_for_messages[i];
+    for (let i = 0; i < rcClassLocksForMessages.length; i++) {
+        const rcMsg = rcClassLocksForMessages[i];
+        const ahMsg = ahClassLocksForMessages[i];
 
         // Compare account IDs
         assert.equal(
-            rc_msg.accountId.toString(),
-            ah_msg.accountId.toString(),
-            `Account ID mismatch at index ${i}: rc=${rc_msg.accountId.toString()} ah=${ah_msg.accountId.toString()}`
+            rcMsg.accountId.toString(),
+            ahMsg.accountId.toString(),
+            `Account ID mismatch at index ${i}: rc=${rcMsg.accountId.toString()} ah=${ahMsg.accountId.toString()}`
         );
 
         // Compare balance arrays length
         assert.equal(
-            rc_msg.balancePerClass.length,
-            ah_msg.balancePerClass.length,
-            `Balance array length mismatch for account ${rc_msg.accountId.toString()}`
+            rcMsg.balancePerClass.length,
+            ahMsg.balancePerClass.length,
+            `Balance array length mismatch for account ${rcMsg.accountId.toString()}`
         );
 
         // Compare each balance pair
-        for (let j = 0; j < rc_msg.balancePerClass.length; j++) {
-            const [rc_class, rc_balance] = rc_msg.balancePerClass[j];
-            const [ah_class, ah_balance] = ah_msg.balancePerClass[j];
+        for (let j = 0; j < rcMsg.balancePerClass.length; j++) {
+            const [rcClass, rcBalance] = rcMsg.balancePerClass[j];
+            const [ahClass, ahBalance] = ahMsg.balancePerClass[j];
 
             assert.equal(
-                rc_class.toString(),
-                ah_class.toString(),
-                `Class mismatch at index ${j} for account ${rc_msg.accountId.toString()}`
+                rcClass.toString(),
+                ahClass.toString(),
+                `Class mismatch at index ${j} for account ${rcMsg.accountId.toString()}`
             );
 
             assert.equal(
-                rc_balance.toString(),
-                ah_balance.toString(),
-                `Balance mismatch at index ${j} for account ${rc_msg.accountId.toString()}`
+                rcBalance.toString(),
+                ahBalance.toString(),
+                `Balance mismatch at index ${j} for account ${rcMsg.accountId.toString()}`
             );
         }
     }
 }
 
-function compare_voting_for_messages(rc_voting_for_messages: VotingForMessage[], ah_voting_for_messages: VotingForMessage[]) {
+function compareVotingForMessages(rcVotingForMessages: VotingFor[], ahVotingForMessages: VotingFor[]) {
     assert.equal(
-        rc_voting_for_messages.length,
-        ah_voting_for_messages.length,
+        rcVotingForMessages.length,
+        ahVotingForMessages.length,
         "Length mismatch in voting for messages"
     );
 
-    for (let i = 0; i < rc_voting_for_messages.length; i++) {
-        const rc_msg = rc_voting_for_messages[i];
-        const ah_msg = ah_voting_for_messages[i];
+    for (let i = 0; i < rcVotingForMessages.length; i++) {
+        const rcMsg = rcVotingForMessages[i];
+        const ahMsg = ahVotingForMessages[i];
 
         // Compare account IDs
         assert.equal(
-            rc_msg.accountId.toString(),
-            ah_msg.accountId.toString(),
+            rcMsg.accountId.toString(),
+            ahMsg.accountId.toString(),
             `Account ID mismatch at index ${i}}`
         );
 
         // Compare class
         assert.equal(
-            rc_msg.class.toString(),
-            ah_msg.class.toString(),
-            `Class mismatch at index ${i} for account ${rc_msg.accountId.toString()}`
+            rcMsg.class.toString(),
+            ahMsg.class.toString(),
+            `Class mismatch at index ${i} for account ${rcMsg.accountId.toString()}`
         );
 
         // Compare voting
         assert.equal(
-            rc_msg.voting.toString(),
-            ah_msg.voting.toString(),
-            `Voting mismatch at index ${i} for account ${rc_msg.accountId.toString()}`
+            rcMsg.voting.toString(),
+            ahMsg.voting.toString(),
+            `Voting mismatch at index ${i} for account ${rcMsg.accountId.toString()}`
         );
     }
 }
 
-function log_diff(rc_voting_for_messages: VotingForMessage[], ah_voting_for_messages: VotingForMessage[]) {
-    console.log('RC voting messages length:', rc_voting_for_messages.length);
-    console.log('AH voting messages length:', ah_voting_for_messages.length);
+function logDiff(rcVotingForMessages: VotingFor[], ahVotingForMessages: VotingFor[]) {
+    console.log('RC voting messages length:', rcVotingForMessages.length);
+    console.log('AH voting messages length:', ahVotingForMessages.length);
     // Find messages that exist in RC but not in AH
-    const rcOnly = rc_voting_for_messages.filter(rcMsg => 
-        !ah_voting_for_messages.some(ahMsg => 
+    const rcOnly = rcVotingForMessages.filter(rcMsg => 
+        !ahVotingForMessages.some(ahMsg => 
             rcMsg.accountId.toString() === ahMsg.accountId.toString() &&
             rcMsg.class.toString() === ahMsg.class.toString()
         )
     );
 
     // Find messages that exist in AH but not in RC
-    const ahOnly = ah_voting_for_messages.filter(ahMsg =>
-        !rc_voting_for_messages.some(rcMsg =>
+    const ahOnly = ahVotingForMessages.filter(ahMsg =>
+        !rcVotingForMessages.some(rcMsg =>
             ahMsg.accountId.toString() === rcMsg.accountId.toString() &&
             ahMsg.class.toString() === rcMsg.class.toString() 
         )
@@ -232,8 +232,8 @@ function log_diff(rc_voting_for_messages: VotingForMessage[], ah_voting_for_mess
     }
 
     // Find messages that exist in both RC and AH
-    const commonEntries = rc_voting_for_messages.filter(rcMsg =>
-        ah_voting_for_messages.some(ahMsg =>
+    const commonEntries = rcVotingForMessages.filter(rcMsg =>
+        ahVotingForMessages.some(ahMsg =>
             rcMsg.accountId.toString() === ahMsg.accountId.toString() &&
             rcMsg.class.toString() === ahMsg.class.toString()
         )
