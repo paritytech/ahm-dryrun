@@ -9,7 +9,6 @@ import { proxyTests } from "./pallets/proxies.js";
 import { voterListTests } from './pallets/staking/voter_list.js';
 import { convictionVotingTests } from "./pallets/conviction_voting.js";
 import { indicesTests } from "./pallets/indices.js";
-// import { bountiesTests } from './pallets/bounties.js';
 
 // when updating this, also update the testsByNetwork below
 type Network = "Westend" | "Paseo" | "Polkadot";
@@ -108,20 +107,6 @@ export async function main(
 
   // Disconnect all APIs
   await Promise.all(apis.map((api) => api.disconnect()));
-
-  // Later you can use it as a key-value mapping
-  const testsByNetwork: Record<Network, MigrationTest[]> = {
-    Westend: [vestingTests, assetRateTests],
-    Paseo: [vestingTests],
-    Polkadot: [vestingTests, assetRateTests]
-  };
-
-  // Or as a Map
-  const testsMap = new Map<Network, MigrationTest[]>([
-    ["Westend", [vestingTests, assetRateTests]],
-    ["Paseo", [vestingTests]],
-    ["Polkadot", [vestingTests, assetRateTests]]
-  ]);
 }
 
 export interface ChainConfig {
