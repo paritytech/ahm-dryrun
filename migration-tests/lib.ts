@@ -8,6 +8,7 @@ import { assetRateTests } from './pallets/asset_rate.js';
 import { proxyTests } from "./pallets/proxies.js";
 import { voterListTests } from './pallets/staking/voter_list.js';
 import { convictionVotingTests } from "./pallets/conviction_voting.js";
+import { indicesTests } from "./pallets/indices.js";
 // import { bountiesTests } from './pallets/bounties.js';
 
 // when updating this, also update the testsByNetwork below
@@ -15,11 +16,12 @@ type Network = "Westend" | "Paseo" | "Polkadot";
 
 // All available tests
 const allTests = [
-  vestingTests,
   assetRateTests,
   convictionVotingTests,
+  indicesTests,
   proxyTests,
-  voterListTests
+  voterListTests,
+  vestingTests
 ];
 
 // Excludes tests from all available tests
