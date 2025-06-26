@@ -9,6 +9,7 @@ import { proxyTests } from "./pallets/proxies.js";
 import { voterListTests } from './pallets/staking/voter_list.js';
 import { convictionVotingTests } from "./pallets/conviction_voting.js";
 import { indicesTests } from "./pallets/indices.js";
+import { bountiesTests } from "./pallets/bounties.js";
 
 // when updating this, also update the testsByNetwork below
 type Network = "Westend" | "Paseo" | "Kusama" | "Polkadot";
@@ -20,12 +21,13 @@ const allTests = [
   indicesTests,
   proxyTests,
   voterListTests,
-  vestingTests
+  vestingTests,
+  bountiesTests
 ];
 
 // Excludes tests from all available tests
 const excludedTestsByNetwork: Record<Network, MigrationTest[]> = {
-  Westend: [],
+  Westend: [bountiesTests],
   Paseo: [],
   Kusama: [],
   Polkadot: [],
