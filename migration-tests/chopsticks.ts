@@ -29,7 +29,9 @@ const POT_ACCOUNT = '5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z';
 export async function treasury_spend(ah_api_after: ApiPromise): Promise<void> {
     
     // _NOTE_:uncomment if you want to test kusama
-    // await spend_kusama();
+    await spend_polkadot();
+    await new Promise(() => {}); // Wait indefinitely
+    return;
     
 
     const {assetHub} = await setupNetworks({
@@ -90,6 +92,51 @@ export async function treasury_spend(ah_api_after: ApiPromise): Promise<void> {
 
 // DO NOT REVIEW THIS FUNCTIONS
 
+async function spend_polkadot(): Promise<void> {
+    const {polkadot} = await setupNetworks({
+        polkadot: {
+            endpoint: 'wss://polkadot-rpc.publicnode.com',
+            port: 8008,
+        },
+    });
+
+    const number = (await polkadot.api.rpc.chain.getHeader()).number.toNumber()
+    console.log('latest block number', number);
+    console.log('Treasury balance before:');
+    console.log((await polkadot.api.query.system.account('13UVJyLnbVp9RBZYFwFGyDvVd1y27Tt8tkntv6Q7JVPhFsTB')).data.toString());
+
+    await polkadot.api.rpc('dev_setStorage', {
+        scheduler: {
+            agenda: [
+                [
+                    [number + 1], [{
+                        call: {
+                            // works and emits events
+                            Inline: "0x130504000100a10f0002043205011fe5140500010100d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d00",
+                        },
+                        origin: {
+                            System: 'Root'
+                        }
+                    }]
+                ]
+            ]
+        }
+    });
+
+    // Make blocks to include the scheduled call
+    await polkadot.api.rpc('dev_newBlock', { count: 1 });
+
+    console.log('Treasury balance after:');
+    console.log((await polkadot.api.query.system.account('13UVJyLnbVp9RBZYFwFGyDvVd1y27Tt8tkntv6Q7JVPhFsTB')).data.toString());
+
+    const events = await polkadot.api.query.system.events();
+      console.log(`Events after spend block:`);
+      events.forEach(event => {
+        console.log('Event:', event.event.method, event.event.section);
+        console.log('Data:', JSON.stringify(event.event.data, null, 2));
+      });
+}
+
 async function spend_kusama(): Promise<void> {
     const {kusama} = await setupNetworks({
         kusama: {
@@ -110,7 +157,7 @@ async function spend_kusama(): Promise<void> {
                     [number + 1], [{
                         call: {
                             // works and emits events
-                            Inline: "0x12030f00101336ed590f00d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d",  // authorize upgrated
+                            Inline: "0x12030f00101336ed590f00d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d",
                         },
                         origin: {
                             System: 'Root'
