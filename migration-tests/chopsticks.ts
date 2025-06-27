@@ -105,6 +105,40 @@ async function spend_polkadot(): Promise<void> {
     console.log('Treasury balance before:');
     console.log((await polkadot.api.query.system.account('13UVJyLnbVp9RBZYFwFGyDvVd1y27Tt8tkntv6Q7JVPhFsTB')).data.toString());
 
+    const assetKind = {
+        V4: {
+          location: {
+            parents: 0,
+            interior: { X1: [{ Parachain: 1000 }] }
+          },
+          asset_id: {
+            parents: 0,
+            interior: { X2: [{ PalletInstance: 50 }, { GeneralIndex: 1984 }] }
+          }
+        }
+    };
+
+    const amount = 1337n;
+
+    const beneficiary = {
+        V5: {
+            parents: 0,
+            interior: {
+                X1: [
+                    {
+                        AccountId32: {
+                            network: null,
+                            id: '0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d'
+                        }
+                    }
+                ]
+            }
+        }
+    };
+
+    const call = polkadot.api.tx.treasury.spend(assetKind, amount, beneficiary, null);
+    
+
     await polkadot.api.rpc('dev_setStorage', {
         scheduler: {
             agenda: [
