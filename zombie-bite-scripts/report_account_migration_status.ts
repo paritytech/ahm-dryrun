@@ -93,9 +93,9 @@ async function fetchAndCacheAccounts(
   while (true) {
     const pageStart = performance.now();
     const entries = await api.query.system.account.entriesPaged({
-      args: [],
-      pageSize,
-      startKey,
+        args: [],
+        pageSize,
+        startKey,
     }) as unknown as Array<[StorageKey, AccountInfo]>;
     const pageEnd = performance.now();
     const pageDuration = pageEnd - pageStart;
