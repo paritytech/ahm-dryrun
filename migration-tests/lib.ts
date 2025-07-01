@@ -75,7 +75,7 @@ export async function main(
     assetHubConfig,
   );
 
-  await treasury_spend(apis[1]);
+  await treasury_spend();
   // to correctly state assert, the best is to take Westend before 1st and WAH after 2nd,
   // though knowing that between 1st and 2nd migration in WAH, few users might have added few things
   // so a small mismatch might be expected.
