@@ -5,16 +5,13 @@ import { ApiPromise, WsProvider } from "@polkadot/api";
 import { MigrationTest, TestContext } from "./types.js";
 import { vestingTests } from "./pallets/vesting.js";
 import { assetRateTests } from './pallets/asset_rate.js';
-<<<<<<< HEAD
 import { treasury_spend } from "./chopsticks.js";
-// import { bountiesTests } from './pallets/bounties.js';
-=======
 import { proxyTests } from "./pallets/proxies.js";
 import { voterListTests } from './pallets/staking/voter_list.js';
 import { convictionVotingTests } from "./pallets/conviction_voting.js";
 import { indicesTests } from "./pallets/indices.js";
 import { bountiesTests } from "./pallets/bounties.js";
->>>>>>> main
+
 
 // when updating this, also update the testsByNetwork below
 type Network = "Westend" | "Paseo" | "Kusama" | "Polkadot";
