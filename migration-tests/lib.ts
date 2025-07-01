@@ -12,7 +12,6 @@ import { convictionVotingTests } from "./pallets/conviction_voting.js";
 import { indicesTests } from "./pallets/indices.js";
 import { bountiesTests } from "./pallets/bounties.js";
 
-
 // when updating this, also update the testsByNetwork below
 type Network = "Westend" | "Paseo" | "Kusama" | "Polkadot";
 
