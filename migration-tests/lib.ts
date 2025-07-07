@@ -105,7 +105,6 @@ export async function main(
   );
 
   await treasury_spend();
-  return;
   // to correctly state assert, the best is to take Westend before 1st and WAH after 2nd,
   // though knowing that between 1st and 2nd migration in WAH, few users might have added few things
   // so a small mismatch might be expected.
