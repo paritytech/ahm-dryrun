@@ -44,7 +44,7 @@ jobs:
             cargo install zombie-cli -f
             npm install
             npm run build
-            gh run download ARTIFACTS_RUN_ID
+            gh run download $ARTIFACTS_RUN_ID
             ls -ltr
             pwd
           else
