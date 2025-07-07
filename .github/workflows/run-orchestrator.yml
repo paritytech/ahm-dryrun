@@ -44,9 +44,12 @@ jobs:
             cargo install zombie-cli -f
             npm install
             npm run build
+            echo "downloading artifacts from https://github.com/paritytech/ahm-dryrun/actions/runs/${ARTIFACTS_RUN_ID}"
             gh run download $ARTIFACTS_RUN_ID
             ls -ltr
-            pwd
+            cd $(ls -t |head -1)
+            ls -ltr
+            RUST_LOG=zombie=debug zombie-cli spawn -p native config.toml
           else
             just run-orchestrator-polkadot
           fi
