@@ -2,6 +2,14 @@ name: Run-Orchestrator-polkadot
 
 on:
   workflow_dispatch:
+    inputs:
+      artifacts-run-id:
+        required: false
+        type: string
+        description: 'Run-id to use the artifacts to spawn the network'
+      sudo-key:
+        required: false
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -31,8 +39,19 @@ jobs:
 
       - name: run_orchestrator
         shell: bash
+        env:
+          ARTIFACTS_RUN_ID: ${{ inputs.artifacts-run-id }}
         run: |
+          if [[ $ARTIFACTS_RUN_ID != "" ]]; then
+            cargo install zombie-cli -f
+            npm install
+            npm run build
+            gh run download ARTIFACTS_RUN_ID
+            ls -ltr
+            pwd
+          else
             just run-orchestrator-polkadot
+          fi
 
       - name: upload_artifacts
         uses: actions/upload-artifact@v4
