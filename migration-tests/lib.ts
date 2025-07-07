@@ -26,9 +26,14 @@ const allTests = [
   bountiesTests
 ];
 
-// Excludes tests from all available tests
-const excludedTestsByNetwork: Record<Network, MigrationTest[]> = {
-  Westend: [bountiesTests],
+// Excludes tests from the pool of all available tests
+const excludedTestsPerNetwork: Record<Network, MigrationTest[]> = {
+  Westend: [
+    // the pallet is not available on Westend
+    bountiesTests,
+    // https://github.com/paritytech/ahm-dryrun/issues/67
+    convictionVotingTests
+  ],
   Paseo: [],
   Kusama: [],
   Polkadot: [],
@@ -36,7 +41,7 @@ const excludedTestsByNetwork: Record<Network, MigrationTest[]> = {
 
 // Function to get tests for a specific network
 function getTestsForNetwork(network: Network): MigrationTest[] {
-  const excludedTests = excludedTestsByNetwork[network];
+  const excludedTests = excludedTestsPerNetwork[network];
   return allTests.filter(test => !excludedTests.includes(test));
 }
 
