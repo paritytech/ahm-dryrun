@@ -38,6 +38,7 @@ jobs:
         shell: bash
         env:
           ARTIFACTS_RUN_ID: ${{ inputs.artifacts-run-id }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           if [[ $ARTIFACTS_RUN_ID != "" ]]; then
             cargo install zombie-cli -f
