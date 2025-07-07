@@ -7,9 +7,6 @@ on:
         required: false
         type: string
         description: 'Run-id to use the artifacts to spawn the network'
-      sudo-key:
-        required: false
-        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -23,7 +20,7 @@ jobs:
   run_orchestrator_polkadot:
     runs-on: parity-large-persistent
     container:
-      image: docker.io/paritytech/ci-unified:bullseye-1.84.1-2025-01-28-v202502131220
+      image: docker.io/paritytech/ci-unified:bullseye-1.88.0-2025-06-27-v202506301118
     timeout-minutes: 2880 # 2 days
 
     steps:
