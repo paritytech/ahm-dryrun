@@ -28,7 +28,12 @@ const allTests = [
 
 // Excludes tests from the pool of all available tests
 const excludedTestsPerNetwork: Record<Network, MigrationTest[]> = {
-  Westend: [bountiesTests, convictionVotingTests],
+  Westend: [
+    // the pallet is not available on Westend
+    bountiesTests,
+    // https://github.com/paritytech/ahm-dryrun/issues/67
+    convictionVotingTests
+  ],
   Paseo: [],
   Kusama: [],
   Polkadot: [],
