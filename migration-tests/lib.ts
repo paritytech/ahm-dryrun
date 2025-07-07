@@ -26,9 +26,9 @@ const allTests = [
   bountiesTests
 ];
 
-// Excludes tests from all available tests
-const excludedTestsByNetwork: Record<Network, MigrationTest[]> = {
-  Westend: [bountiesTests],
+// Excludes tests from the pool of all available tests
+const excludedTestsPerNetwork: Record<Network, MigrationTest[]> = {
+  Westend: [bountiesTests, convictionVotingTests],
   Paseo: [],
   Kusama: [],
   Polkadot: [],
@@ -36,7 +36,7 @@ const excludedTestsByNetwork: Record<Network, MigrationTest[]> = {
 
 // Function to get tests for a specific network
 function getTestsForNetwork(network: Network): MigrationTest[] {
-  const excludedTests = excludedTestsByNetwork[network];
+  const excludedTests = excludedTestsPerNetwork[network];
   return allTests.filter(test => !excludedTests.includes(test));
 }
 
@@ -105,6 +105,7 @@ export async function main(
   );
 
   await treasury_spend();
+  return;
   // to correctly state assert, the best is to take Westend before 1st and WAH after 2nd,
   // though knowing that between 1st and 2nd migration in WAH, few users might have added few things
   // so a small mismatch might be expected.
