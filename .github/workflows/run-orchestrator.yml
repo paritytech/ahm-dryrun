@@ -101,9 +101,7 @@ jobs:
             cd $(ls -t |head -1)
             ls -ltr
 
-                npm install
-
-            RUST_LOG=zombie=debug zombie-cli spawn -p native config.toml &
+            RUST_LOG=zombie=debug zombie-cli spawn -p native config.toml
 
           else
             just run-orchestrator-polkadot
