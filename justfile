@@ -137,8 +137,22 @@ test:
     npm test
 
 # Run as-derivative account scanning script
-as-derived-accs:
-    node as-derivative-script/checkExtrinsic.js
+as-derived-accs *NETWORK:
+    #!/usr/bin/env bash
+    case "{{ NETWORK }}" in
+        "paseo")
+            RPC_WS=wss://paseo.rpc.amforc.com node as-derivative-script/checkExtrinsic.js
+            ;;
+        "westend")
+            RPC_WS=wss://westend-rpc.polkadot.io node as-derivative-script/checkExtrinsic.js
+            ;;
+        *)
+            echo "Unknown network: {{ NETWORK }}"
+            echo "Available networks: paseo, westend"
+            echo "Usage: just as-derived-accs <network>"
+            exit 1
+            ;;
+    esac
 
 # List the available commands
 help:
