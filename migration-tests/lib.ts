@@ -11,12 +11,14 @@ import { voterListTests } from './pallets/staking/voter_list.js';
 import { convictionVotingTests } from "./pallets/conviction_voting.js";
 import { indicesTests } from "./pallets/indices.js";
 import { bountiesTests } from "./pallets/bounties.js";
+import { referendaTests } from "./pallets/referenda.js";
 
 // when updating this, also update the testsByNetwork below
 type Network = "Westend" | "Paseo" | "Kusama" | "Polkadot";
 
 // All available tests
 const allTests = [
+  referendaTests,
   assetRateTests,
   convictionVotingTests,
   indicesTests,

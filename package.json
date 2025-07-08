@@ -25,15 +25,16 @@
     "@polkadot/api": "^15.9.3",
     "@polkadot/util-crypto": "^13.4.4",
     "@types/node": "^22.15.30",
+    "chokidar": "^4.0.3",
     "dotenv": "^16.4.7",
     "polkadot-api": "^1.9.9",
-    "chokidar": "^4.0.3",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
+    "typescript": "^5"
   },
   "devDependencies": {
     "prettier": "^3.5.3",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^3.2.4"
   },
   "peerDependencies": {
     "typescript": "^5"
