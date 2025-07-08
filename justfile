@@ -136,6 +136,10 @@ wah-e2e-tests *TEST:
 test:
     npm test
 
+# Run as-derivative account scanning script
+as-derived-accs:
+    node as-derivative-script/checkExtrinsic.js
+
 # List the available commands
 help:
     @just --list
