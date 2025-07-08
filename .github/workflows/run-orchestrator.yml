@@ -34,6 +34,42 @@ jobs:
         with:
           node-version: 22
 
+      - name: download_polkadot_binaries
+        shell: bash
+        run: |
+          # polkadot polkadot-execute-worker polkadot-prepare-worker
+          for bin in  polkadot-parachain; do
+            echo "downloading $bin";
+            curl -L -o /tmp/$bin https://github.com/paritytech/polkadot-sdk/releases/download/polkadot-stable2503-1/$bin;
+            chmod 755 /tmp/$bin;
+          done
+          ls -ltr /tmp
+          export PATH=/tmp:$PATH
+          echo $PATH
+
+      - name: download_doppelganger_binaries
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download -R paritytech/doppelganger-wrapper
+          ls -ltr
+
+      - name: download_artifacts
+        shell: bash
+        env:
+          ARTIFACTS_RUN_ID: ${{ inputs.artifacts-run-id }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ $ARTIFACTS_RUN_ID != "" ]]; then
+            echo "downloading artifacts from https://github.com/paritytech/ahm-dryrun/actions/runs/${ARTIFACTS_RUN_ID}"
+            gh run download $ARTIFACTS_RUN_ID
+            ls -ltr
+            ls $(ls -t |head -1)
+          else
+            echo "No artifact run id provided, skipping step"
+          fi
+
       - name: run_orchestrator
         shell: bash
         env:
@@ -44,11 +80,9 @@ jobs:
             cargo install zombie-cli -f
             npm install
             npm run build
-            echo "downloading artifacts from https://github.com/paritytech/ahm-dryrun/actions/runs/${ARTIFACTS_RUN_ID}"
-            gh run download $ARTIFACTS_RUN_ID
-            ls -ltr
             cd $(ls -t |head -1)
             ls -ltr
+
             RUST_LOG=zombie=debug zombie-cli spawn -p native config.toml
           else
             just run-orchestrator-polkadot
