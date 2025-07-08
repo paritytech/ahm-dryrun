@@ -41,7 +41,7 @@ jobs:
           ARTIFACTS_RUN_ID: ${{ inputs.artifacts-run-id }}
         run: |
           if [[ $ARTIFACTS_RUN_ID != "" ]]; then
-            echo "RUN_ID_SET='true'" >> $GITHUB_OUTPUT
+            echo "RUN_ID_SET=true" >> $GITHUB_OUTPUT
           fi;
 
 
@@ -73,6 +73,7 @@ jobs:
           ls -ltr /tmp
 
       - name: download_artifacts
+        id: download_artifacts
         shell: bash
         if: ${{ steps.set_run_id.outputs.RUN_ID_SET == 'true' }}
         env:
@@ -83,7 +84,8 @@ jobs:
             echo "downloading artifacts from https://github.com/paritytech/ahm-dryrun/actions/runs/${ARTIFACTS_RUN_ID}"
             gh run download $ARTIFACTS_RUN_ID
             ls -ltr
-            ls $(ls -t |head -1)
+            ARTIFACTS_DIR=$(ls -t |head -1)
+            echo "ARTIFACTS_DIR=$ARTIFACTS_DIR" >> $GITHUB_OUTPUT
           else
             echo "No artifact run id provided, skipping step"
           fi
@@ -101,7 +103,7 @@ jobs:
             cd $(ls -t |head -1)
             ls -ltr
 
-            RUST_LOG=zombie=debug zombie-cli spawn -p native config.toml
+            RUST_LOG=zombie=debug zombie-cli spawn -p native ${{ steps.download_artifacts.outputs.ARTIFACTS_DIR }}/config.toml
 
           else
             just run-orchestrator-polkadot
