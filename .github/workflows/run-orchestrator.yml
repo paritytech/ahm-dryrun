@@ -34,8 +34,20 @@ jobs:
         with:
           node-version: 22
 
+      - name: set_run_id
+        id: set_run_id
+        shell: bash
+        env:
+          ARTIFACTS_RUN_ID: ${{ inputs.artifacts-run-id }}
+        run: |
+          if [[ $ARTIFACTS_RUN_ID != "" ]]; then
+            echo "RUN_ID_SET='true'" >> $GITHUB_OUTPUT
+          fi;
+
+
       - name: download_polkadot_binaries
         shell: bash
+        if: ${{ steps.set_run_id.outputs.RUN_ID_SET == 'true' }}
         run: |
           # polkadot polkadot-execute-worker polkadot-prepare-worker
           for bin in  polkadot-parachain; do
@@ -49,14 +61,20 @@ jobs:
 
       - name: download_doppelganger_binaries
         shell: bash
+        if: ${{ steps.set_run_id.outputs.RUN_ID_SET == 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release download -R paritytech/doppelganger-wrapper -p doppelganger -p doppelganger-parachain
           ls -ltr
+          mv doppelganger /tmp
+          mv doppelganger-parachain /tmp
+          chmod 755 /tmp/doppelganger*
+          ls -ltr /tmp
 
       - name: download_artifacts
         shell: bash
+        if: ${{ steps.set_run_id.outputs.RUN_ID_SET == 'true' }}
         env:
           ARTIFACTS_RUN_ID: ${{ inputs.artifacts-run-id }}
           GH_TOKEN: ${{ github.token }}
@@ -83,7 +101,10 @@ jobs:
             cd $(ls -t |head -1)
             ls -ltr
 
-            RUST_LOG=zombie=debug zombie-cli spawn -p native config.toml
+                npm install
+
+            RUST_LOG=zombie=debug zombie-cli spawn -p native config.toml &
+
           else
             just run-orchestrator-polkadot
           fi
