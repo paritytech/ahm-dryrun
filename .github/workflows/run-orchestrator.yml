@@ -52,7 +52,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release download -R paritytech/doppelganger-wrapper --p doppelganger --p doppelganger-parachain
+          gh release download -R paritytech/doppelganger-wrapper -p doppelganger -p doppelganger-parachain
           ls -ltr
 
       - name: download_artifacts
