@@ -110,13 +110,17 @@ jobs:
             export PATH=/tmp:$PATH
             echo "::warning::PATH: $PATH"
             cd ${{ steps.download_artifacts.outputs.ARTIFACTS_DIR }}
-            RUST_LOG=zombie=debug zombie-cli spawn -p native config_sanitized.toml &
+            export RUST_LOG=zombie=debug
+            nohup zombie-cli spawn -p native config_sanitized.toml > nohup.out 2> nohup.err &
             until [ -f zombie.json ]; do
               sleep 2
             done
             echo "::debug::Json 'zombie.json' file present, network spawned... sleeping a few seconds"
             sleep 12
-            AHM_STEP=1 AHM_BASE_PATH="$(pwd)/${{ steps.download_artifacts.outputs.ARTIFACTS_DIR }}" npm run polkadot-migration
+
+            export AHM_STEP=1
+            export AHM_BASE_PATH="$(pwd)/${{ steps.download_artifacts.outputs.ARTIFACTS_DIR }}"
+            npm run polkadot-migration
           else
             just run-orchestrator-polkadot
           fi
