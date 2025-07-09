@@ -56,8 +56,6 @@ jobs:
             chmod 755 /tmp/$bin;
           done
           ls -ltr /tmp
-          export PATH=/tmp:$PATH
-          echo $PATH
 
       - name: download_doppelganger_binaries
         shell: bash
@@ -100,11 +98,12 @@ jobs:
             cargo install zombie-cli -f
             npm install
             npm run build
-            cd $(ls -t |head -1)
-            ls -ltr
-
+            ls -l ${{ steps.download_artifacts.outputs.ARTIFACTS_DIR }}
+            cat ${{ steps.download_artifacts.outputs.ARTIFACTS_DIR }}/config.toml
+            # export path
+            export PATH=/tmp:$PATH
+            echo $PATH
             RUST_LOG=zombie=debug zombie-cli spawn -p native ${{ steps.download_artifacts.outputs.ARTIFACTS_DIR }}/config.toml
-
           else
             just run-orchestrator-polkadot
           fi
