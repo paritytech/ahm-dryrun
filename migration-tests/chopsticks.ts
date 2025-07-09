@@ -51,7 +51,7 @@ export async function treasury_spend(): Promise<void> {
                             Inline: treasurySpendCall,
                         },
                         origin: {
-                            System: 'Root'
+                            Origins: 'BigSpender'
                         }
                     }],
                 ],
