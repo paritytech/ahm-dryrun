@@ -11,12 +11,14 @@ import { voterListTests } from './pallets/staking/voter_list.js';
 import { convictionVotingTests } from "./pallets/conviction_voting.js";
 import { indicesTests } from "./pallets/indices.js";
 import { bountiesTests } from "./pallets/bounties.js";
+import { treasuryTests } from "./pallets/treasury.js";
 
 // when updating this, also update the testsByNetwork below
 type Network = "Westend" | "Paseo" | "Kusama" | "Polkadot";
 
 // All available tests
 const allTests = [
+  treasuryTests,
   assetRateTests,
   convictionVotingTests,
   indicesTests,
@@ -32,7 +34,9 @@ const excludedTestsPerNetwork: Record<Network, MigrationTest[]> = {
     // the pallet is not available on Westend
     bountiesTests,
     // https://github.com/paritytech/ahm-dryrun/issues/67
-    convictionVotingTests
+    convictionVotingTests,
+    // https://github.com/paritytech/ahm-dryrun/issues/85
+    treasuryTests,
   ],
   Paseo: [],
   Kusama: [],
@@ -109,11 +113,11 @@ export async function main(
     assetHubConfig,
   );
 
-  await treasury_spend();
   // to correctly state assert, the best is to take Westend before 1st and WAH after 2nd,
   // though knowing that between 1st and 2nd migration in WAH, few users might have added few things
   // so a small mismatch might be expected.
   await runTests(context, network);
+  await treasury_spend();
 
   // Disconnect all APIs
   await Promise.all(apis.map((api) => api.disconnect()));
