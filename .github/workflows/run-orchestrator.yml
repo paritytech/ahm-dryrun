@@ -100,14 +100,17 @@ jobs:
             npm run build
             ls -l ${{ steps.download_artifacts.outputs.ARTIFACTS_DIR }}
             cat ${{ steps.download_artifacts.outputs.ARTIFACTS_DIR }}/config.toml
-            echo "removing base_dir"
+            echo ""
+            echo "::warning ::Removing base_dir"
             grep -v "base_dir " ${{ steps.download_artifacts.outputs.ARTIFACTS_DIR }}/config.toml > ${{ steps.download_artifacts.outputs.ARTIFACTS_DIR }}/config_sanitized.toml
-            echo "sanitized config"
+            echo ""
+            echo "::warning ::Sanitized config"
             cat ${{ steps.download_artifacts.outputs.ARTIFACTS_DIR }}/config_sanitized.toml
             # export path
             export PATH=/tmp:$PATH
-            echo "PATH: $PATH"
-            RUST_LOG=zombie=debug zombie-cli spawn -p native ${{ steps.download_artifacts.outputs.ARTIFACTS_DIR }}/config_sanitized.toml
+            echo "::warning::PATH: $PATH"
+            cd ${{ steps.download_artifacts.outputs.ARTIFACTS_DIR }}
+            RUST_LOG=zombie=debug zombie-cli spawn -p native config_sanitized.toml
           else
             just run-orchestrator-polkadot
           fi
