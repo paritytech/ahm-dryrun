@@ -101,37 +101,46 @@ async function ah_check(uri: string) {
 }
 
 export async function scheduleMigration(rc_port?: number) {
-  const rc_uri = `ws://localhost:${rc_port || rcPort}`;
-  await cryptoWaitReady();
+  try {
+    console.log("[scheduleMigration] : 0");
+    const rc_uri = `ws://localhost:${rc_port || rcPort}`;
+    await cryptoWaitReady();
+    console.log("[scheduleMigration] : 1");
 
-  const keyring = new Keyring({ type: "sr25519" });
-  const alice = keyring.addFromUri("//Alice");
+    const keyring = new Keyring({ type: "sr25519" });
+    const alice = keyring.addFromUri("//Alice");
 
-  const api = await connect(rc_uri);
-  // @ts-ignore
-  let nonce = (await api.query.system.account(alice.address)).nonce.toNumber();
+    const api = await connect(rc_uri);
+    console.log("[scheduleMigration] : 2");
+    // @ts-ignore
+    let nonce = (await api.query.system.account(alice.address)).nonce.toNumber();
+    console.log("[scheduleMigration] : 3");
 
-  const unsub: any = await api.tx.sudo
-    .sudo(api.tx.rcMigrator.scheduleMigration({ after: 1 }))
-    .signAndSend(alice, { nonce: nonce, era: 0 }, (result) => {
-      console.log(`Current status is ${result.status}`);
-      if (result.status.isInBlock) {
-        console.log(
-          `Transaction included at blockhash ${result.status.asInBlock}`,
-        );
-        if (finalization) {
-          console.log("Waiting for finalization...");
-        } else {
-          finish(unsub, api);
+    const unsub: any = await api.tx.sudo
+      .sudo(api.tx.rcMigrator.scheduleMigration({ after: 1 }))
+      .signAndSend(alice, { nonce: nonce, era: 0 }, (result) => {
+        console.log(`Current status is ${result.status}`);
+        if (result.status.isInBlock) {
+          console.log(
+            `Transaction included at blockhash ${result.status.asInBlock}`,
+          );
+          if (finalization) {
+            console.log("Waiting for finalization...");
+          } else {
+            finish(unsub, api);
+          }
+        } else if (result.status.isFinalized) {
+          console.log(
+            `Transaction finalized at blockHash ${result.status.asFinalized}`,
+          );
+          return finish(unsub, api);
+        } else if (result.isError) {
+          console.log(`Transaction error`);
+          return finish(unsub, api);
         }
-      } else if (result.status.isFinalized) {
-        console.log(
-          `Transaction finalized at blockHash ${result.status.asFinalized}`,
-        );
-        return finish(unsub, api);
-      } else if (result.isError) {
-        console.log(`Transaction error`);
-        return finish(unsub, api);
-      }
-    });
+      });
+    } catch(e) {
+      console.log("error: ", e);
+      throw(e)
+    }
 }
