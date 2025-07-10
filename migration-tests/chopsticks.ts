@@ -16,6 +16,8 @@ export async function treasury_spend(): Promise<void> {
     const aliceSS58 = '15oF4uVJwmo4TdGW7VfQxNLavjCXviqxT9S1MgbjMNHr6Sp5';
     const aliceHEX = '0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d';
     const USDT_ID = 1984;
+    const ASSET_HUB_PARA_ID = 1000;
+    const ASSETS_PALLET_ID = 50;
 
     const {polkadot, assetHub} = await setupNetworks({
         polkadot: {
@@ -38,7 +40,7 @@ export async function treasury_spend(): Promise<void> {
                 "interior": {
                     "x1": [
                         {
-                            "parachain": 1000
+                            "parachain": ASSET_HUB_PARA_ID
                         }
                     ]
                 }
@@ -48,10 +50,10 @@ export async function treasury_spend(): Promise<void> {
                 "interior": {
                     "x2": [
                         {
-                            "palletInstance": 50
+                            "palletInstance": ASSETS_PALLET_ID
                         },
                         {
-                            "generalIndex": 1984
+                            "generalIndex": USDT_ID
                         }
                     ]
                 }
@@ -66,7 +68,7 @@ export async function treasury_spend(): Promise<void> {
 					{
 						"accountId32": {
 							"network": null,
-							"id": "0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"
+							"id": aliceHEX
 						}
 					}
 				]
