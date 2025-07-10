@@ -58,13 +58,13 @@ class Orchestrator {
       console.log("\t\t 📩 Ready info received:", start_blocks, ports);
       const { alice_port, collator_port } = ports;
 
-      console.log(`\t 🧑‍🔧 Triggering migration with alice_port: ${alice_port}`);
-      await scheduleMigration(alice_port);
+      // console.log(`\t 🧑‍🔧 Triggering migration with alice_port: ${alice_port}`);
+      // await scheduleMigration(alice_port);
 
-      console.log(
-        `\t 🧑‍🔧 Starting monitoring until miragtion finish with ports: ${alice_port}, ${collator_port}`,
-      );
-      this.monitMigrationFinishWrapper(base_path, alice_port, collator_port);
+      // console.log(
+      //   `\t 🧑‍🔧 Starting monitoring until miragtion finish with ports: ${alice_port}, ${collator_port}`,
+      // );
+      // this.monitMigrationFinishWrapper(base_path, alice_port, collator_port);
 
       console.log("\t 🧑‍🔧 Waiting for migration info...");
       let end_blocks = await this.waitForMigrationInfo(base_path);
