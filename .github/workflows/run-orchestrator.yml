@@ -96,30 +96,34 @@ jobs:
         run: |
           if [[ $ARTIFACTS_RUN_ID != "" ]]; then
             cargo install zombie-cli -f
+
+            echo "::group::npm"
             npm install
             npm run build
+            echo "::endgroup::"
+
             ls -l ${{ steps.download_artifacts.outputs.ARTIFACTS_DIR }}
             cat ${{ steps.download_artifacts.outputs.ARTIFACTS_DIR }}/config.toml
-            echo ""
-            echo "::warning ::Removing base_dir"
-            grep -v "base_dir " ${{ steps.download_artifacts.outputs.ARTIFACTS_DIR }}/config.toml > ${{ steps.download_artifacts.outputs.ARTIFACTS_DIR }}/config_sanitized.toml
-            echo ""
-            echo "::warning ::Sanitized config"
-            cat ${{ steps.download_artifacts.outputs.ARTIFACTS_DIR }}/config_sanitized.toml
+
+            echo "::group::exports"
             # export path
             export PATH=/tmp:$PATH
-            echo "::warning::PATH: $PATH"
-            cd ${{ steps.download_artifacts.outputs.ARTIFACTS_DIR }}
+            export AHM_STEP=1
+            export AHM_BASE_PATH="$(pwd)/${{ steps.download_artifacts.outputs.ARTIFACTS_DIR }}"
             export RUST_LOG=zombie=debug
-            nohup zombie-cli spawn -p native config_sanitized.toml > nohup.out 2> nohup.err &
-            until [ -f zombie.json ]; do
+            echo "::warning::PATH: $PATH"
+            echo "::endgroup::"
+
+            cd ${{ steps.download_artifacts.outputs.ARTIFACTS_DIR }}
+            nohup zombie-cli spawn -p native -d /tmp/spawn config.toml > nohup.out 2> nohup.err &
+            ZOMBIE_FILE="/tmp/spawn/zombie.json"
+            until [ -f "$ZOMBIE_FILE" ]; do
+              echo "ZOMBIE_FILE: $ZOMBIE_FILE not present yet"
               sleep 2
             done
             echo "::debug::Json 'zombie.json' file present, network spawned... sleeping a few seconds"
             sleep 12
 
-            export AHM_STEP=1
-            export AHM_BASE_PATH="$(pwd)/${{ steps.download_artifacts.outputs.ARTIFACTS_DIR }}"
             npm run polkadot-migration
           else
             just run-orchestrator-polkadot
