@@ -95,7 +95,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           if [[ $ARTIFACTS_RUN_ID != "" ]]; then
+            echo "::group::install_zombie-cli"
             cargo install zombie-cli -f
+            echo "::endgroup::"
 
             echo "::group::npm"
             npm install
@@ -114,6 +116,7 @@ jobs:
             echo "::warning::PATH: $PATH"
             echo "::endgroup::"
 
+            echo "::group::zombie-cli"
             cd ${{ steps.download_artifacts.outputs.ARTIFACTS_DIR }}
             nohup zombie-cli spawn -p native -d /tmp/spawn config.toml > nohup.out 2> nohup.err &
             ZOMBIE_FILE="/tmp/spawn/zombie.json"
@@ -121,7 +124,13 @@ jobs:
               echo "ZOMBIE_FILE: $ZOMBIE_FILE not present yet"
               sleep 2
             done
-            echo "::debug::Json 'zombie.json' file present, network spawned... sleeping a few seconds"
+            echo "'zombie.json' file present, network spawned... sleeping a few seconds"
+            echo "::endgroup::"
+
+            echo "::group::zombie-cli-output"
+            cat nohup.out
+            echo "::endgroup::"
+
             sleep 12
 
             npm run polkadot-migration

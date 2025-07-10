@@ -29,6 +29,23 @@ interface EndBlocks {
   rc_finish_block: number;
 }
 
+
+// Ensure to log the uncaught exceptions
+process.on("uncaughtException", async (err) => {
+  console.log(`uncaughtException`);
+  console.log(err);
+  process.exit(1000);
+});
+
+// Ensure that we know about any exception thrown in a promise that we
+// accidentally don't have a 'catch' for.
+// http://www.hacksrus.net/blog/2015/08/a-solution-to-swallowed-exceptions-in-es6s-promises/
+process.on("unhandledRejection", async (err) => {
+  console.log(`unhandledRejection`);
+  console.log(err);
+  process.exit(1001);
+});
+
 class Orchestrator {
   private readyWatcher: any;
   private doneWatcher: any;
