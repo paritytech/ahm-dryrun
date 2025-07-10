@@ -63,7 +63,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release download -R paritytech/doppelganger-wrapper -p doppelganger -p doppelganger-parachain
+          gh release download -R paritytech/doppelganger-wrapper \
+          -p doppelganger -p doppelganger-parachain \
+          -p polkadot-execute-worker -p polkadot-prepare-worker
           ls -ltr
           mv doppelganger /tmp
           mv doppelganger-parachain /tmp
@@ -150,4 +152,4 @@ jobs:
           name: polkadot-ahm-${{ github.sha }}
           path: |
             ${{ env.AHM_BASE_PATH }}/*
-            /tmp/spawn/**/*.log
+            /tmp/spawn/**/{alice,bob,collator}.log
