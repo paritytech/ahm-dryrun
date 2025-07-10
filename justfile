@@ -146,9 +146,12 @@ as-derived-accs *NETWORK:
         "westend")
             RPC_WS=wss://westend-rpc.polkadot.io node as-derivative-script/checkExtrinsic.js
             ;;
+        "kusama")
+            RPC_WS=wss://kusama-rpc.n.dwellir.com node as-derivative-script/checkExtrinsic.js
+            ;;
         *)
             echo "Unknown network: {{ NETWORK }}"
-            echo "Available networks: paseo, westend"
+            echo "Available networks: paseo, westend, kusama"
             echo "Usage: just as-derived-accs <network>"
             exit 1
             ;;
