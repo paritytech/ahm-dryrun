@@ -133,6 +133,11 @@ jobs:
 
             sleep 12
 
+            echo "::group::alice-output"
+            cat /tmp/spawn/alice/alice.log
+            echo "::endgroup::"
+
+
             npm run polkadot-migration
           else
             just run-orchestrator-polkadot
@@ -145,3 +150,4 @@ jobs:
           name: polkadot-ahm-${{ github.sha }}
           path: |
             ${{ env.AHM_BASE_PATH }}/*
+            /tmp/spawn/**/*.log
