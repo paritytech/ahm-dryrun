@@ -93,6 +93,7 @@ jobs:
           fi
 
       - name: run_orchestrator
+        id: run_orchestrator
         shell: bash
         env:
           ARTIFACTS_RUN_ID: ${{ inputs.artifacts-run-id }}
@@ -108,8 +109,10 @@ jobs:
             npm run build
             echo "::endgroup::"
 
+            echo "::group::zombie_config"
             ls -l ${{ steps.download_artifacts.outputs.ARTIFACTS_DIR }}
             cat ${{ steps.download_artifacts.outputs.ARTIFACTS_DIR }}/config.toml
+            echo "::endgroup::"
 
             echo "::group::exports"
             # export path
@@ -135,22 +138,30 @@ jobs:
             cat nohup.out
             echo "::endgroup::"
 
+            echo "sleeping 1 min to bootstrap"
             sleep 60
 
             echo "::group::alice-output"
             cat /tmp/spawn/alice/alice.log
             echo "::endgroup::"
 
-
             npm run polkadot-migration
           else
             just run-orchestrator-polkadot
           fi
 
-      ##${{ env.AHM_BASE_PATH }}/*
       - name: upload_artifacts
         uses: actions/upload-artifact@v4
-        if: ${{ ! cancelled() }}
+        if: ${{ steps.run_orchestrator.conclusion == 'success' }}
+        with:
+          name: polkadot-ahm-${{ github.sha }}
+          path: |
+            /tmp/spawn
+
+      # if fails upload only the node logs
+      - name: upload_artifacts
+        uses: actions/upload-artifact@v4
+        if: ${{ steps.run_orchestrator.conclusion == 'failure' }}
         with:
           name: polkadot-ahm-${{ github.sha }}
           path: |

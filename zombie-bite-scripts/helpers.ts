@@ -103,19 +103,15 @@ async function ah_check(uri: string) {
 }
 
 export async function scheduleMigration(rc_port?: number) {
-  console.log("[scheduleMigration] : 0");
   const rc_uri = `ws://localhost:${rc_port || rcPort}`;
   await cryptoWaitReady();
-  console.log("[scheduleMigration] : 1");
 
   const keyring = new Keyring({ type: "sr25519" });
   const alice = keyring.addFromUri("//Alice");
 
   const api = await connect(rc_uri);
-  console.log("[scheduleMigration] : 2");
   // @ts-ignore
   let nonce = (await api.query.system.account(alice.address)).nonce.toNumber();
-  console.log("[scheduleMigration] : 3");
 
   return new Promise(async (resolve, reject) => {
     const unsub: any = await api.tx.sudo
