@@ -56,6 +56,7 @@ async function mock_finish(delay_ms: number, is_mocked: boolean) {
 
 async function rc_check(uri: string) {
   return new Promise(async (resolve) => {
+    console.log(`checking rc at uri: ${uri}`);
     const api = await connect(uri);
     const unsub = await api.query.rcMigrator.rcMigrationStage(
       async (raw: any) => {
@@ -79,6 +80,7 @@ async function rc_check(uri: string) {
 
 async function ah_check(uri: string) {
   return new Promise(async (resolve) => {
+    console.log(`checking ah at uri: ${uri}`);
     const api = await connect(uri);
     const unsub = await api.query.ahMigrator.ahMigrationStage(
       async (raw: any) => {
@@ -101,21 +103,21 @@ async function ah_check(uri: string) {
 }
 
 export async function scheduleMigration(rc_port?: number) {
-  try {
-    console.log("[scheduleMigration] : 0");
-    const rc_uri = `ws://localhost:${rc_port || rcPort}`;
-    await cryptoWaitReady();
-    console.log("[scheduleMigration] : 1");
+  console.log("[scheduleMigration] : 0");
+  const rc_uri = `ws://localhost:${rc_port || rcPort}`;
+  await cryptoWaitReady();
+  console.log("[scheduleMigration] : 1");
 
-    const keyring = new Keyring({ type: "sr25519" });
-    const alice = keyring.addFromUri("//Alice");
+  const keyring = new Keyring({ type: "sr25519" });
+  const alice = keyring.addFromUri("//Alice");
 
-    const api = await connect(rc_uri);
-    console.log("[scheduleMigration] : 2");
-    // @ts-ignore
-    let nonce = (await api.query.system.account(alice.address)).nonce.toNumber();
-    console.log("[scheduleMigration] : 3");
+  const api = await connect(rc_uri);
+  console.log("[scheduleMigration] : 2");
+  // @ts-ignore
+  let nonce = (await api.query.system.account(alice.address)).nonce.toNumber();
+  console.log("[scheduleMigration] : 3");
 
+  return new Promise(async (resolve, reject) => {
     const unsub: any = await api.tx.sudo
       .sudo(api.tx.rcMigrator.scheduleMigration({ after: 1 }))
       .signAndSend(alice, { nonce: nonce, era: 0 }, (result) => {
@@ -128,19 +130,19 @@ export async function scheduleMigration(rc_port?: number) {
             console.log("Waiting for finalization...");
           } else {
             finish(unsub, api);
+            return resolve(true);
           }
         } else if (result.status.isFinalized) {
           console.log(
             `Transaction finalized at blockHash ${result.status.asFinalized}`,
           );
-          return finish(unsub, api);
+          finish(unsub, api);
+          return resolve(true);
         } else if (result.isError) {
           console.log(`Transaction error`);
-          return finish(unsub, api);
+          finish(unsub, api);
+          return reject()
         }
       });
-    } catch(e) {
-      console.log("error: ", e);
-      throw(e)
-    }
+  });
 }
