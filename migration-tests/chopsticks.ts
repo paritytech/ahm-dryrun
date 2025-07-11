@@ -75,6 +75,7 @@ export async function treasury_spend(): Promise<void> {
 			}
 		}
 	} as unknown as XcmVersionedLocation;
+    // validFrom - null, which means immediately.	
     const call = polkadot.api.tx.treasury.spend(assetKind, amount, beneficiary, null);
     const hexCall = call.method.toHex();
     
