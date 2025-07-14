@@ -52,7 +52,7 @@ jobs:
           # polkadot polkadot-execute-worker polkadot-prepare-worker
           for bin in  polkadot-parachain; do
             echo "downloading $bin";
-            curl -L -o /tmp/$bin https://github.com/paritytech/polkadot-sdk/releases/download/polkadot-stable2503-1/$bin;
+            curl -L -o /tmp/$bin https://github.com/paritytech/polkadot-sdk/releases/download/polkadot-stable2503-7/$bin;
             chmod 755 /tmp/$bin;
           done
           ls -ltr /tmp
