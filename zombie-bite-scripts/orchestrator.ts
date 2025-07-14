@@ -55,7 +55,7 @@ class Orchestrator {
       console.log("🧑‍🔧 Starting migration process...");
 
       // STEP 0: Sync and fork
-      if( STEP_TO_INIT <= 0 ) {
+      if ( STEP_TO_INIT <= 0 ) {
         // Start zombie-bite process
         console.log("\t 🧑‍🔧 Starting zombie-bite...");
         const zombieBite = spawn(
