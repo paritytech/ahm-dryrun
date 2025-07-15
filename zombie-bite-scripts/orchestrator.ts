@@ -11,6 +11,9 @@ const READY_FILE = "ready.json";
 const PORTS_FILE = "ports.json";
 const DONE_FILE = "migration_done.json";
 
+// STEP to init, default to 0
+const STEP_TO_INIT = parseInt(process.env["AHM_STEP"] || "0", 10) || 0;
+
 interface Ports {
   alice_port: number;
   collator_port: number;
@@ -26,6 +29,23 @@ interface EndBlocks {
   rc_finish_block: number;
 }
 
+
+// Ensure to log the uncaught exceptions
+process.on("uncaughtException", async (err) => {
+  console.log(`uncaughtException`);
+  console.log(err);
+  process.exit(1000);
+});
+
+// Ensure that we know about any exception thrown in a promise that we
+// accidentally don't have a 'catch' for.
+process.on("unhandledRejection", async (err, promise) => {
+  console.log(`unhandledRejection`);
+  console.log(err);
+  console.log("promise", promise);
+  process.exit(1001);
+});
+
 class Orchestrator {
   private readyWatcher: any;
   private doneWatcher: any;
@@ -34,33 +54,45 @@ class Orchestrator {
     try {
       console.log("🧑‍🔧 Starting migration process...");
 
-      // Start zombie-bite process
-      console.log("\t 🧑‍🔧 Starting zombie-bite...");
-      const zombieBite = spawn(
-        "zombie-bite",
-        [
-          `polkadot:${process.env.RUNTIME_WASM}/polkadot_runtime.compact.compressed.wasm`,
-          `asset-hub:${process.env.RUNTIME_WASM}/asset_hub_polkadot_runtime.compact.compressed.wasm`,
-        ],
-        {
-          stdio: "inherit",
-          env: { ...process.env, ZOMBIE_BITE_BASE_PATH: base_path },
-        },
-      );
+      // STEP 0: Sync and fork
+      if ( STEP_TO_INIT <= 0 ) {
+        // Start zombie-bite process
+        console.log("\t 🧑‍🔧 Starting zombie-bite...");
+        const zombieBite = spawn(
+          "zombie-bite",
+          [
+            `polkadot:${process.env.RUNTIME_WASM}/polkadot_runtime.compact.compressed.wasm`,
+            `asset-hub:${process.env.RUNTIME_WASM}/asset_hub_polkadot_runtime.compact.compressed.wasm`,
+          ],
+          {
+            stdio: "inherit",
+            env: { ...process.env, ZOMBIE_BITE_BASE_PATH: base_path },
+          },
+        );
 
-      zombieBite.on("error", (err) => {
-        console.error("🧑‍🔧 Failed to start zombie-bite:", err);
-        process.exit(1);
-      });
+        zombieBite.on("error", (err) => {
+          console.error("🧑‍🔧 Failed to start zombie-bite:", err);
+          process.exit(1);
+        });
+      } else {
+        console.warn("⚠️  STEP 0: zombie-bite skipped\n");
+      }
 
       console.log("\t 🧑‍🔧 Waiting for ready info from the spawned network...");
       let [start_blocks, ports] = await this.waitForReadyInfo(base_path);
       console.log("\t\t 📩 Ready info received:", start_blocks, ports);
       const { alice_port, collator_port } = ports;
 
-      console.log(`\t 🧑‍🔧 Triggering migration with alice_port: ${alice_port}`);
-      await scheduleMigration(alice_port);
 
+      // STEP 1: Trigger migration
+      if( STEP_TO_INIT <= 1 ) {
+        console.log(`\t 🧑‍🔧 Triggering migration with alice_port: ${alice_port}`);
+        await scheduleMigration(alice_port);
+      } else {
+        console.warn("⚠️  STEP 1: Trigger migration skipped\n");
+      }
+
+      // STEP 2: Wait finish migration
       console.log(
         `\t 🧑‍🔧 Starting monitoring until miragtion finish with ports: ${alice_port}, ${collator_port}`,
       );
@@ -70,6 +102,7 @@ class Orchestrator {
       let end_blocks = await this.waitForMigrationInfo(base_path);
       console.log("\t\t 📩 Migration info received:", end_blocks);
 
+      // STEP 3: Run migration tests
       // Mock: Run migration tests
       console.log("🧑‍🔧 Running migration tests with ports and blocks...");
       const rc_endpoint = `ws://localhost:${alice_port}`;
@@ -124,11 +157,30 @@ class Orchestrator {
     return result as EndBlocks;
   }
 
+  private readyInfo(ready_file: string, ports_file: string): [StarBlocks, Ports] {
+      // NOTE: zombie-bite inform the block number where the network was
+      // `forked`, so we use the next block as start of the migration
+      // since the forked one will not be in the db.
+      let start_info: StarBlocks = JSON.parse(
+        fs.readFileSync(ready_file).toString(),
+      );
+      start_info.ah_start_block += 1;
+      start_info.rc_start_block += 1;
+      const ports = JSON.parse(fs.readFileSync(ports_file).toString());
+      return [start_info, ports];
+  }
+
   private async waitForReadyInfo(
     base_path: string,
   ): Promise<[StarBlocks, Ports]> {
     let ready_file = `${base_path}/${READY_FILE}`;
     let ports_file = `${base_path}/${PORTS_FILE}`;
+
+    // IFF already exist just read it
+    if( fs.existsSync(ready_file) && fs.existsSync(ports_file) ) {
+      return this.readyInfo(ready_file, ports_file);
+    }
+
     return new Promise((resolve) => {
       this.readyWatcher = watch(base_path, {
         persistent: true,
@@ -140,17 +192,8 @@ class Orchestrator {
 
       this.readyWatcher.on("all", (event: any, info: string) => {
         if (event == "add" && info.includes(PORTS_FILE)) {
-          // NOTE: zombie-bite inform the block number where the network was
-          // `forked`, so we use the next block as start of the migration
-          // since the forked one will not be in the db.
-          let start_info: StarBlocks = JSON.parse(
-            fs.readFileSync(ready_file).toString(),
-          );
-          start_info.ah_start_block += 1;
-          start_info.rc_start_block += 1;
-          const ports = JSON.parse(fs.readFileSync(ports_file).toString());
           this.readyWatcher.close();
-          return resolve([start_info, ports]);
+          return resolve(this.readyInfo(ready_file, ports_file));
         }
       });
     });
