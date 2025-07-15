@@ -135,7 +135,7 @@ export async function scheduleMigration(rc_port?: number) {
           finish(unsub, api);
           return resolve(true);
         } else if (result.isError) {
-          console.log(`Transaction error`);
+          console.log(`Transaction error: ${result.toHuman()}`);
           finish(unsub, api);
           return reject()
         }
