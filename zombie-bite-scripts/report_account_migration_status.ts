@@ -55,11 +55,11 @@ const BACKUP_FILE = "reversedMap.json";
 config();
 const WS_URL = `ws://localhost:${process.env.ZOMBIE_BITE_RC_PORT}`;
 
-async function main() {
+async function main(run_schedule_migration:boolean = true) {
   const wsProvider = new WsProvider(WS_URL);
   const api = await ApiPromise.create({ provider: wsProvider });
 
-  await scheduleMigration();
+  if(run_schedule_migration) await scheduleMigration();
   const reversedMap = await fetchAndCacheAccounts(api);
   await api.disconnect();
 
@@ -203,4 +203,5 @@ function createStorageKeyFromSS58(lastKey: string): string {
   return u8aToHex(key);
 }
 
-main().catch(console.error);
+const run_schedule_migration = process.argv[2] && process.argv[2] == 'no-schedule' ? false : true;
+main(run_schedule_migration).catch(console.error);

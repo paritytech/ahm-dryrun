@@ -56,6 +56,7 @@ async function mock_finish(delay_ms: number, is_mocked: boolean) {
 
 async function rc_check(uri: string) {
   return new Promise(async (resolve) => {
+    console.log(`checking rc at uri: ${uri}`);
     const api = await connect(uri);
     const unsub = await api.query.rcMigrator.rcMigrationStage(
       async (raw: any) => {
@@ -70,7 +71,7 @@ async function rc_check(uri: string) {
           await finish(unsub, api);
           return resolve(number);
         } else {
-          console.debug(`[RC] Migration in stage ${stage}, keep waiting`);
+          console.debug(`[RC] Migration in stage ${JSON.stringify(stage)}, keep waiting`);
         }
       },
     );
@@ -79,6 +80,7 @@ async function rc_check(uri: string) {
 
 async function ah_check(uri: string) {
   return new Promise(async (resolve) => {
+    console.log(`checking ah at uri: ${uri}`);
     const api = await connect(uri);
     const unsub = await api.query.ahMigrator.ahMigrationStage(
       async (raw: any) => {
@@ -93,7 +95,7 @@ async function ah_check(uri: string) {
           await finish(unsub, api);
           return resolve(number);
         } else {
-          console.debug(`[AH] Migration in stage ${stage}, keep waiting`);
+          console.debug(`[AH] Migration in stage ${JSON.stringify(stage)}, keep waiting`);
         }
       },
     );
@@ -111,27 +113,32 @@ export async function scheduleMigration(rc_port?: number) {
   // @ts-ignore
   let nonce = (await api.query.system.account(alice.address)).nonce.toNumber();
 
-  const unsub: any = await api.tx.sudo
-    .sudo(api.tx.rcMigrator.scheduleMigration({ after: 1 }))
-    .signAndSend(alice, { nonce: nonce, era: 0 }, (result) => {
-      console.log(`Current status is ${result.status}`);
-      if (result.status.isInBlock) {
-        console.log(
-          `Transaction included at blockhash ${result.status.asInBlock}`,
-        );
-        if (finalization) {
-          console.log("Waiting for finalization...");
-        } else {
+  return new Promise(async (resolve, reject) => {
+    const unsub: any = await api.tx.sudo
+      .sudo(api.tx.rcMigrator.scheduleMigration({ after: 1 }))
+      .signAndSend(alice, { nonce: nonce, era: 0 }, (result) => {
+        console.log(`Current status is ${result.status}`);
+        if (result.status.isInBlock) {
+          console.log(
+            `Transaction included at blockhash ${result.status.asInBlock}`,
+          );
+          if (finalization) {
+            console.log("Waiting for finalization...");
+          } else {
+            finish(unsub, api);
+            return resolve(true);
+          }
+        } else if (result.status.isFinalized) {
+          console.log(
+            `Transaction finalized at blockHash ${result.status.asFinalized}`,
+          );
           finish(unsub, api);
+          return resolve(true);
+        } else if (result.isError) {
+          console.log(`Transaction error: ${result.toHuman()}`);
+          finish(unsub, api);
+          return reject()
         }
-      } else if (result.status.isFinalized) {
-        console.log(
-          `Transaction finalized at blockHash ${result.status.asFinalized}`,
-        );
-        return finish(unsub, api);
-      } else if (result.isError) {
-        console.log(`Transaction error`);
-        return finish(unsub, api);
-      }
-    });
+      });
+  });
 }
