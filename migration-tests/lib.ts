@@ -38,7 +38,7 @@ const excludedTestsPerNetwork: Record<Network, MigrationTest[]> = {
     // https://github.com/paritytech/ahm-dryrun/issues/67
     convictionVotingTests,
     // https://github.com/paritytech/ahm-dryrun/issues/85
-    treasuryTests,,
+    treasuryTests,
     // https://github.com/paritytech/ahm-dryrun/issues/66
     referendaTests
   ],
