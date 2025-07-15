@@ -12,6 +12,7 @@ import { convictionVotingTests } from "./pallets/conviction_voting.js";
 import { indicesTests } from "./pallets/indices.js";
 import { bountiesTests } from "./pallets/bounties.js";
 import { treasuryTests } from "./pallets/treasury.js";
+import { referendaTests } from "./pallets/referenda.js";
 
 // when updating this, also update the testsByNetwork below
 type Network = "Westend" | "Paseo" | "Kusama" | "Polkadot";
@@ -19,6 +20,7 @@ type Network = "Westend" | "Paseo" | "Kusama" | "Polkadot";
 // All available tests
 const allTests = [
   treasuryTests,
+  referendaTests,
   assetRateTests,
   convictionVotingTests,
   indicesTests,
@@ -37,6 +39,8 @@ const excludedTestsPerNetwork: Record<Network, MigrationTest[]> = {
     convictionVotingTests,
     // https://github.com/paritytech/ahm-dryrun/issues/85
     treasuryTests,
+    // https://github.com/paritytech/ahm-dryrun/issues/66
+    referendaTests
   ],
   Paseo: [],
   Kusama: [],
