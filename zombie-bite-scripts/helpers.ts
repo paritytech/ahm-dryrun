@@ -7,6 +7,12 @@ const ahPort = process.env.ZOMBIE_BITE_AH_PORT || 63170;
 const finalization = false;
 let mock_finish_flag = false;
 
+interface scheduleMigrationArgs {
+  rc_port?: number|string,
+  rb_block_start?: number|string,
+  cool_off_end?: number|string,
+};
+
 async function connect(apiUrl: string, types = {}) {
   const provider = new WsProvider(apiUrl);
   const api = new ApiPromise({ provider, types });
@@ -102,8 +108,8 @@ async function ah_check(uri: string) {
   });
 }
 
-export async function scheduleMigration(rc_port?: number) {
-  const rc_uri = `ws://localhost:${rc_port || rcPort}`;
+export async function scheduleMigration(migration_args?: scheduleMigrationArgs) {
+  const rc_uri = `ws://localhost:${migration_args && migration_args.rc_port || rcPort}`;
   await cryptoWaitReady();
 
   const keyring = new Keyring({ type: "sr25519" });
@@ -113,9 +119,18 @@ export async function scheduleMigration(rc_port?: number) {
   // @ts-ignore
   let nonce = (await api.query.system.account(alice.address)).nonce.toNumber();
 
+  // check start and cool_off_end
+  const start = migration_args && migration_args.rb_block_start! || (await api.rpc.chain.getHeader()).number.toHuman();
+
+  const cool_off_end = migration_args && migration_args.cool_off_end ?
+    migration_args.cool_off_end > start! ?
+    migration_args.cool_off_end :
+    migration_args.cool_off_end :
+    (start as number + 6);
+
   return new Promise(async (resolve, reject) => {
     const unsub: any = await api.tx.sudo
-      .sudo(api.tx.rcMigrator.scheduleMigration({ after: 1 }))
+      .sudo(api.tx.rcMigrator.scheduleMigration({ start, cool_off_end }))
       .signAndSend(alice, { nonce: nonce, era: 0 }, (result) => {
         console.log(`Current status is ${result.status}`);
         if (result.status.isInBlock) {

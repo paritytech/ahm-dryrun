@@ -10,7 +10,7 @@ import { scheduleMigration } from "./helpers.js";
 
 const main = async () => {
   let rc_port = parseInt(process.argv[2],10);
-  await scheduleMigration(rc_port);
+  await scheduleMigration({rc_port});
   process.exit(0);
 };
 
