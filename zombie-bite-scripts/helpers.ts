@@ -7,10 +7,20 @@ const ahPort = process.env.ZOMBIE_BITE_AH_PORT || 63170;
 const finalization = false;
 let mock_finish_flag = false;
 
+interface At {
+  at: number
+};
+
+interface After {
+  after: number
+};
+
+type DispatchTime = At | After;
+
 interface scheduleMigrationArgs {
   rc_port?: number|string,
-  rb_block_start?: number|string,
-  cool_off_end?: number|string,
+  rc_block_start?: DispatchTime
+  cool_off_end?: DispatchTime
 };
 
 async function connect(apiUrl: string, types = {}) {
@@ -120,13 +130,8 @@ export async function scheduleMigration(migration_args?: scheduleMigrationArgs) 
   let nonce = (await api.query.system.account(alice.address)).nonce.toNumber();
 
   // check start and cool_off_end
-  const start = migration_args && migration_args.rb_block_start! || (await api.rpc.chain.getHeader()).number.toHuman();
-
-  const cool_off_end = migration_args && migration_args.cool_off_end ?
-    migration_args.cool_off_end > start! ?
-    migration_args.cool_off_end :
-    migration_args.cool_off_end :
-    (start as number + 6);
+  const start = migration_args && migration_args.rc_block_start || { after: 1 };
+  const cool_off_end = migration_args && migration_args.cool_off_end || { after: 1 };
 
   return new Promise(async (resolve, reject) => {
     const unsub: any = await api.tx.sudo
