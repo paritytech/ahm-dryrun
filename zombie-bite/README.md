@@ -77,7 +77,7 @@ node_spawn_timeout = 600
 
 [relaychain]
 chain = "polkadot"
-default_command = "doppelganger"
+default_command = "polkadot"
 default_db_snapshot = "./polkadot-snap.tgz"
 default_args = [
     "-l=babe=trace,grandpa=info,runtime=trace,consensus::common=trace,parachain=debug",
