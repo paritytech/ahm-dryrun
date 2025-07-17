@@ -53,7 +53,7 @@ You should get a new network with the `live state` running locally.
 
 #### How to use a custom `wasm` (polkadot/ah)
 
-In the case you want to provide a custom wasm (and not build it as part of the flow), you can use this steps to get a new network spawned:
+In the case you want to provide a custom wasm (and not build it as part of the flow), you can use these steps to get a new network spawned:
 
 - `just build-doppelganger`
 - `just install-zombie-bite`
