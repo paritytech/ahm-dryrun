@@ -315,7 +315,7 @@ async function map_rc_ah_call(ah_api_after: ApiDecoration<'promise'>, rcStatus: 
 }
 
 async function convert_rc_to_ah_call(ah_api_after: ApiDecoration<'promise'>, encodedCall: any): Promise<any | null> {
-    // TODO: implement decode(encodedCall) + map(decodedCall)
+    // TODO: implement decode(encodedCall) then map(decodedCall)
     //  https://github.com/polkadot-fellows/runtimes/blob/6048e1c18f36a9e00ea396d39b456f5e92ba1552/system-parachains/asset-hubs/asset-hub-polkadot/src/ah_migration/mod.rs#L238-L360
     return encodedCall;
 }
