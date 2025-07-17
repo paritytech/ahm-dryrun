@@ -123,6 +123,3 @@ And then you can run:
 ```
 RUST_LOG=zombie=debug zombie-cli spawn -p native config.toml
 ```
-
-
-
