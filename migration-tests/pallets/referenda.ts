@@ -324,9 +324,9 @@ async function fetch_preimage(ah_api_after: ApiDecoration<'promise'>, rcStatus: 
     if (rcStatus.proposal.inline) {
         return rcStatus.proposal.inline;
     } else if (rcStatus.proposal.lookup) {
-        return await ah_api_after.query.preimage.requestPreimage(rcStatus.proposal.lookup.hash);
+        return await ah_api_after.query.preimage.preimageFor(rcStatus.proposal.lookup.hash, rcStatus.proposal.lookup.len);
     } else if (rcStatus.proposal.legacy) {
-        return await ah_api_after.query.preimage.requestPreimage(rcStatus.proposal.legacy.hash);
+        return await ah_api_after.query.preimage.preimageFor(rcStatus.proposal.legacy.hash, null);
     } else {
         return null;
     }
