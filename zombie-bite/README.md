@@ -66,7 +66,7 @@ This will spawn the network, with the runtimes overridden.
 
 #### How to use zombie-cli to spawn a network with a custom `wasm` and `snapshot`
 
-In the case you have a _custom snapshot_ and _wasm_ and you want to spawn a network, you can use `zombie-cli` to use it. For that you need to create a _toml_ configuration of your network.
+In the case you have a _custom snapshot_ and a _wasm_ and you want to spawn a network, you can use `zombie-cli` to do it. For that you need to create a _toml_ configuration of your network.
 
 For example (config.toml):
 
