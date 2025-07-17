@@ -326,7 +326,7 @@ async function fetch_preimage(ah_api_after: ApiDecoration<'promise'>, rcStatus: 
     } else if (rcStatus.proposal.lookup) {
         return await ah_api_after.query.preimage.requestPreimage(rcStatus.proposal.lookup.hash);
     } else if (rcStatus.proposal.legacy) {
-        return await ah_api_after.query.preimage.fetch(rcStatus.proposal.legacy.hash);
+        return await ah_api_after.query.preimage.requestPreimage(rcStatus.proposal.legacy.hash);
     } else {
         return null;
     }
