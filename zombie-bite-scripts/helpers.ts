@@ -131,7 +131,7 @@ export async function scheduleMigration(migration_args?: scheduleMigrationArgs) 
 
   // check start and cool_off_end
   const start = migration_args && migration_args.rc_block_start || { after: 1 };
-  const cool_off_end = migration_args && migration_args.cool_off_end || { after: 1 };
+  const cool_off_end = migration_args && migration_args.cool_off_end || { after: 6 };
 
   return new Promise(async (resolve, reject) => {
     const unsub: any = await api.tx.sudo
