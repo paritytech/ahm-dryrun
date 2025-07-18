@@ -80,6 +80,7 @@ export const referendaTests: MigrationTest = {
 
         // Verify AH storage matches RC pre-migration data
         await verifyAhStorageMatchesRcPreMigrationData(
+            rc_api_after,
             ah_api_after,
             rc_referendumCount,
             rc_decidingCount,
@@ -120,6 +121,7 @@ async function verifyRcStorageEmpty(rc_api_after: ApiDecoration<'promise'>): Pro
 }
 
 async function verifyAhStorageMatchesRcPreMigrationData(
+    rc_api_after: ApiDecoration<'promise'>,
     ah_api_after: ApiDecoration<'promise'>,
     rc_referendumCount: u32,
     rc_decidingCount: [StorageKey, u32][],
@@ -149,7 +151,7 @@ async function verifyAhStorageMatchesRcPreMigrationData(
 
     // Check referendum info
     const ah_after_referendumInfo = await ah_api_after.query.referenda.referendumInfoFor.entries();
-    await verifyReferendumInfo(ah_api_after, rc_referendumInfo, ah_after_referendumInfo as unknown as [StorageKey, Codec][]);
+    await verifyReferendumInfo(rc_api_after, ah_api_after, rc_referendumInfo, ah_after_referendumInfo as unknown as [StorageKey, Codec][]);
 }
 
 function verifyDecidingCount(rc_before_decidingCount: [StorageKey, Codec][], ah_after_decidingCount: [StorageKey, Codec][]): void {
@@ -223,11 +225,11 @@ function verifyMetadata(rc_before_metadata: [StorageKey, Codec][], ah_after_meta
 
 // reference implementation from Rust code: 
 // https://github.com/polkadot-fellows/runtimes/blob/6048e1c18f36a9e00ea396d39b456f5e92ba1552/pallets/ah-migrator/src/referenda.rs#L371C3-L491C4
-async function verifyReferendumInfo(ah_api_after: ApiDecoration<'promise'>, rc_before_referendumInfo: [StorageKey, Codec][], ah_after_referendumInfo: [StorageKey, Codec][]): Promise<void> {
+async function verifyReferendumInfo(rc_api_after: ApiDecoration<'promise'>, ah_api_after: ApiDecoration<'promise'>, rc_before_referendumInfo: [StorageKey, Codec][], ah_after_referendumInfo: [StorageKey, Codec][]): Promise<void> {
     // Convert RC referenda to expected AH format
     const expectedAhReferenda = await Promise.all(rc_before_referendumInfo.map(async ([key, rcInfo]) => {
         const refIndex = key.args[0].toString();
-        const convertedInfo = await convert_rc_to_ah_referendum(ah_api_after, rcInfo);
+        const convertedInfo = await convert_rc_to_ah_referendum(rc_api_after, ah_api_after, rcInfo);
         return [refIndex, convertedInfo] as [string, Codec];
     }));
 
@@ -257,7 +259,7 @@ async function verifyReferendumInfo(ah_api_after: ApiDecoration<'promise'>, rc_b
     }
 }
 
-async function convert_rc_to_ah_referendum(ah_api_after: ApiDecoration<'promise'>, rcInfo: Codec): Promise<Codec> {
+async function convert_rc_to_ah_referendum(rc_api_after: ApiDecoration<'promise'>, ah_api_after: ApiDecoration<'promise'>, rcInfo: Codec): Promise<Codec> {
     const rcInfoJson = rcInfo.toJSON() as any;
     
     // Handle different referendum states
