@@ -85,12 +85,15 @@ build-westend:
     find "${SDK_BUILD_ARTIFACTS_PATH}/wbuild" -name '*westend*.compact.compressed.wasm' -exec {{ cp_cmd }} {} ./runtime_wasm/ \;
 
 build-doppelganger:
-    if [ "$ZOMBIE_BITE_SKIP_BUILD" != "1" ]; then
+    echo $ZOMBIE_BITE_SKIP_BUILD
+    if [ "$ZOMBIE_BITE_SKIP_BUILD" != "1" ]; then \
         cd ${DOPPELGANGER_PATH} && \
         SKIP_WASM_BUILD=1 cargo build --release -p polkadot-doppelganger-node --bin doppelganger && \
         SKIP_WASM_BUILD=1 cargo build --release -p polkadot-parachain-bin --features doppelganger --bin doppelganger-parachain && \
         SKIP_WASM_BUILD=1 cargo build --release -p polkadot-parachain-bin --bin polkadot-parachain && \
-        SKIP_WASM_BUILD=1 cargo build --release --bin polkadot --bin polkadot-prepare-worker --bin polkadot-execute-worker
+        SKIP_WASM_BUILD=1 cargo build --release --bin polkadot --bin polkadot-prepare-worker --bin polkadot-execute-worker; \
+    else \
+        echo "skipped by env (ZOMBIE_BITE_SKIP_BUILD=1)"; \
     fi;
 
 install-zombie-bite:
