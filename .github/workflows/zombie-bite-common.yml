@@ -12,6 +12,7 @@ on:
 
 env:
   ZOMBIE_BITE_CI_PATH: "/tmp/ci"
+  ZOMBIE_BITE_SKIP_BUILD: 1
 
 jobs:
   run_zombie_bite:
@@ -25,6 +26,33 @@ jobs:
         with:
           submodules: recursive
       - uses: extractions/setup-just@v2
+
+      - name: download_polkadot_binaries
+        shell: bash
+        run: |
+          for bin in  polkadot polkadot-parachain; do
+            echo "downloading $bin";
+            curl -L -o /tmp/$bin https://github.com/paritytech/polkadot-sdk/releases/download/polkadot-stable2503-7/$bin;
+            chmod 755 /tmp/$bin;
+          done
+          ls -ltr /tmp
+
+      - name: download_doppelganger_binaries
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download -R paritytech/doppelganger-wrapper \
+          -p doppelganger -p doppelganger-parachain \
+          -p polkadot-execute-worker -p polkadot-prepare-worker
+          ls -ltr
+          mv doppelganger /tmp
+          mv doppelganger-parachain /tmp
+          mv polkadot-*-worker /tmp
+          chmod 755 /tmp/doppelganger*
+          chmod 755 /tmp/polkadot-*-worker
+          ls -ltr /tmp
+
       - name: zombie_bite
         shell: bash
         env:
@@ -41,6 +69,8 @@ jobs:
           fi
 
           apt-get update && apt-get install -y lz4 rsync
+
+          export PATH=/tmp:$PATH
 
           just create-${{ inputs.network }}-pre-migration-snapshot
 
