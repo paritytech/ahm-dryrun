@@ -87,7 +87,7 @@ class Orchestrator {
       // STEP 1: Trigger migration
       if( STEP_TO_INIT <= 1 ) {
         console.log(`\t 🧑‍🔧 Triggering migration with alice_port: ${alice_port}`);
-        await scheduleMigration(alice_port);
+        await scheduleMigration({rc_port: alice_port});
       } else {
         console.warn("⚠️  STEP 1: Trigger migration skipped\n");
       }
