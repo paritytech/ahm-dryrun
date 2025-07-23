@@ -58,6 +58,11 @@ build-polkadot *EXTRA:
     cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --release --features=metadata-hash {{ EXTRA }} -p asset-hub-polkadot-runtime -p polkadot-runtime -p collectives-polkadot-runtime
     {{ cp_cmd }} ${RUNTIMES_BUILD_ARTIFACTS_PATH}/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
 
+# Build the paseo runtimes and copy back
+build-paseo *EXTRA:
+    cd ${PASEO_PATH} && ${CARGO_CMD} build --release --features=metadata-hash {{ EXTRA }} -p asset-hub-paseo-runtime -p paseo-runtime -p collectives-paseo-runtime
+    {{ cp_cmd }} ${RUNTIMES_BUILD_ARTIFACTS_PATH}/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
+
 clean-westend:
     # cleanup is required for proper porting, as the porting procedure is not idempotent
     echo "Cleaning up any modifications to ${SDK_PATH}"
@@ -98,15 +103,26 @@ create-polkadot-pre-migration-snapshot: build-doppelganger install-zombie-bite
     just build-polkadot "--features zombie-bite-sudo"
     PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite polkadot:./runtime_wasm/polkadot_runtime.compact.compressed.wasm asset-hub:./runtime_wasm/asset_hub_polkadot_runtime.compact.compressed.wasm
 
+create-paseo-pre-migration-snapshot: build-doppelganger install-zombie-bite
+    just build-paseo "--features zombie-bite-sudo"
+    PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite paseo:./runtime_wasm/paseo_runtime.compact.compressed.wasm asset-hub:./runtime_wasm/asset_hub_paseo_runtime.compact.compressed.wasm
+
 create-westend-pre-migration-snapshot: build-westend build-doppelganger install-zombie-bite
     PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite westend:./runtime_wasm/westend_runtime.compact.compressed.wasm asset-hub:./runtime_wasm/asset_hub_westend_runtime.compact.compressed.wasm
 
-# run orchestrator for polkadot (fork live network, run migration and post migration tests)
-run-orchestrator-polkadot: submodule-init submodule-update build-doppelganger install-zombie-bite
+# run ahm for polkadot (fork live network, run migration and post migration tests)
+run-ahm-polkadot: submodule-init submodule-update build-doppelganger install-zombie-bite
     just build-polkadot "--features zombie-bite-sudo"
+    just run-ahm "polkadot:${RUNTIME_WASM}/polkadot_runtime.compact.compressed.wasm" "asset-hub:${RUNTIME_WASM}/asset_hub_polkadot_runtime.compact.compressed.wasm"
+
+run-ahm-paseo: submodule-init submodule-update build-doppelganger install-zombie-bite
+    just build-paseo "--features zombie-bite-sudo"
+    just run-ahm "paseo:${RUNTIME_WASM}/paseo_runtime.compact.compressed.wasm" "asset-hub:${RUNTIME_WASM}/asset_hub_paseo_runtime.compact.compressed.wasm"
+
+run-ahm relay_runtime asset_hub_runtime: submodule-init submodule-update build-doppelganger install-zombie-bite
     npm install
     npm run build
-    PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH npm run polkadot-migration
+    PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH npm run ahm "./migration-run" "{{relay_runtime}}" "{{asset_hub_runtime}}"
 
 report-account-migration-status:
     npm run build
