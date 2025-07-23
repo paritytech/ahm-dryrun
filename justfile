@@ -110,16 +110,16 @@ create-paseo-pre-migration-snapshot: build-doppelganger install-zombie-bite
 create-westend-pre-migration-snapshot: build-westend build-doppelganger install-zombie-bite
     PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite westend:./runtime_wasm/westend_runtime.compact.compressed.wasm asset-hub:./runtime_wasm/asset_hub_westend_runtime.compact.compressed.wasm
 
-# run orchestrator for polkadot (fork live network, run migration and post migration tests)
-run-orchestrator-polkadot: submodule-init submodule-update build-doppelganger install-zombie-bite
+# run ahm for polkadot (fork live network, run migration and post migration tests)
+run-ahm-polkadot: submodule-init submodule-update build-doppelganger install-zombie-bite
     just build-polkadot "--features zombie-bite-sudo"
-    just run-orchestrator "polkadot:${RUNTIME_WASM}/polkadot_runtime.compact.compressed.wasm" "asset-hub:${RUNTIME_WASM}/asset_hub_polkadot_runtime.compact.compressed.wasm"
+    just run-ahm "polkadot:${RUNTIME_WASM}/polkadot_runtime.compact.compressed.wasm" "asset-hub:${RUNTIME_WASM}/asset_hub_polkadot_runtime.compact.compressed.wasm"
 
-run-orchestrator-paseo: submodule-init submodule-update build-doppelganger install-zombie-bite
+run-ahm-paseo: submodule-init submodule-update build-doppelganger install-zombie-bite
     just build-paseo "--features zombie-bite-sudo"
-    just run-orchestrator "paseo:${RUNTIME_WASM}/paseo_runtime.compact.compressed.wasm" "asset-hub:${RUNTIME_WASM}/asset_hub_paseo_runtime.compact.compressed.wasm"
+    just run-ahm "paseo:${RUNTIME_WASM}/paseo_runtime.compact.compressed.wasm" "asset-hub:${RUNTIME_WASM}/asset_hub_paseo_runtime.compact.compressed.wasm"
 
-run-orchestrator relay_runtime asset_hub_runtime: submodule-init submodule-update build-doppelganger install-zombie-bite
+run-ahm relay_runtime asset_hub_runtime: submodule-init submodule-update build-doppelganger install-zombie-bite
     npm install
     npm run build
     PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH npm run ahm "./migration-run" "{{relay_runtime}}" "{{asset_hub_runtime}}"
