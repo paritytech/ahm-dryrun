@@ -242,7 +242,7 @@ async function main() {
     console.log(e);
   }
 
-  await orchestrator.run(base_path);
+  await orchestrator.run(base_path, relay_runtime_arg, asset_hub_runtime_arg);
 }
 
 main().catch(console.error);
