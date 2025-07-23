@@ -58,6 +58,11 @@ build-polkadot *EXTRA:
     cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --release --features=metadata-hash {{ EXTRA }} -p asset-hub-polkadot-runtime -p polkadot-runtime -p collectives-polkadot-runtime
     {{ cp_cmd }} ${RUNTIMES_BUILD_ARTIFACTS_PATH}/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
 
+# Build the paseo runtimes and copy back
+build-paseo *EXTRA:
+    cd ${PASEO_PATH} && ${CARGO_CMD} build --release --features=metadata-hash {{ EXTRA }} -p asset-hub-paseo-runtime -p paseo-runtime -p collectives-paseo-runtime
+    {{ cp_cmd }} ${RUNTIMES_BUILD_ARTIFACTS_PATH}/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
+
 clean-westend:
     # cleanup is required for proper porting, as the porting procedure is not idempotent
     echo "Cleaning up any modifications to ${SDK_PATH}"
@@ -103,6 +108,12 @@ create-westend-pre-migration-snapshot: build-westend build-doppelganger install-
 
 # run orchestrator for polkadot (fork live network, run migration and post migration tests)
 run-orchestrator-polkadot: submodule-init submodule-update build-doppelganger install-zombie-bite
+    just build-polkadot "--features zombie-bite-sudo"
+    npm install
+    npm run build
+    PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH npm run polkadot-migration
+
+run-orchestrator-paseo: submodule-init submodule-update build-doppelganger install-zombie-bite
     just build-polkadot "--features zombie-bite-sudo"
     npm install
     npm run build
