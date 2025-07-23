@@ -114,7 +114,7 @@ run-orchestrator-polkadot: submodule-init submodule-update build-doppelganger in
     PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH npm run polkadot-migration
 
 run-orchestrator-paseo: submodule-init submodule-update build-doppelganger install-zombie-bite
-    just build-polkadot "--features zombie-bite-sudo"
+    just build-paseo "--features zombie-bite-sudo"
     npm install
     npm run build
     PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH npm run polkadot-migration
