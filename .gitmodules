@@ -14,3 +14,6 @@
 	path = zombie-bite/polkadot-sdk-doppelganger
 	url = https://github.com/paritytech/polkadot-sdk.git
 	branch = jv-doppelganger-node
+[submodule "paseo-runtimes"]
+	path = paseo-runtimes
+	url = https://github.com/paseo-network/runtimes.git
