@@ -61,6 +61,7 @@ class Orchestrator {
         const zombieBite = spawn(
           "zombie-bite",
           [
+            // TODO: make it a parameter again
             `polkadot:${process.env.RUNTIME_WASM}/polkadot_runtime.compact.compressed.wasm`,
             `asset-hub:${process.env.RUNTIME_WASM}/asset_hub_polkadot_runtime.compact.compressed.wasm`,
           ],
