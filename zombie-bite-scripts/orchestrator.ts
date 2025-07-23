@@ -58,7 +58,6 @@ class Orchestrator {
       if ( STEP_TO_INIT <= 0 ) {
         // Start zombie-bite process
         console.log("\t 🧑‍🔧 Starting zombie-bite...");
-        console.log("\t 🧑‍🔧 Zombie bite args: ", relay_arg, asset_hub_arg);
         const zombieBite = spawn(
           "zombie-bite",
           [
