@@ -113,16 +113,16 @@ create-westend-pre-migration-snapshot: build-westend build-doppelganger install-
 # run orchestrator for polkadot (fork live network, run migration and post migration tests)
 run-orchestrator-polkadot: submodule-init submodule-update build-doppelganger install-zombie-bite
     just build-polkadot "--features zombie-bite-sudo"
-    just run-orchestrator `polkadot:${RUNTIME_WASM}/polkadot_runtime.compact.compressed.wasm` `asset-hub:${RUNTIME_WASM}/asset_hub_polkadot_runtime.compact.compressed.wasm`
+    just run-orchestrator "polkadot:${RUNTIME_WASM}/polkadot_runtime.compact.compressed.wasm" "asset-hub:${RUNTIME_WASM}/asset_hub_polkadot_runtime.compact.compressed.wasm"
 
 run-orchestrator-paseo: submodule-init submodule-update build-doppelganger install-zombie-bite
     just build-paseo "--features zombie-bite-sudo"
-    just run-orchestrator `paseo:${RUNTIME_WASM}/paseo_runtime.compact.compressed.wasm` `asset-hub:${RUNTIME_WASM}/asset_hub_paseo_runtime.compact.compressed.wasm`
+    just run-orchestrator "paseo:${RUNTIME_WASM}/paseo_runtime.compact.compressed.wasm" "asset-hub:${RUNTIME_WASM}/asset_hub_paseo_runtime.compact.compressed.wasm"
 
 run-orchestrator relay_runtime asset_hub_runtime: submodule-init submodule-update build-doppelganger install-zombie-bite
     npm install
     npm run build
-    PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH npm run polkadot-migration "{{relay_runtime}}" "{{asset_hub_runtime}}"
+    PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH npm run ahm "./migration-run" "{{relay_runtime}}" "{{asset_hub_runtime}}"
 
 report-account-migration-status:
     npm run build
