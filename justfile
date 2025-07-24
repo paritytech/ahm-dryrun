@@ -100,7 +100,7 @@ install-zombie-bite:
     cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite --locked --force
 
 create-polkadot-pre-migration-snapshot: build-doppelganger install-zombie-bite
-    just build-polkadot "--features zombie-bite-sudo"
+    just build-polkadot
     PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite polkadot:./runtime_wasm/polkadot_runtime.compact.compressed.wasm asset-hub:./runtime_wasm/asset_hub_polkadot_runtime.compact.compressed.wasm
 
 create-paseo-pre-migration-snapshot: build-doppelganger install-zombie-bite
@@ -112,7 +112,7 @@ create-westend-pre-migration-snapshot: build-westend build-doppelganger install-
 
 # run ahm for polkadot (fork live network, run migration and post migration tests)
 run-ahm-polkadot: submodule-init submodule-update build-doppelganger install-zombie-bite
-    just build-polkadot "--features zombie-bite-sudo"
+    just build-polkadot
     just run-ahm "polkadot:${RUNTIME_WASM}/polkadot_runtime.compact.compressed.wasm" "asset-hub:${RUNTIME_WASM}/asset_hub_polkadot_runtime.compact.compressed.wasm"
 
 run-ahm-paseo: submodule-init submodule-update build-doppelganger install-zombie-bite
