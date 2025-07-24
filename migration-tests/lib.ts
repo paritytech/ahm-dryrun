@@ -19,15 +19,15 @@ type Network = "Westend" | "Paseo" | "Kusama" | "Polkadot";
 
 // All available tests
 const allTests = [
-  // treasuryTests,
+  treasuryTests,
   referendaTests,
-  // assetRateTests,
-  // convictionVotingTests,
-  // indicesTests,
-  // proxyTests,
-  // voterListTests,
-  // vestingTests,
-  // bountiesTests
+  assetRateTests,
+  convictionVotingTests,
+  indicesTests,
+  proxyTests,
+  voterListTests,
+  vestingTests,
+  bountiesTests
 ];
 
 // Excludes tests from the pool of all available tests
@@ -121,7 +121,7 @@ export async function main(
   // though knowing that between 1st and 2nd migration in WAH, few users might have added few things
   // so a small mismatch might be expected.
   await runTests(context, network);
-  // await treasury_spend();
+  await treasury_spend();
 
   // Disconnect all APIs
   await Promise.all(apis.map((api) => api.disconnect()));

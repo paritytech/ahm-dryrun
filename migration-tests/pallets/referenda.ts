@@ -5,7 +5,6 @@ import type { Codec } from '@polkadot/types/types';
 import type { StorageKey, u32 } from '@polkadot/types';
 import { ApiDecoration } from '@polkadot/api/types';
 import { ReferendumInfo } from '@polkadot/types/interfaces/democracy/types.js';
-import {  } from '@polkadot/types/types'
 
 const MIGRATED_PALLETS = ['System', 'Utility', 'Treasury', 'Referenda', 'Bounties', 'ChildBounties'];
 
@@ -52,7 +51,6 @@ export const referendaTests: MigrationTest = {
         const metadata = await rc_api_before.query.referenda.metadataOf.entries();
         const referendumInfo = await rc_api_before.query.referenda.referendumInfoFor.entries();
         const { idToName: indexToPalletName } = getPalletNameIndexMaps(rc_api_before);
-        console.log('metadata before: ', indexToPalletName);
 
         return {
             rc_pre_payload: {
@@ -80,10 +78,6 @@ export const referendaTests: MigrationTest = {
             referendumInfo: rc_referendumInfo,
             indexToPalletName: rc_indexToPalletName
         } = pre_payload.rc_pre_payload;
-
-        const { nameToId: palletNameToIndex } = getPalletNameIndexMaps(ah_api_after);
-        console.log('metadata after: ', palletNameToIndex);
-
         // Verify RC storage is empty after migration
         await verifyRcStorageEmpty(rc_api_after);
 
