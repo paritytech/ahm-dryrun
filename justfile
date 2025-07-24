@@ -41,7 +41,7 @@ build-omni-node:
 
 # Update the runtimes submodule
 submodule-update:
-    git submodule update --recursive
+    git submodule update --remote --merge
     @echo '\nYou probably want to now run `just build-<runtime>` for westend, kusama or polkadot'
 
 # Initialize the submodules
@@ -112,11 +112,11 @@ create-westend-pre-migration-snapshot: build-westend build-doppelganger install-
 
 # run ahm for polkadot (fork live network, run migration and post migration tests)
 run-ahm-polkadot: submodule-init submodule-update build-doppelganger install-zombie-bite
-    just build-polkadot "--features zombie-bite-sudo"
+    just build-polkadot
     just run-ahm "polkadot:${RUNTIME_WASM}/polkadot_runtime.compact.compressed.wasm" "asset-hub:${RUNTIME_WASM}/asset_hub_polkadot_runtime.compact.compressed.wasm"
 
 run-ahm-paseo: submodule-init submodule-update build-doppelganger install-zombie-bite
-    just build-paseo "--features zombie-bite-sudo"
+    just build-paseo
     just run-ahm "paseo:${RUNTIME_WASM}/paseo_runtime.compact.compressed.wasm" "asset-hub:${RUNTIME_WASM}/asset_hub_paseo_runtime.compact.compressed.wasm"
 
 run-ahm relay_runtime asset_hub_runtime: submodule-init submodule-update build-doppelganger install-zombie-bite
