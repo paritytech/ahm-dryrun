@@ -50,7 +50,7 @@ class Orchestrator {
   private readyWatcher: any;
   private doneWatcher: any;
 
-  async run(base_path: string) {
+  async run(base_path: string, relay_arg: string, asset_hub_arg: string) {
     try {
       console.log("🧑‍🔧 Starting migration process...");
 
@@ -61,8 +61,8 @@ class Orchestrator {
         const zombieBite = spawn(
           "zombie-bite",
           [
-            `polkadot:${process.env.RUNTIME_WASM}/polkadot_runtime.compact.compressed.wasm`,
-            `asset-hub:${process.env.RUNTIME_WASM}/asset_hub_polkadot_runtime.compact.compressed.wasm`,
+            relay_arg || `polkadot:${process.env.RUNTIME_WASM}/polkadot_runtime.compact.compressed.wasm`,
+            asset_hub_arg || `asset-hub:${process.env.RUNTIME_WASM}/asset_hub_polkadot_runtime.compact.compressed.wasm`,
           ],
           {
             stdio: "inherit",
@@ -87,7 +87,7 @@ class Orchestrator {
       // STEP 1: Trigger migration
       if( STEP_TO_INIT <= 1 ) {
         console.log(`\t 🧑‍🔧 Triggering migration with alice_port: ${alice_port}`);
-        await scheduleMigration(alice_port);
+        await scheduleMigration({rc_port: alice_port});
       } else {
         console.warn("⚠️  STEP 1: Trigger migration skipped\n");
       }
@@ -228,6 +228,8 @@ async function main() {
   dotenv.config({ override: true });
   const orchestrator = new Orchestrator();
   const base_path_arg = process.argv[2];
+  const relay_runtime_arg = process.argv[3];
+  const asset_hub_runtime_arg = process.argv[4];
   const base_path_env = process.env["AHM_BASE_PATH"];
   let base_path =
     base_path_arg || base_path_env || `./migration-run-${Date.now()}`;
@@ -239,7 +241,7 @@ async function main() {
     console.log(e);
   }
 
-  await orchestrator.run(base_path);
+  await orchestrator.run(base_path, relay_runtime_arg, asset_hub_runtime_arg);
 }
 
 main().catch(console.error);

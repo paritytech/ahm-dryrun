@@ -13,7 +13,7 @@
     "authorize-upgrade": "node dist/zombie-bite-scripts/authorize_upgrade_ah.js",
     "report-account-migration-status": "node dist/zombie-bite-scripts/report_account_migration_status.js",
     "compare-state": "node dist/migration-tests/index.js",
-    "polkadot-migration": "RUST_LOG=zombie=debug node dist/zombie-bite-scripts/orchestrator.js",
+    "ahm": "RUST_LOG=zombie=debug node dist/zombie-bite-scripts/orchestrator.js",
     "prettier": "prettier --write .",
     "clean": "rm -rf dist",
     "postinstall": "papi"
