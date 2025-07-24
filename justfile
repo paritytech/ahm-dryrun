@@ -100,11 +100,11 @@ install-zombie-bite:
     cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite --locked --force
 
 create-polkadot-pre-migration-snapshot: build-doppelganger install-zombie-bite
-    just build-polkadot "--features zombie-bite-sudo"
+    just build-polkadot
     PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite polkadot:./runtime_wasm/polkadot_runtime.compact.compressed.wasm asset-hub:./runtime_wasm/asset_hub_polkadot_runtime.compact.compressed.wasm
 
 create-paseo-pre-migration-snapshot: build-doppelganger install-zombie-bite
-    just build-paseo "--features zombie-bite-sudo"
+    just build-paseo
     PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite paseo:./runtime_wasm/paseo_runtime.compact.compressed.wasm asset-hub:./runtime_wasm/asset_hub_paseo_runtime.compact.compressed.wasm
 
 create-westend-pre-migration-snapshot: build-westend build-doppelganger install-zombie-bite
