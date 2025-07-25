@@ -23,7 +23,7 @@ run:
 
 # Run the network from the pre-migration state
 run-pre:
-    POLKADOT_BLOCK_NUMBER=${POLKADOT_BLOCK_NUMBER_PRE} POLKADOT_ASSET_HUB_BLOCK_NUMBER=${POLKADOT_ASSET_HUB_BLOCK_NUMBER_PRE} POLKADOT_COLLECTIVES_BLOCK_NUMBER=${POLKADOT_COLLECTIVES_BLOCK_NUMBER_PRE} npx @acala-network/chopsticks@latest xcm -r ./configs/polkadot.yml -p ./configs/polkadot-asset-hub.yml -p ./configs/polkadot-collectives.yml
+    POLKADOT_BLOCK_NUMBER=${POLKADOT_BLOCK_NUMBER_PRE} POLKADOT_ASSET_HUB_BLOCK_NUMBER=${POLKADOT_ASSET_HUB_BLOCK_NUMBER_PRE}  npx @acala-network/chopsticks@latest xcm -r ./configs/polkadot.yml -p ./configs/polkadot-asset-hub.yml
 
 # Create a snapshot for polkadot RC and AH from local nodes
 fetch-storage:
@@ -41,7 +41,7 @@ build-omni-node:
 
 # Update the runtimes submodule
 submodule-update:
-    git submodule update --recursive
+    git submodule update --remote --merge
     @echo '\nYou probably want to now run `just build-<runtime>` for westend, kusama or polkadot'
 
 # Initialize the submodules
@@ -55,12 +55,12 @@ build-kusama:
 
 # Build the polkadot runtimes and copy back
 build-polkadot *EXTRA:
-    cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --release --features=metadata-hash {{ EXTRA }} -p asset-hub-polkadot-runtime -p polkadot-runtime -p collectives-polkadot-runtime
+    cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --release --features=metadata-hash {{ EXTRA }} -p asset-hub-polkadot-runtime -p polkadot-runtime
     {{ cp_cmd }} ${RUNTIMES_BUILD_ARTIFACTS_PATH}/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
 
 # Build the paseo runtimes and copy back
 build-paseo *EXTRA:
-    cd ${PASEO_PATH} && ${CARGO_CMD} build --release --features=metadata-hash {{ EXTRA }} -p asset-hub-paseo-runtime -p paseo-runtime -p collectives-paseo-runtime
+    cd ${PASEO_PATH} && ${CARGO_CMD} build --release --features=metadata-hash {{ EXTRA }} -p asset-hub-paseo-runtime -p paseo-runtime
     {{ cp_cmd }} ${RUNTIMES_BUILD_ARTIFACTS_PATH}/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
 
 clean-westend:
@@ -100,11 +100,11 @@ install-zombie-bite:
     cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite --locked --force
 
 create-polkadot-pre-migration-snapshot: build-doppelganger install-zombie-bite
-    just build-polkadot "--features zombie-bite-sudo"
+    just build-polkadot
     PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite polkadot:./runtime_wasm/polkadot_runtime.compact.compressed.wasm asset-hub:./runtime_wasm/asset_hub_polkadot_runtime.compact.compressed.wasm
 
 create-paseo-pre-migration-snapshot: build-doppelganger install-zombie-bite
-    just build-paseo "--features zombie-bite-sudo"
+    just build-paseo
     PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite paseo:./runtime_wasm/paseo_runtime.compact.compressed.wasm asset-hub:./runtime_wasm/asset_hub_paseo_runtime.compact.compressed.wasm
 
 create-westend-pre-migration-snapshot: build-westend build-doppelganger install-zombie-bite
@@ -112,11 +112,11 @@ create-westend-pre-migration-snapshot: build-westend build-doppelganger install-
 
 # run ahm for polkadot (fork live network, run migration and post migration tests)
 run-ahm-polkadot: submodule-init submodule-update build-doppelganger install-zombie-bite
-    just build-polkadot "--features zombie-bite-sudo"
+    just build-polkadot
     just run-ahm "polkadot:${RUNTIME_WASM}/polkadot_runtime.compact.compressed.wasm" "asset-hub:${RUNTIME_WASM}/asset_hub_polkadot_runtime.compact.compressed.wasm"
 
 run-ahm-paseo: submodule-init submodule-update build-doppelganger install-zombie-bite
-    just build-paseo "--features zombie-bite-sudo"
+    just build-paseo
     just run-ahm "paseo:${RUNTIME_WASM}/paseo_runtime.compact.compressed.wasm" "asset-hub:${RUNTIME_WASM}/asset_hub_paseo_runtime.compact.compressed.wasm"
 
 run-ahm relay_runtime asset_hub_runtime: submodule-init submodule-update build-doppelganger install-zombie-bite
