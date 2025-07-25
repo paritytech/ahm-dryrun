@@ -134,8 +134,7 @@ export async function scheduleMigration(migration_args?: scheduleMigrationArgs) 
   const cool_off_end = migration_args && migration_args.cool_off_end || { after: 2 };
 
   return new Promise(async (resolve, reject) => {
-    const unsub: any = await api.tx.sudo
-      .sudo(api.tx.rcMigrator.scheduleMigration(start, cool_off_end))
+    const unsub: any = await api.tx.rcMigrator.scheduleMigration(start, cool_off_end)
       .signAndSend(alice, { nonce: nonce, era: 0 }, (result) => {
         console.log(`Current status is ${result.status}`);
         if (result.status.isInBlock) {
