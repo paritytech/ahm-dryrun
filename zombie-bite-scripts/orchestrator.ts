@@ -66,7 +66,13 @@ class Orchestrator {
           ],
           {
             stdio: "inherit",
-            env: { ...process.env, ZOMBIE_BITE_BASE_PATH: base_path },
+            env: {
+              ...process.env,
+              ZOMBIE_BITE_BASE_PATH: base_path,
+              // map to env needed in zombie-bite (IIF are present)
+              ...(process.env.ZOMBIE_BITE_RUST_LOG && { RUST_LOG:process.env.ZOMBIE_BITE_RUST_LOG }),
+              ...(process.env.ZOMBIE_BITE_RUST_LOG_COL && { RUST_LOG_COL:process.env.ZOMBIE_BITE_RUST_LOG }),
+            },
           },
         );
 
