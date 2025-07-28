@@ -131,7 +131,7 @@ jobs:
 
             npm run polkadot-migration
           else
-            just run-orchestrator-polkadot
+            just run-ahm-polkadot
           fi
 
       - name: upload_artifacts
