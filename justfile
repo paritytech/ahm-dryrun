@@ -95,7 +95,7 @@ build-doppelganger:
         SKIP_WASM_BUILD=1 cargo build --release -p polkadot-doppelganger-node --bin doppelganger && \
         SKIP_WASM_BUILD=1 cargo build --release -p polkadot-parachain-bin --features doppelganger --bin doppelganger-parachain && \
         SKIP_WASM_BUILD=1 cargo build --release -p polkadot-parachain-bin --bin polkadot-parachain && \
-        SKIP_WASM_BUILD=1 cargo build --release --bin polkadot --bin polkadot-prepare-worker --bin polkadot-execute-worker \
+        SKIP_WASM_BUILD=1 cargo build --release --bin polkadot --bin polkadot-prepare-worker --bin polkadot-execute-worker; \
     fi
 
 install-zombie-bite:
@@ -116,7 +116,7 @@ create-westend-pre-migration-snapshot: build-westend build-doppelganger install-
 run-ahm-polkadot: build-doppelganger install-zombie-bite
     if [ "$ZOMBIE_CI" != "1" ]; then \
         just submodule-init && \
-        just submodule-update \
+        just submodule-update; \
     fi;
     just build-polkadot
     just run-ahm "polkadot:${RUNTIME_WASM}/polkadot_runtime.compact.compressed.wasm" "asset-hub:${RUNTIME_WASM}/asset_hub_polkadot_runtime.compact.compressed.wasm"
@@ -124,7 +124,7 @@ run-ahm-polkadot: build-doppelganger install-zombie-bite
 run-ahm-paseo: build-doppelganger install-zombie-bite
     if [ "$ZOMBIE_CI" != "1" ]; then \
         just submodule-init && \
-        just submodule-update \
+        just submodule-update; \
     fi;
     just build-paseo
     just run-ahm "paseo:${RUNTIME_WASM}/paseo_runtime.compact.compressed.wasm" "asset-hub:${RUNTIME_WASM}/asset_hub_paseo_runtime.compact.compressed.wasm"
