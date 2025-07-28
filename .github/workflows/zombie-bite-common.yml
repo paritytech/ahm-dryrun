@@ -12,6 +12,8 @@ on:
 
 env:
   ZOMBIE_BITE_CI_PATH: "/tmp/ci"
+  AHM_BINS: "/tmp"
+  ZOMBIE_SKIP_BUILD: 1
 
 jobs:
   run_zombie_bite:
@@ -25,12 +27,27 @@ jobs:
         with:
           submodules: recursive
       - uses: extractions/setup-just@v2
+
+      - name: download_polkadot_binaries
+        uses: ./.github/actions/download-polkadot-binaries
+        with:
+          tag-version: "polkadot-stable2503-7"
+          destination-path: ${{ env.AHM_BINS }}
+
+      - name: download_doppelganger_binaries
+        uses: ./.github/actions/download-doppelganger-binaries
+        with:
+          destination-path: ${{ env.AHM_BINS }}
+
       - name: zombie_bite
         shell: bash
         env:
           RUSTFLAGS: "-A warnings"
           SUDO: ${{ inputs.sudo-key }}
         run: |
+          # export path
+          export PATH=${AHM_BINS}:$PATH
+
           echo 'CARGO_CMD="forklift cargo"' >> .env
           mkdir -p ${ZOMBIE_BITE_CI_PATH}
 

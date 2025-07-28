@@ -1,0 +1,34 @@
+name: "Download Doppelganger bins"
+description: "Downloads 'doppelganger' bins and optionally copies files to a destination"
+
+inputs:
+  tag-version:
+    description: "Tag/version to download"
+    default: "latest"
+    required: false
+  destination-path:
+    description: "Destination path for downloaded files"
+    default: "/tmp"
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Download
+      env:
+        TAG_VERSION: ${{ inputs.tag-version }}
+        DESTINATION_PATH: ${{ inputs.destination-path }}
+
+      shell: bash
+      run: |
+        VERSION_TO_DOWNLOAD=$TAG_VERSION
+        if [ "$TAG_VERSION" == "latest" ]; then
+          VERSION_TO_DOWNLOAD=$(curl https://api.github.com/repos/paritytech/doppelganger-wrapper/releases/latest | jq -r .tag_name)
+        fi;
+        for bin in doppelganger doppelganger-parachain polkadot-execute-worker polkadot-prepare-worker
+          echo "downloading $bin";
+          curl -L -o $DESTINATION_PATH/$bin https://github.com/paritytech/doppelganger-wrapper/releases/download/$VERSION_TO_DOWNLOAD/$bin;
+          chmod 755 $DESTINATION_PATH/$bin;
+        fi;
+
+        ls $DESTINATION_PATH;

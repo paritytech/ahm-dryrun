@@ -23,6 +23,12 @@ jobs:
       network: polkadot
       sudo-key: ${{ inputs.sudo-key }}
 
+  zombie_bite_paseo:
+    uses: ./.github/workflows/zombie-bite-common.yml
+    with:
+      network: paseo
+      sudo-key: ${{ inputs.sudo-key }}
+
   # TODO (Javier): westend doesn't works with doppelganger, I will implement fork-off (in genesis) as alternative
   # zombie_bite_westend:
   #   uses: ./.github/workflows/zombie-bite-common.yml
