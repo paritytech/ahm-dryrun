@@ -13,7 +13,7 @@ on:
 env:
   ZOMBIE_BITE_CI_PATH: "/tmp/ci"
   AHM_BINS: "/tmp"
-  ZOMBIE_SKIP_BUILD: 1
+  ZOMBIE_CI: 1
 
 jobs:
   run_zombie_bite:

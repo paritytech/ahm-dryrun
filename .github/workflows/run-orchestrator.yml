@@ -16,7 +16,7 @@ permissions: {}
 env:
   AHM_BASE_PATH: "/tmp/ahm"
   AHM_BINS: "/tmp"
-  ZOMBIE_SKIP_BUILD: 1
+  ZOMBIE_CI: 1
 
 jobs:
   run_orchestrator_polkadot:

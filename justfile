@@ -90,7 +90,7 @@ build-westend:
     find "${SDK_BUILD_ARTIFACTS_PATH}/wbuild" -name '*westend*.compact.compressed.wasm' -exec {{ cp_cmd }} {} ./runtime_wasm/ \;
 
 build-doppelganger:
-    if [ "$ZOMBIE_SKIP_BUILD" != "1" ]; then \
+    if [ "$ZOMBIE_CI" != "1" ]; then \
         cd ${DOPPELGANGER_PATH} && \
         SKIP_WASM_BUILD=1 cargo build --release -p polkadot-doppelganger-node --bin doppelganger && \
         SKIP_WASM_BUILD=1 cargo build --release -p polkadot-parachain-bin --features doppelganger --bin doppelganger-parachain && \
@@ -113,11 +113,19 @@ create-westend-pre-migration-snapshot: build-westend build-doppelganger install-
     PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite westend:./runtime_wasm/westend_runtime.compact.compressed.wasm asset-hub:./runtime_wasm/asset_hub_westend_runtime.compact.compressed.wasm
 
 # run ahm for polkadot (fork live network, run migration and post migration tests)
-run-ahm-polkadot: submodule-init submodule-update build-doppelganger install-zombie-bite
+run-ahm-polkadot: build-doppelganger install-zombie-bite
+    if [ "$ZOMBIE_CI" != "1" ]; then \
+        just submodule-init && \
+        just submodule-update \
+    fi;
     just build-polkadot
     just run-ahm "polkadot:${RUNTIME_WASM}/polkadot_runtime.compact.compressed.wasm" "asset-hub:${RUNTIME_WASM}/asset_hub_polkadot_runtime.compact.compressed.wasm"
 
-run-ahm-paseo: submodule-init submodule-update build-doppelganger install-zombie-bite
+run-ahm-paseo: build-doppelganger install-zombie-bite
+    if [ "$ZOMBIE_CI" != "1" ]; then \
+        just submodule-init && \
+        just submodule-update \
+    fi;
     just build-paseo
     just run-ahm "paseo:${RUNTIME_WASM}/paseo_runtime.compact.compressed.wasm" "asset-hub:${RUNTIME_WASM}/asset_hub_paseo_runtime.compact.compressed.wasm"
 
