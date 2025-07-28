@@ -25,10 +25,10 @@ runs:
         if [ "$TAG_VERSION" == "latest" ]; then
           VERSION_TO_DOWNLOAD=$(curl https://api.github.com/repos/paritytech/doppelganger-wrapper/releases/latest | jq -r .tag_name)
         fi;
-        for bin in doppelganger doppelganger-parachain polkadot-execute-worker polkadot-prepare-worker
+        for bin in doppelganger doppelganger-parachain polkadot-execute-worker polkadot-prepare-worker; do
           echo "downloading $bin";
           curl -L -o $DESTINATION_PATH/$bin https://github.com/paritytech/doppelganger-wrapper/releases/download/$VERSION_TO_DOWNLOAD/$bin;
           chmod 755 $DESTINATION_PATH/$bin;
-        fi;
+        done;
 
         ls $DESTINATION_PATH;

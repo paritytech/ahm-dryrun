@@ -25,10 +25,10 @@ runs:
         if [ "$TAG_VERSION" == "latest" ]; then
           VERSION_TO_DOWNLOAD=$(curl https://api.github.com/repos/paritytech/polkadot-sdk/releases/latest | jq -r .tag_name)
         fi;
-        for bin in polkadot polkadot-parachain
+        for bin in polkadot polkadot-parachain; do
           echo "downloading $bin";
           curl -L -o $DESTINATION_PATH/$bin https://github.com/paritytech/polkadot-sdk/releases/download/$VERSION_TO_DOWNLOAD/$bin;
           chmod 755 $DESTINATION_PATH/$bin;
-        fi;
+        done;
 
         ls $DESTINATION_PATH;
