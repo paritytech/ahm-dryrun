@@ -6,10 +6,6 @@
 	path = polkadot-ecosystem-tests
 	url = https://github.com/open-web3-stack/polkadot-ecosystem-tests.git
 	branch = ahm-tests
-[submodule "polkadot-sdk"]
-	path = polkadot-sdk
-	url = https://github.com/paritytech/polkadot-sdk.git
-	branch = donal-ahm
 [submodule "zombie-bite/polkadot-sdk-doppelganger"]
 	path = zombie-bite/polkadot-sdk-doppelganger
 	url = https://github.com/paritytech/polkadot-sdk.git
