@@ -129,7 +129,11 @@ run-ahm-paseo: build-doppelganger install-zombie-bite
     just build-paseo
     just run-ahm "paseo:${RUNTIME_WASM}/paseo_runtime.compact.compressed.wasm" "asset-hub:${RUNTIME_WASM}/asset_hub_paseo_runtime.compact.compressed.wasm"
 
-run-ahm relay_runtime asset_hub_runtime: submodule-init submodule-update build-doppelganger install-zombie-bite
+run-ahm relay_runtime asset_hub_runtime: build-doppelganger install-zombie-bite
+    if [ "$ZOMBIE_CI" != "1" ]; then \
+        just submodule-init && \
+        just submodule-update; \
+    fi;
     npm install
     npm run build
     PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH npm run ahm "./migration-run" "{{relay_runtime}}" "{{asset_hub_runtime}}"
