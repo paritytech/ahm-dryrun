@@ -61,7 +61,7 @@ build-polkadot *EXTRA:
 # Build the paseo runtimes and copy back
 build-paseo *EXTRA:
     cd ${PASEO_PATH} && ${CARGO_CMD} build --release --features=metadata-hash {{ EXTRA }} -p asset-hub-paseo-runtime -p paseo-runtime
-    {{ cp_cmd }} ${RUNTIMES_BUILD_ARTIFACTS_PATH}/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
+    {{ cp_cmd }} ${PASEO_PATH}/target/release/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
 
 clean-westend:
     # cleanup is required for proper porting, as the porting procedure is not idempotent
