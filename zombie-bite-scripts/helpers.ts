@@ -70,6 +70,10 @@ async function mock_finish(delay_ms: number, is_mocked: boolean) {
   if(is_mocked) await delay(delay_ms);
 }
 
+function migration_done(stage: any) {
+  return JSON.stringify(stage) == '"MigrationDone"';
+}
+
 async function rc_check(uri: string) {
   return new Promise(async (resolve) => {
     console.log(`checking rc at uri: ${uri}`);
@@ -77,8 +81,7 @@ async function rc_check(uri: string) {
     const unsub = await api.query.rcMigrator.rcMigrationStage(
       async (raw: any) => {
         let stage = raw.toHuman();
-        const finished =
-          Object.keys(stage)[0] == "MigrationDone" || mock_finish_flag;
+        const finished = migration_done(stage) || mock_finish_flag;
         if (finished) {
           // Retrieve the latest header
           const lastHeader = await api.rpc.chain.getHeader();
@@ -101,8 +104,7 @@ async function ah_check(uri: string) {
     const unsub = await api.query.ahMigrator.ahMigrationStage(
       async (raw: any) => {
         let stage = raw.toHuman();
-        const finished =
-          Object.keys(stage)[0] == "MigrationDone" || mock_finish_flag;
+        const finished = migration_done(stage) || mock_finish_flag;
         if (finished) {
           // Retrieve the latest header
           const lastHeader = await api.rpc.chain.getHeader();
