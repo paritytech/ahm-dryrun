@@ -145,7 +145,7 @@ jobs:
       # if fails upload only the node logs
       - name: upload_artifacts
         uses: actions/upload-artifact@v4
-        if: ${{ steps.run_orchestrator.conclusion == 'failure' }}
+        if: ${{ steps.run_orchestrator.conclusion != 'success' }}
         with:
           name: polkadot-ahm-${{ github.sha }}
           path: |
