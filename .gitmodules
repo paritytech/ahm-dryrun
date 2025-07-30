@@ -8,4 +8,5 @@
 	branch = ahm-tests
 [submodule "paseo-runtimes"]
 	path = paseo-runtimes
-	url = https://github.com/paseo-network/runtimes.git
+	url = https://github.com/paritytech/paseo-ahm.git
+	branch = dev-ahm
