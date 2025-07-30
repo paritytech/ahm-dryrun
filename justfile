@@ -204,6 +204,7 @@ ahm runtime *id:
         migration_id="migration-run-{{ id }}"
     fi
 
+    npm run build
     PATH=$(pwd)/${DOPPELGANGER_PATH}/bin:$PATH \
         npm run ahm \
         "./$migration_id" \
