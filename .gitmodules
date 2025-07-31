@@ -7,6 +7,6 @@
 	url = https://github.com/open-web3-stack/polkadot-ecosystem-tests.git
 	branch = ahm-tests
 [submodule "paseo-ahm"]
-	path = paseo-ahm
+	path = paseo-runtimes
 	url = git@github.com:paritytech/paseo-ahm.git
 	branch = dev-ahm
