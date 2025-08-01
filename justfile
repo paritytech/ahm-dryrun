@@ -93,16 +93,7 @@ build-westend:
     cd "${SDK_PATH}" && git checkout oty-donal-ahm-builds && "${CARGO_CMD}" build --release --features=metadata-hash,fast-runtime -p asset-hub-westend-runtime -p westend-runtime
     find "${SDK_BUILD_ARTIFACTS_PATH}/wbuild" -name '*westend*.compact.compressed.wasm' -exec {{ cp_cmd }} {} ./runtime_wasm/ \;
 
-install-doppelganger:
-    SKIP_WASM_BUILD=1 cargo install --git https://github.com/paritytech/doppelganger-wrapper --bin doppelganger \
-        --bin doppelganger-parachain \
-        --bin polkadot-execute-worker \
-        --bin polkadot-prepare-worker  \
-        --locked --root ${DOPPELGANGER_PATH}
-
-install-zombie-bite:
-    cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite --locked --force
-
+# ------------------------- CREATING SNAPSHOTS -------------------------
 create-polkadot-pre-migration-snapshot: install-doppelganger install-zombie-bite
     just build-polkadot
     PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite polkadot:./runtime_wasm/polkadot_runtime.compact.compressed.wasm asset-hub:./runtime_wasm/asset_hub_polkadot_runtime.compact.compressed.wasm
@@ -113,6 +104,8 @@ create-paseo-pre-migration-snapshot: install-doppelganger install-zombie-bite
 
 create-westend-pre-migration-snapshot: build-westend install-doppelganger install-zombie-bite
     PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite westend:./runtime_wasm/westend_runtime.compact.compressed.wasm asset-hub:./runtime_wasm/asset_hub_westend_runtime.compact.compressed.wasm
+
+# ------------------------- RUNNING E2E TESTS -------------------------
 
 e2e-tests *TEST:
     cd ${PET_PATH} && yarn && yarn test {{ TEST }}
@@ -126,7 +119,19 @@ wah-e2e-tests *TEST:
     done
     just e2e-tests $tests
 
-# -------------------------------- Utilities --------------------------------
+# ------------------------- INSTALLING DEPENDENCIES -------------------------
+
+install-doppelganger:
+    SKIP_WASM_BUILD=1 cargo install --git https://github.com/paritytech/doppelganger-wrapper --bin doppelganger \
+        --bin doppelganger-parachain \
+        --bin polkadot-execute-worker \
+        --bin polkadot-prepare-worker  \
+        --locked --root ${DOPPELGANGER_PATH}
+
+install-zombie-bite:
+    cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite --locked --force
+
+# -------------------------------- Helpers --------------------------------
 # Update the runtimes submodule
 submodule-update:
     git submodule update --remote --merge
