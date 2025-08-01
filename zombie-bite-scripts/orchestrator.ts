@@ -3,6 +3,7 @@ import { spawn } from "child_process";
 import * as fs from "fs";
 import { watch } from "chokidar";
 import * as dotenv from "dotenv";
+import logger from "../shared/logger.js";
 
 import { scheduleMigration, monitMigrationFinish } from "./helpers.js";
 import { main as migrationTestMain } from "../migration-tests/lib.js";
@@ -29,20 +30,16 @@ interface EndBlocks {
   rc_finish_block: number;
 }
 
-
 // Ensure to log the uncaught exceptions
 process.on("uncaughtException", async (err) => {
-  console.log(`uncaughtException`);
-  console.log(err);
+  logger.error("uncaughtException", { error: err });
   process.exit(1000);
 });
 
 // Ensure that we know about any exception thrown in a promise that we
 // accidentally don't have a 'catch' for.
 process.on("unhandledRejection", async (err, promise) => {
-  console.log(`unhandledRejection`);
-  console.log(err);
-  console.log("promise", promise);
+  logger.error("unhandledRejection", { error: err, promise });
   process.exit(1001);
 });
 
@@ -52,12 +49,12 @@ class Orchestrator {
 
   async run(base_path: string, relay_arg: string, asset_hub_arg: string) {
     try {
-      console.log("🧑‍🔧 Starting migration process...");
+      logger.info("🧑‍🔧 Starting migration process...");
 
       // STEP 0: Sync and fork
       if ( STEP_TO_INIT <= 0 ) {
         // Start zombie-bite process
-        console.log("\t 🧑‍🔧 Starting zombie-bite...");
+        logger.info("\t ⚙️ Starting zombie-bite...");
         const zombieBite = spawn(
           "zombie-bite",
           [
@@ -77,40 +74,39 @@ class Orchestrator {
         );
 
         zombieBite.on("error", (err) => {
-          console.error("🧑‍🔧 Failed to start zombie-bite:", err);
+          logger.error("⚙️ Failed to start zombie-bite:", { error: err });
           process.exit(1);
         });
       } else {
-        console.warn("⚠️  STEP 0: zombie-bite skipped\n");
+        logger.warn("⚠️  STEP 0: zombie-bite skipped\n");
       }
 
-      console.log("\t 🧑‍🔧 Waiting for ready info from the spawned network...");
+      logger.info("\t 🧑‍🔧 Waiting for ready info from the spawned network...");
       let [start_blocks, ports] = await this.waitForReadyInfo(base_path);
-      console.log("\t\t 📩 Ready info received:", start_blocks, ports);
+      logger.info("\t\t 📩 Ready info received:", { start_blocks, ports });
       const { alice_port, collator_port } = ports;
-
 
       // STEP 1: Trigger migration
       if( STEP_TO_INIT <= 1 ) {
-        console.log(`\t 🧑‍🔧 Triggering migration with alice_port: ${alice_port}`);
+        logger.info(`\t 🧑‍🔧 Triggering migration with alice_port: ${alice_port}`);
         await scheduleMigration({rc_port: alice_port});
       } else {
-        console.warn("⚠️  STEP 1: Trigger migration skipped\n");
+        logger.warn("⚠️  STEP 1: Trigger migration skipped\n");
       }
 
       // STEP 2: Wait finish migration
-      console.log(
-        `\t 🧑‍🔧 Starting monitoring until miragtion finish with ports: ${alice_port}, ${collator_port}`,
+      logger.info(
+        `\t 🧑‍🔧 Starting monitoring until migration finish with ports: ${alice_port}, ${collator_port}`,
       );
       this.monitMigrationFinishWrapper(base_path, alice_port, collator_port);
 
-      console.log("\t 🧑‍🔧 Waiting for migration info...");
+      logger.info("\t 🧑‍🔧 Waiting for migration info...");
       let end_blocks = await this.waitForMigrationInfo(base_path);
-      console.log("\t\t 📩 Migration info received:", end_blocks);
+      logger.info("\t\t 📩 Migration info received:", { end_blocks });
 
       // STEP 3: Run migration tests
       // Mock: Run migration tests
-      console.log("🧑‍🔧 Running migration tests with ports and blocks...");
+      logger.info("🧑‍🔧 Running migration tests with ports and blocks...");
       const rc_endpoint = `ws://localhost:${alice_port}`;
       const rc_before = start_blocks.rc_start_block;
       const rc_after = end_blocks.rc_finish_block;
@@ -130,11 +126,11 @@ class Orchestrator {
 
       // TODO: wait for Alex.
       // Mock: Run PET tests
-      // console.log('🧑‍🔧  Running final PET tests...');
+      // logger.info('🧑‍🔧  Running final PET tests...');
 
-      console.log("\n✅ Migration completed successfully");
+      logger.info("\n✅ Migration completed successfully");
     } catch (error) {
-      console.error("🧑‍🔧Error in orchestrator:", error);
+      logger.error("🧑‍🔧Error in orchestrator:", { error });
       process.exit(1);
     }
   }
@@ -156,7 +152,7 @@ class Orchestrator {
         );
         ongoing = false;
       } catch (e) {
-        console.error("Error monitoring", e, "restaring...");
+        logger.error("Error monitoring", { error: e, message: "restarting..." });
       }
     }
 
@@ -244,10 +240,12 @@ async function main() {
   try {
     await fs.promises.mkdir(base_path, { recursive: true });
   } catch (e) {
-    console.log(e);
+    logger.error("Error creating base path", { error: e });
   }
 
   await orchestrator.run(base_path, relay_runtime_arg, asset_hub_runtime_arg);
 }
 
-main().catch(console.error);
+main().catch((error) => {
+  logger.error("Main function error", { error });
+});
