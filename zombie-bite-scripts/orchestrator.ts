@@ -4,7 +4,7 @@ import * as fs from "fs";
 import { watch } from "chokidar";
 import * as dotenv from "dotenv";
 
-import { scheduleMigration, monitMigrationFinish, cmd } from "./helpers.js";
+import { scheduleMigration, monitMigrationFinish } from "./helpers.js";
 import { main as migrationTestMain } from "../migration-tests/lib.js";
 
 const READY_FILE = "ready.json";
