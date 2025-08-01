@@ -1,30 +1,41 @@
-# AHM dry run scripts
+# TL;DR
 
-Scripts for dry-running the Asset Hub migration and verifying the post-migration state.
-
-Using [Chopsticks](https://github.com/AcalaNetwork/chopsticks) and [PAPI](papi.how).
-
-## Getting started
+To run AHM for Paseo using Zombie-Bite:
 ```
-git clone --recursive git@github.com:paritytech/ahm-dryrun.git && cd ahm-dryrun
-```
-
-Or, if you've already cloned and didn't use the recursive flag, you can run:
-```
-git submodule update --init
+git clone --recursive git@github.com:paritytech/ahm-dryrun.git && \
+cd ahm-dryrun && \
+just init && \
+just setup && \
+just ahm paseo || echo "Setup failed"
 ```
 
-Replacing any paths you want to customise in the env file.
+# Just commands
 
-Use the justfile to do most common actions.
+We envision interaction with ahm-dryrun mainly using a set of `just` commands. Replacing any paths you want to customise in the `.env` file.
 
-> ⚠️ These should probably be migrated to npm scripts in the package.json when the testing tooling is in place.
+You can run AHM for Polkadot using `just ahm polkadot` or substitute the runtime with a custom one by updating submodules to your branches/commits. There are many things you can do with it but you should not need anything other than these two at first. In case you want to contribute directly to the codebase, see Code Contribution section towards the end of the page.
 
-Start the network with the default options (resuming at the post-state):
-```
-just build-runtimes
-just run
-```
+## Updating submodules
+
+Make sure to run `git submodule update --recursive` after you pull from the repo to update the submodules to the commits tracked in the repo.
+
+You can run e.g. `cd runtimes && git checkout <commit_hash> && cd - && git add runtimes && git commit` to update the commit that the runtimes submodule points to.
+
+**TODO**: make a list of the most common flows that developers may want to use
+## Flows
+
+### Run zombie-bite
+
+This will override the runtime with the provided one and the output (database snapshots, chain-specs, config ) will be saved as pre - Context this is just running zombie-bite and can be spawned from ts/js or even from a `just` cmd.
+
+### Run the network from the output of pre
+
+Trigger the migration, monitoring the progress and ones completed create the same output as post - Context: this needs start the network from the previous output (with zombie-bite ), trigger the migration and monitoring the progress and ones completed created the output files. Most of this is already working in the orchestrator (except for creating the output artifacts).
+This part need some kind of process that spawn the other ones and we can reuse some parts of the current orchestrator.
+
+### Run the network from the post output
+
+On top of that network run the migration test provided. Context: This needs to spawn the network from the post state and then run the test on top. Spawning here can also be don through zombie-bite (or even from ts/js if is needed)
 
 ### E2E Tests on Westend Asset Hub
 
@@ -50,14 +61,35 @@ just e2e-tests staking nominationPools
 ...
 ```
 
-List the other available commands with `just help`.
+# Logs
 
-## Contributions
+You can find zombie-bite logs in `~/migration-run-*/sync-node/sync-node.log` or `~/migration-run-*/sync-node-para/sync-node-para.log` folders. `logs/` folder in turn 
+combine orchestrator logs with post-ahm testing logs. You can find different level of severance files there.
+
+# Components overview
+
+## Tech stack
+
+- [Chopsticks](https://github.com/AcalaNetwork/chopsticks) and PET for e2e functionality tests
+- [PAPI](papi.how) + PJS for orchstrating/controlling e2e AHM flow
+- Zombie-Bite + Doppelganger for forking off the network and making migration blocks
+
+## Orchestrator a.k.a. Controller
+
+## Zombie-bite
+
+## Migration tests
+
+## PET tests
+
+# Code Contributions
 Make any changes to the env rather than to the bare configs.
 
-DBs are provided for resuming post-migration - don't commit your db changes unless you're re-running the migration, and never commit them after tests have run.
-
-## Updating submodules
-Make sure to run `git submodule update --recursive` after you pull from the repo to update the submodules to the commits tracked in the repo.
-
-You can run e.g. `cd runtimes && git checkout <commit_hash> && cd - && git add runtimes && git commit` to update the commit that the runtimes submodule points to.
+# FAQ
+## If you've already cloned `ahm-dryrun` repo but didn't use the recursive flag
+You can run:
+```
+git submodule update --init
+```
+## Help
+List the other available commands with `just help`.
