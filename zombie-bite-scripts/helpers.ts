@@ -1,6 +1,7 @@
 import { ApiPromise, WsProvider, Keyring } from "@polkadot/api";
 import { cryptoWaitReady } from "@polkadot/util-crypto";
 import { promises as fs_promises } from "fs";
+import type { Logger } from 'winston';
 
 const rcPort = process.env.ZOMBIE_BITE_RC_PORT || 63168;
 const ahPort = process.env.ZOMBIE_BITE_AH_PORT || 63170;
@@ -29,6 +30,7 @@ async function connect(apiUrl: string, types = {}) {
   await api.isReady;
   return api;
 }
+
 async function finish(unsub: any, api: any) {
   unsub();
   api.disconnect();
@@ -42,15 +44,16 @@ export async function monitMigrationFinish(
   base_path?: string,
   rc_port?: string | number,
   ah_port?: string | number,
+  logger?: Logger,
 ) {
   const base_path_to_use = base_path || ".";
   const rc_uri = `ws://localhost:${rc_port || rcPort}`;
   const ah_uri = `ws://localhost:${ah_port || ahPort}`;
 
   let r = await Promise.all([
-    rc_check(rc_uri),
-    ah_check(ah_uri),
-    mock_finish(20 * 1000, !!process.env.ZOMBIE_BITE_AHM_MOCKED),
+    rc_check(rc_uri, logger),
+    ah_check(ah_uri, logger),
+    mock_finish(20 * 1000, !!process.env.ZOMBIE_BITE_AHM_MOCKED, logger),
   ]);
 
   const content = {
@@ -65,18 +68,21 @@ export async function monitMigrationFinish(
   return content;
 }
 
-async function mock_finish(delay_ms: number, is_mocked: boolean) {
+async function mock_finish(delay_ms: number, is_mocked: boolean, logger?: Logger) {
   mock_finish_flag = is_mocked;
-  if(is_mocked) await delay(delay_ms);
+  if(is_mocked) {
+    logger?.debug('Mock finish enabled, waiting', { delay_ms });
+    await delay(delay_ms);
+  }
 }
 
 function migration_done(stage: any) {
   return JSON.stringify(stage) == '"MigrationDone"';
 }
 
-async function rc_check(uri: string) {
+async function rc_check(uri: string, logger?: Logger) {
   return new Promise(async (resolve) => {
-    console.log(`checking rc at uri: ${uri}`);
+    logger?.info('Checking RC migration status', { uri });
     const api = await connect(uri);
     const unsub = await api.query.rcMigrator.rcMigrationStage(
       async (raw: any) => {
@@ -86,20 +92,20 @@ async function rc_check(uri: string) {
           // Retrieve the latest header
           const lastHeader = await api.rpc.chain.getHeader();
           const number = lastHeader.number;
-          console.debug(`[RC] Migration finished at block #${number}`);
+          logger?.debug('RC migration finished', { blockNumber: number.toNumber() });
           await finish(unsub, api);
           return resolve(number);
         } else {
-          console.debug(`[RC] Migration in stage ${JSON.stringify(stage)}, keep waiting`);
+          logger?.debug('RC migration in progress', { stage });
         }
       },
     );
   });
 }
 
-async function ah_check(uri: string) {
+async function ah_check(uri: string, logger?: Logger) {
   return new Promise(async (resolve) => {
-    console.log(`checking ah at uri: ${uri}`);
+    logger?.info('Checking AH migration status', { uri });
     const api = await connect(uri);
     const unsub = await api.query.ahMigrator.ahMigrationStage(
       async (raw: any) => {
@@ -109,18 +115,18 @@ async function ah_check(uri: string) {
           // Retrieve the latest header
           const lastHeader = await api.rpc.chain.getHeader();
           const number = lastHeader.number;
-          console.debug(`[AH] Migration finished at block #${number}`);
+          logger?.debug('AH migration finished', { blockNumber: number.toNumber() });
           await finish(unsub, api);
           return resolve(number);
         } else {
-          console.debug(`[AH] Migration in stage ${JSON.stringify(stage)}, keep waiting`);
+          logger?.debug('AH migration in progress', { stage });
         }
       },
     );
   });
 }
 
-export async function scheduleMigration(migration_args?: scheduleMigrationArgs) {
+export async function scheduleMigration(migration_args?: scheduleMigrationArgs, logger?: Logger) {
   const rc_uri = `ws://localhost:${migration_args && migration_args.rc_port || rcPort}`;
   await cryptoWaitReady();
 
@@ -135,28 +141,31 @@ export async function scheduleMigration(migration_args?: scheduleMigrationArgs) 
   const start = migration_args && migration_args.rc_block_start || { after: 1 };
   const cool_off_end = migration_args && migration_args.cool_off_end || { after: 2 };
 
+  logger?.info('Scheduling migration', { start, cool_off_end, nonce });
+
   return new Promise(async (resolve, reject) => {
     const unsub: any = await api.tx.rcMigrator.scheduleMigration(start, cool_off_end)
       .signAndSend(alice, { nonce: nonce, era: 0 }, (result) => {
-        console.log(`Current status is ${result.status}`);
+        logger?.info('Migration transaction status', { status: result.status.toString() });
+        
         if (result.status.isInBlock) {
-          console.log(
-            `Transaction included at blockhash ${result.status.asInBlock}`,
-          );
+          logger?.info('Transaction included in block', { 
+            blockHash: result.status.asInBlock.toString() 
+          });
           if (finalization) {
-            console.log("Waiting for finalization...");
+            logger?.info('Waiting for finalization...');
           } else {
             finish(unsub, api);
             return resolve(true);
           }
         } else if (result.status.isFinalized) {
-          console.log(
-            `Transaction finalized at blockHash ${result.status.asFinalized}`,
-          );
+          logger?.info('Transaction finalized', { 
+            blockHash: result.status.asFinalized.toString() 
+          });
           finish(unsub, api);
           return resolve(true);
         } else if (result.isError) {
-          console.log(`Transaction error: ${result.toHuman()}`);
+          logger?.error('Transaction error', { error: result.toHuman() });
           finish(unsub, api);
           return reject()
         }

@@ -2,6 +2,7 @@ import "@polkadot/api-augment";
 import "@polkadot/types-augment";
 
 import { ApiPromise, WsProvider } from "@polkadot/api";
+import logger from "../shared/logger.js";
 import { MigrationTest, TestContext } from "./types.js";
 import { vestingTests } from "./pallets/vesting.js";
 import { assetRateTests } from './pallets/asset_rate.js';
@@ -64,10 +65,9 @@ export async function runTests(context: TestContext, network: Network) {
       stage = "post-check";
       await test.post_check(context.post, pre_payload);
 
-      console.log(`✅ Test ${test.name} test completed successfully`);
+      logger.info(`✅ Test ${test.name} test completed successfully`);
     } catch (error: unknown) {
-      console.error(`❌ Test '${test.name}' failed during ${stage}:`);
-      console.error(error);
+      logger.error(`❌ Test '${test.name}' failed during ${stage}:`, { error });
     }
   }
 }
@@ -108,9 +108,10 @@ export async function main(
   //     after_block: 11736597, // wah after second migration ended
   // };
 
-  console.log("Setup configuration:");
-  console.log("rc_chain_config", relayChainConfig);
-  console.log("ah_chain_config", assetHubConfig);
+  logger.info("Setup configuration:", {
+    rc_chain_config: relayChainConfig,
+    ah_chain_config: assetHubConfig
+  });
 
   const { context, apis } = await setupTestContext(
     relayChainConfig,
