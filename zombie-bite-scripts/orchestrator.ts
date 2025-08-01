@@ -73,6 +73,7 @@ class Orchestrator {
             asset_hub_arg || `asset-hub:${process.env.RUNTIME_WASM}/asset_hub_polkadot_runtime.compact.compressed.wasm`,
           ],
           {
+            // The signal property tells the child process (zombie-bite) to listen for abort signals
             signal: abortController.signal,
             stdio: "inherit",
             env: {
