@@ -22,6 +22,7 @@ setup:
     git submodule update --remote --merge
     just install-doppelganger
     just install-zombie-bite
+    npm install
 
 # ------------------------- RUNNING AHM -------------------------
 
