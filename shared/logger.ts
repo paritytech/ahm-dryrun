@@ -1,6 +1,5 @@
 import winston from 'winston';
 
-// Define log levels
 const levels = {
   error: 0,
   warn: 1,
@@ -8,7 +7,6 @@ const levels = {
   debug: 3,
 };
 
-// Define colors for each level
 const colors = {
   error: 'red',
   warn: 'yellow',
@@ -16,10 +14,8 @@ const colors = {
   debug: 'blue',
 };
 
-// Tell winston that you want to link the colors
 winston.addColors(colors);
 
-// Create the logger
 const logger = winston.createLogger({
   levels,
   format: winston.format.combine(
@@ -50,8 +46,7 @@ const logger = winston.createLogger({
   ],
 });
 
-// If we're not in production then log to the `console` with the format:
-// `${info.level}: ${info.message} JSON.stringify({ ...rest }) `
+// in case we want to log to the console, instead of the file, just set the .env variable
 if (process.env.TS_LOG_CONSOLE ===  'true') {
   logger.add(new winston.transports.Console({
     format: winston.format.combine(
