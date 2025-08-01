@@ -4,7 +4,7 @@ import { promises as fs_promises } from "fs";
 
 const rcPort = process.env.ZOMBIE_BITE_RC_PORT || 63168;
 const ahPort = process.env.ZOMBIE_BITE_AH_PORT || 63170;
-const finalization = false;
+const finalization = true;
 let mock_finish_flag = false;
 
 interface At {
@@ -70,10 +70,6 @@ async function mock_finish(delay_ms: number, is_mocked: boolean) {
   if(is_mocked) await delay(delay_ms);
 }
 
-function migration_done(stage: any) {
-  return JSON.stringify(stage) == '"MigrationDone"';
-}
-
 async function rc_check(uri: string) {
   return new Promise(async (resolve) => {
     console.log(`checking rc at uri: ${uri}`);
@@ -81,7 +77,8 @@ async function rc_check(uri: string) {
     const unsub = await api.query.rcMigrator.rcMigrationStage(
       async (raw: any) => {
         let stage = raw.toHuman();
-        const finished = migration_done(stage) || mock_finish_flag;
+        const finished =
+          Object.keys(stage)[0] == "MigrationDone" || mock_finish_flag;
         if (finished) {
           // Retrieve the latest header
           const lastHeader = await api.rpc.chain.getHeader();
@@ -104,7 +101,8 @@ async function ah_check(uri: string) {
     const unsub = await api.query.ahMigrator.ahMigrationStage(
       async (raw: any) => {
         let stage = raw.toHuman();
-        const finished = migration_done(stage) || mock_finish_flag;
+        const finished =
+          Object.keys(stage)[0] == "MigrationDone" || mock_finish_flag;
         if (finished) {
           // Retrieve the latest header
           const lastHeader = await api.rpc.chain.getHeader();
@@ -139,6 +137,8 @@ export async function scheduleMigration(migration_args?: scheduleMigrationArgs) 
     const unsub: any = await api.tx.rcMigrator.scheduleMigration(start, cool_off_end)
       .signAndSend(alice, { nonce: nonce, era: 0 }, (result) => {
         console.log(`Current status is ${result.status}`);
+        console.log(`Current events is ${result.events.toString()}`);
+        console.log(`Current errors is ${result.dispatchError?.toString()}`);
         if (result.status.isInBlock) {
           console.log(
             `Transaction included at blockhash ${result.status.asInBlock}`,

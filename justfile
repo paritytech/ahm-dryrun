@@ -89,16 +89,6 @@ build-westend:
     cd "${SDK_PATH}" && git checkout oty-donal-ahm-builds && "${CARGO_CMD}" build --release --features=metadata-hash,fast-runtime -p asset-hub-westend-runtime -p westend-runtime
     find "${SDK_BUILD_ARTIFACTS_PATH}/wbuild" -name '*westend*.compact.compressed.wasm' -exec {{ cp_cmd }} {} ./runtime_wasm/ \;
 
-install-doppelganger:
-    SKIP_WASM_BUILD=1 cargo install --git https://github.com/paritytech/doppelganger-wrapper --bin doppelganger \
-        --bin doppelganger-parachain \
-        --bin polkadot-execute-worker \
-        --bin polkadot-prepare-worker  \
-        --locked --root ${DOPPELGANGER_PATH}
-
-install-zombie-bite:
-    cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite --locked --force
-
 create-polkadot-pre-migration-snapshot: install-doppelganger install-zombie-bite
     just build-polkadot
     PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite polkadot:./runtime_wasm/polkadot_runtime.compact.compressed.wasm asset-hub:./runtime_wasm/asset_hub_polkadot_runtime.compact.compressed.wasm
@@ -167,6 +157,21 @@ run-westend-migration-tests:
     npm run compare-state
 
 # -------------------------
+# (everything above this should not really be needed)
+
+create-pre-migration-snapshot runtime:
+    just build {{ runtime }}
+    PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite {{runtime}}:./runtime_wasm/{{runtime}}_runtime.compact.compressed.wasm asset-hub:./runtime_wasm/asset_hub_{{runtime}}_runtime.compact.compressed.wasm
+
+install-doppelganger:
+    SKIP_WASM_BUILD=1 cargo install --git https://github.com/paritytech/doppelganger-wrapper --bin doppelganger \
+        --bin doppelganger-parachain \
+        --bin polkadot-execute-worker \
+        --bin polkadot-prepare-worker  \
+        --locked --root ${DOPPELGANGER_PATH}
+
+install-zombie-bite:
+    cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite --locked --force
 
 # only to be run the first time, or when submodules changes.
 init:
@@ -204,6 +209,7 @@ ahm runtime *id:
         migration_id="migration-run-{{ id }}"
     fi
 
+    # make sure we always run the latest compiled ts file.
     npm run build
     PATH=$(pwd)/${DOPPELGANGER_PATH}/bin:$PATH \
         npm run ahm \
