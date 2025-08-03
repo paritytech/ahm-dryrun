@@ -51,6 +51,11 @@ jobs:
         run: |
           just build $NETWORK
 
+      - name: create_base_dir
+        shell: bash
+        run: |
+          mkdir $ZOMBIE_BITE_CI_PATH
+
       - name: zombie_bite_step_bite
         shell: bash
         env:
@@ -77,6 +82,10 @@ jobs:
             ${{ env.ZOMBIE_BITE_CI_PATH }}/bite
             ${{ env.ZOMBIE_BITE_CI_PATH }}/ports.json
             ${{ env.ZOMBIE_BITE_CI_PATH }}/ready.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
       - name: npm
         shell: bash
