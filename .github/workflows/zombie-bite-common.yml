@@ -57,6 +57,7 @@ jobs:
           mkdir $ZOMBIE_BITE_CI_PATH
 
       - name: zombie_bite_step_bite
+        id: zombie_bite_step_bite
         shell: bash
         env:
           NETWORK: ${{ inputs.network }}
@@ -87,6 +88,17 @@ jobs:
             ${{ env.ZOMBIE_BITE_CI_PATH }}/bite
             ${{ env.ZOMBIE_BITE_CI_PATH }}/ports.json
             ${{ env.ZOMBIE_BITE_CI_PATH }}/ready.json
+
+      - name: checkpoint_bite
+        shell: bash
+        if: ${{ steps.zombie_bite_step_bite.conclusion != 'success' }}
+        run: |
+          echo "bite step fails, cancelling"
+          echo "::group::debug"
+          ls ${{ env.ZOMBIE_BITE_CI_PATH }}/bite
+          ls ${{ env.ZOMBIE_BITE_CI_PATH }}/bite-debug
+          echo "::endgroup::"
+          exit 1
 
       - uses: actions/setup-node@v4
         with:
@@ -150,6 +162,12 @@ jobs:
             ${{ env.ZOMBIE_BITE_CI_PATH }}/spawn
             ${{ env.ZOMBIE_BITE_CI_PATH }}/migration_done.json
 
+      - name: checkpoint_spawn
+        shell: bash
+        if: ${{ steps.zombie_bite_step_spawn_and_run_migration.conclusion != 'success' }}
+        run: |
+          echo "spawn and run migration step fails, cancelling"
+          exit 1
 
       #
       # TODO: post migration setup
