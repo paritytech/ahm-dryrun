@@ -89,6 +89,7 @@ build-westend:
     cd "${SDK_PATH}" && git checkout oty-donal-ahm-builds && "${CARGO_CMD}" build --release --features=metadata-hash,fast-runtime -p asset-hub-westend-runtime -p westend-runtime
     find "${SDK_BUILD_ARTIFACTS_PATH}/wbuild" -name '*westend*.compact.compressed.wasm' -exec {{ cp_cmd }} {} ./runtime_wasm/ \;
 
+<<<<<<< HEAD
 build-doppelganger:
     if [ "$ZOMBIE_CI" != "1" ]; then \
         cd ${DOPPELGANGER_PATH} && \
@@ -97,43 +98,39 @@ build-doppelganger:
         SKIP_WASM_BUILD=1 cargo build --release -p polkadot-parachain-bin --bin polkadot-parachain && \
         SKIP_WASM_BUILD=1 cargo build --release --bin polkadot --bin polkadot-prepare-worker --bin polkadot-execute-worker; \
     fi
+=======
+install-doppelganger:
+    SKIP_WASM_BUILD=1 cargo install --git https://github.com/paritytech/doppelganger-wrapper --bin doppelganger \
+        --bin doppelganger-parachain \
+        --bin polkadot-execute-worker \
+        --bin polkadot-prepare-worker  \
+        --locked --root ${DOPPELGANGER_PATH}
+>>>>>>> main
 
 install-zombie-bite:
     cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite --locked --force
 
-create-polkadot-pre-migration-snapshot: build-doppelganger install-zombie-bite
+create-polkadot-pre-migration-snapshot: install-doppelganger install-zombie-bite
     just build-polkadot
     PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite polkadot:./runtime_wasm/polkadot_runtime.compact.compressed.wasm asset-hub:./runtime_wasm/asset_hub_polkadot_runtime.compact.compressed.wasm
 
-create-paseo-pre-migration-snapshot: build-doppelganger install-zombie-bite
+create-paseo-pre-migration-snapshot: install-doppelganger install-zombie-bite
     just build-paseo
     PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite paseo:./runtime_wasm/paseo_runtime.compact.compressed.wasm asset-hub:./runtime_wasm/asset_hub_paseo_runtime.compact.compressed.wasm
 
-create-westend-pre-migration-snapshot: build-westend build-doppelganger install-zombie-bite
+create-westend-pre-migration-snapshot: build-westend install-doppelganger install-zombie-bite
     PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite westend:./runtime_wasm/westend_runtime.compact.compressed.wasm asset-hub:./runtime_wasm/asset_hub_westend_runtime.compact.compressed.wasm
 
 # run ahm for polkadot (fork live network, run migration and post migration tests)
-run-ahm-polkadot: build-doppelganger install-zombie-bite
-    if [ "$ZOMBIE_CI" != "1" ]; then \
-        just submodule-init && \
-        just submodule-update; \
-    fi;
+run-ahm-polkadot: submodule-init submodule-update install-doppelganger install-zombie-bite
     just build-polkadot
     just run-ahm "polkadot:${RUNTIME_WASM}/polkadot_runtime.compact.compressed.wasm" "asset-hub:${RUNTIME_WASM}/asset_hub_polkadot_runtime.compact.compressed.wasm"
 
-run-ahm-paseo: build-doppelganger install-zombie-bite
-    if [ "$ZOMBIE_CI" != "1" ]; then \
-        just submodule-init && \
-        just submodule-update; \
-    fi;
+run-ahm-paseo: submodule-init submodule-update install-doppelganger install-zombie-bite
     just build-paseo
     just run-ahm "paseo:${RUNTIME_WASM}/paseo_runtime.compact.compressed.wasm" "asset-hub:${RUNTIME_WASM}/asset_hub_paseo_runtime.compact.compressed.wasm"
 
-run-ahm relay_runtime asset_hub_runtime: build-doppelganger install-zombie-bite
-    if [ "$ZOMBIE_CI" != "1" ]; then \
-        just submodule-init && \
-        just submodule-update; \
-    fi;
+run-ahm relay_runtime asset_hub_runtime: submodule-init submodule-update install-doppelganger install-zombie-bite
     npm install
     npm run build
     PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH npm run ahm "./migration-run" "{{relay_runtime}}" "{{asset_hub_runtime}}"
@@ -179,3 +176,48 @@ clean:
 run-westend-migration-tests:
     npm run build
     npm run compare-state
+
+# -------------------------
+
+# only to be run the first time, or when submodules changes.
+init:
+    git submodule update --init --recursive
+
+# only run once if any of the deps, like ZB, DG, or such are updated
+setup:
+    git submodule update --remote --merge
+    just install-doppelganger
+    just install-zombie-bite
+
+# only run once, per the runtime that you want to test.
+build runtime:
+    #!/usr/bin/env bash
+    if [ "{{ runtime }}" = "paseo" ]; then
+        cd ${PASEO_PATH} && ${CARGO_CMD} build --release -p asset-hub-paseo-runtime -p paseo-runtime && cd ..
+        {{ cp_cmd }} ${PASEO_PATH}/target/release/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
+    elif [ "{{ runtime }}" = "polkadot" ]; then
+        cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --release -p asset-hub-polkadot-runtime -p polkadot-runtime && cd ..
+        {{ cp_cmd }} ${RUNTIMES_PATH}/target/release/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
+    elif [ "{{ runtime }}" = "kusama" ]; then
+        cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --release -p asset-hub-kusama-runtime -p staging-kusama-runtime && cd ..
+        {{ cp_cmd }} ${RUNTIMES_PATH}/target/release/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
+    else
+        echo "Error: Unsupported runtime '{{ runtime }}'. Supported runtimes are: paseo, polkadot, kusama"
+        exit 1
+    fi
+
+ahm runtime *id:
+    #!/usr/bin/env bash
+    just build {{ runtime }}
+    if [ -z "{{ id }}" ]; then
+        migration_id="migration-run-$(date +%s)"
+    else
+        migration_id="migration-run-{{ id }}"
+    fi
+
+    npm run build
+    PATH=$(pwd)/${DOPPELGANGER_PATH}/bin:$PATH \
+        npm run ahm \
+        "./$migration_id" \
+        "{{runtime}}:${RUNTIME_WASM}/{{runtime}}_runtime.compact.compressed.wasm" \
+        "asset-hub:${RUNTIME_WASM}/asset_hub_{{runtime}}_runtime.compact.compressed.wasm"
