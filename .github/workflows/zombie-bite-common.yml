@@ -72,8 +72,8 @@ jobs:
           fi
 
           echo $(pwd)
-          RC_OVERRIDE="./runtime_wasm/$NETWORK_runtime.compact.compressed.wasm"
-          AH_OVERRIDE="./runtime_wasm/asset_hub_$NETWORK_runtime.compact.compressed.wasm"
+          RC_OVERRIDE="./runtime_wasm/${NETWORK}_runtime.compact.compressed.wasm"
+          AH_OVERRIDE="./runtime_wasm/asset_hub_${NETWORK}_runtime.compact.compressed.wasm"
           ls $RC_OVERRIDE
           ls $AH_OVERRIDE
           zombie-bite bite -r $NETWORK --rc-override $RC_OVERRIDE --ah-override $AH_OVERRIDE -d $ZOMBIE_BITE_CI_PATH
@@ -99,6 +99,7 @@ jobs:
           npm run build
 
       - name: zombie_bite_step_spawn_and_run_migration
+        id: zombie_bite_step_spawn_and_run_migration
         shell: bash
         env:
           NETWORK: ${{ inputs.network }}
@@ -108,9 +109,15 @@ jobs:
 
           echo "::group::zombie-bite-spawn"
           nohup zombie-bite spawn -d $ZOMBIE_BITE_CI_PATH > nohup.out 2>&1 &
-          ZOMBIE_FILE="$ZOMBIE_BITE_CI_PATH/spawn/zombie.json"
+          ZOMBIE_FILE="${ZOMBIE_BITE_CI_PATH}/spawn/zombie.json"
+          COUNT=0
           until [ -f "$ZOMBIE_FILE" ]; do
             echo "ZOMBIE_FILE: $ZOMBIE_FILE not present yet"
+            COUNT=$((COUNT +1))
+             if [[ $COUNT -gt 150 ]];then
+              echo "SPAWN_FAIL=1" >> $GITHUB_OUTPUT
+              exit 1;
+             fi;
             sleep 2
           done
           echo "'zombie.json' file present, network spawned... sleeping a few seconds"
@@ -124,14 +131,14 @@ jobs:
           sleep 60
 
           echo "::group::run-migration"
-          ALICE_PORT=$(jq -r .alice_port $ZOMBIE_BITE_CI_PATH/ports.json)
-          COL_PORT=$(jq -r .collator_port $ZOMBIE_BITE_CI_PATH/ports.json)
+          ALICE_PORT=$(jq -r .alice_port ${ZOMBIE_BITE_CI_PATH}/ports.json)
+          COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_CI_PATH}/ports.json)
 
           node dist/zombie-bite-scripts/migration_shedule_migration.js $ALICE_PORT
           node dist/zombie-bite-scripts/migration_finished_monitor.js $ZOMBIE_BITE_CI_PATH $ALICE_PORT $COL_PORT
 
           # signal stop network
-          touch $ZOMBIE_BITE_CI_PATH/stop.txt
+          touch ${ZOMBIE_BITE_CI_PATH}/stop.txt
           echo "::endgroup::"
         continue-on-error: true
 
@@ -140,8 +147,8 @@ jobs:
         with:
           name: ${{ inputs.network }}-zb-step-spawn-${{ github.sha }}
           path: |
-            $ZOMBIE_BITE_CI_PATH/spawn
-            $ZOMBIE_BITE_CI_PATH/migration_done.json
+            ${{ env.ZOMBIE_BITE_CI_PATH }}/spawn
+            ${{ env.ZOMBIE_BITE_CI_PATH }}/migration_done.json
 
 
       #
