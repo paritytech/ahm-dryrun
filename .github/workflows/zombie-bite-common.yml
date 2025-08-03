@@ -71,7 +71,12 @@ jobs:
             echo "no sudo key provided, using default '//Alice'"
           fi
 
-          zombie-bite bite -r $NETWORK --rc-override ./runtime_wasm/$NETWORK_runtime.compact.compressed.wasm --ah-override ./runtime_wasm/asset_hub_$NETWORK_runtime.compact.compressed.wasm -d $ZOMBIE_BITE_CI_PATH
+          echo $(pwd)
+          RC_OVERRIDE="./runtime_wasm/$NETWORK_runtime.compact.compressed.wasm"
+          AH_OVERRIDE="./runtime_wasm/asset_hub_$NETWORK_runtime.compact.compressed.wasm"
+          ls $RC_OVERRIDE
+          ls $AH_OVERRIDE
+          zombie-bite bite -r $NETWORK --rc-override $RC_OVERRIDE --ah-override $AH_OVERRIDE -d $ZOMBIE_BITE_CI_PATH
         continue-on-error: true
 
       - name: zombie_bite_upload_step
