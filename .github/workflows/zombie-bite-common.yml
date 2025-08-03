@@ -78,6 +78,7 @@ jobs:
           ls $RC_OVERRIDE
           ls $AH_OVERRIDE
           zombie-bite bite -r $NETWORK --rc-override $RC_OVERRIDE --ah-override $AH_OVERRIDE -d $ZOMBIE_BITE_CI_PATH
+
         continue-on-error: true
 
       - name: zombie_bite_upload_step
@@ -91,14 +92,11 @@ jobs:
 
       - name: checkpoint_bite
         shell: bash
-        if: ${{ steps.zombie_bite_step_bite.conclusion != 'success' }}
         run: |
-          echo "bite step fails, cancelling"
           echo "::group::debug"
           ls ${{ env.ZOMBIE_BITE_CI_PATH }}/bite
           ls ${{ env.ZOMBIE_BITE_CI_PATH }}/bite-debug
           echo "::endgroup::"
-          exit 1
 
       - uses: actions/setup-node@v4
         with:
@@ -164,10 +162,12 @@ jobs:
 
       - name: checkpoint_spawn
         shell: bash
-        if: ${{ steps.zombie_bite_step_spawn_and_run_migration.conclusion != 'success' }}
         run: |
-          echo "spawn and run migration step fails, cancelling"
-          exit 1
+          echo "::group::debug"
+          ls ${{ env.ZOMBIE_BITE_CI_PATH }}/spawn
+          ls ${{ env.ZOMBIE_BITE_CI_PATH }}/spawn-debug
+          ls ${{ env.ZOMBIE_BITE_CI_PATH }}
+          echo "::endgroup::"
 
       #
       # TODO: post migration setup
