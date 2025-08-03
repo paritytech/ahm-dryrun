@@ -13,7 +13,6 @@ on:
 env:
   ZOMBIE_BITE_CI_PATH: "/tmp/ci"
   AHM_BINS: "/tmp"
-  ZOMBIE_CI: 1
 
 jobs:
   run_zombie_bite:
@@ -28,28 +27,38 @@ jobs:
           submodules: recursive
       - uses: extractions/setup-just@v2
 
-      - name: download_polkadot_binaries
-        uses: ./.github/actions/download-polkadot-binaries
-        with:
-          tag-version: "polkadot-stable2503-7"
-          destination-path: ${{ env.AHM_BINS }}
+      # - name: download_polkadot_binaries
+      #   uses: ./.github/actions/download-polkadot-binaries
+      #   with:
+      #     tag-version: "polkadot-stable2503-7"
+      #     destination-path: ${{ env.AHM_BINS }}
 
       - name: download_doppelganger_binaries
         uses: ./.github/actions/download-doppelganger-binaries
         with:
           destination-path: ${{ env.AHM_BINS }}
 
-      - name: zombie_bite
+      - name: install_zombie_bite
+        shell: bash
+        run: |
+          just install-zombie-bite
+
+      - name: build_runtimes
         shell: bash
         env:
           RUSTFLAGS: "-A warnings"
+          NETWORK: ${{ inputs.network }}
+        run: |
+          just build $NETWORK
+
+      - name: zombie_bite_step_bite
+        shell: bash
+        env:
+          NETWORK: ${{ inputs.network }}
           SUDO: ${{ inputs.sudo-key }}
         run: |
           # export path
           export PATH=${AHM_BINS}:$PATH
-
-          echo 'CARGO_CMD="forklift cargo"' >> .env
-          mkdir -p ${ZOMBIE_BITE_CI_PATH}
 
           if [[ $SUDO != "" ]]; then
             export ZOMBIE_SUDO=$SUDO
@@ -57,18 +66,105 @@ jobs:
             echo "no sudo key provided, using default '//Alice'"
           fi
 
-          apt-get update && apt-get install -y lz4 rsync
+          zombie-bite bite -r $NETWORK --rc-override ./runtime_wasm/$NETWORK_runtime.compact.compressed.wasm --ah-override ./runtime_wasm/asset_hub_$NETWORK_runtime.compact.compressed.wasm -d $ZOMBIE_BITE_CI_PATH
+        continue-on-error: true
 
-          just create-${{ inputs.network }}-pre-migration-snapshot
-
-      - name: read_rc_block
-        id: read_rc_block
-        run: |
-          RC_BLOCK=$(cat $ZOMBIE_BITE_CI_PATH/rc-info.txt)
-          echo "RC_BLOCK=$RC_BLOCK" >> $GITHUB_OUTPUT
-      - name: upload_artifacts
+      - name: zombie_bite_upload_step
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.network }}-zombie-bite-rc_block_${{ steps.read_rc_block.outputs.RC_BLOCK }}-${{ github.sha }}
+          name: ${{ inputs.network }}-zb-step-bite-${{ github.sha }}
           path: |
-            ${{ env.ZOMBIE_BITE_CI_PATH }}/*
+            ${{ env.ZOMBIE_BITE_CI_PATH }}/bite
+            ${{ env.ZOMBIE_BITE_CI_PATH }}/ports.json
+            ${{ env.ZOMBIE_BITE_CI_PATH }}/ready.json
+
+      - name: npm
+        shell: bash
+        run: |
+          npm install
+          npm run build
+
+      - name: zombie_bite_step_spawn_and_run_migration
+        shell: bash
+        env:
+          NETWORK: ${{ inputs.network }}
+        run: |
+          # export path
+          export PATH=${AHM_BINS}:$PATH
+
+          echo "::group::zombie-bite-spawn"
+          nohup zombie-bite spawn -d $ZOMBIE_BITE_CI_PATH > nohup.out 2>&1 &
+          ZOMBIE_FILE="$ZOMBIE_BITE_CI_PATH/spawn/zombie.json"
+          until [ -f "$ZOMBIE_FILE" ]; do
+            echo "ZOMBIE_FILE: $ZOMBIE_FILE not present yet"
+            sleep 2
+          done
+          echo "'zombie.json' file present, network spawned... sleeping a few seconds"
+          echo "::endgroup::"
+
+          echo "::group::zombie-bite-output"
+          cat nohup.out
+          echo "::endgroup::"
+
+          echo "sleeping 1 min to bootstrap"
+          sleep 60
+
+          echo "::group::run-migration"
+          ALICE_PORT=$(jq -r .alice_port $ZOMBIE_BITE_CI_PATH/ports.json)
+          COL_PORT=$(jq -r .collator_port $ZOMBIE_BITE_CI_PATH/ports.json)
+
+          node dist/zombie-bite-scripts/migration_shedule_migration.js $ALICE_PORT
+          node dist/zombie-bite-scripts/migration_finished_monitor.js $ZOMBIE_BITE_CI_PATH $ALICE_PORT $COL_PORT
+
+          # signal stop network
+          touch $ZOMBIE_BITE_CI_PATH/stop.txt
+          echo "::endgroup::"
+        continue-on-error: true
+
+      - name: zombie_bite_upload_step
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.network }}-zb-step-spawn-${{ github.sha }}
+          path: |
+            $ZOMBIE_BITE_CI_PATH/spawn
+            $ZOMBIE_BITE_CI_PATH/migration_done.json
+
+
+      #
+      # TODO: post migration setup
+      #
+
+      # - name: run_post_test
+      #   shell: bash
+      #   env:
+      #     RUSTFLAGS: "-A warnings"
+      #   run: |
+      #     # export path
+      #     export PATH=${AHM_BINS}:$PATH
+
+      #     echo "::group::zombie-bite-spawn"
+      #     nohup zombie-bite spawn -d $ZOMBIE_BITE_CI_PATH -s post > nohup-post.out 2>&1 &
+      #     ZOMBIE_FILE="$ZOMBIE_BITE_CI_PATH/spawn/zombie.json"
+      #     until [ -f "$ZOMBIE_FILE" ]; do
+      #       echo "ZOMBIE_FILE: $ZOMBIE_FILE not present yet"
+      #       sleep 2
+      #     done
+      #     echo "'zombie.json' file present, network spawned... sleeping a few seconds"
+      #     echo "::endgroup::"
+
+      #     echo "::group::zombie-bite-output"
+      #     cat nohup-post.out
+      #     echo "::endgroup::"
+
+      #     echo "sleeping 1 min to bootstrap"
+      #     sleep 60
+
+      #     echo "::group::run-post-migration-test"
+      #     echo "::endgroup::"
+
+      # - name: zombie_bite_upload_step
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: ${{ inputs.network }}-zb-step-spawn-${{ github.sha }}
+      #     path: |
+      #       $ZOMBIE_BITE_CI_PATH/post
