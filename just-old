@@ -1,0 +1,85 @@
+# ------------------------- OLD BUILDING RUNTIMES -------------------------
+
+# Build the kusama runtimes and copy back
+build-kusama:
+    cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --release --features=on-chain-release-build -p asset-hub-kusama-runtime -p kusama-runtime
+    {{ cp_cmd }} ${RUNTIMES_BUILD_ARTIFACTS_PATH}/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
+
+# Build the polkadot runtimes and copy back
+build-polkadot *EXTRA:
+    cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --release --features=metadata-hash {{ EXTRA }} -p asset-hub-polkadot-runtime -p polkadot-runtime
+    {{ cp_cmd }} ${RUNTIMES_BUILD_ARTIFACTS_PATH}/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
+
+# Build the paseo runtimes and copy back
+build-paseo *EXTRA:
+    cd ${PASEO_PATH} && ${CARGO_CMD} build --release --features=metadata-hash {{ EXTRA }} -p asset-hub-paseo-runtime -p paseo-runtime
+    {{ cp_cmd }} ${RUNTIMES_BUILD_ARTIFACTS_PATH}/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
+
+build-westend:
+    echo "Building Westend"
+    cd "${SDK_PATH}" && git checkout oty-donal-ahm-builds && "${CARGO_CMD}" build --release --features=metadata-hash,fast-runtime -p asset-hub-westend-runtime -p westend-runtime
+    find "${SDK_BUILD_ARTIFACTS_PATH}/wbuild" -name '*westend*.compact.compressed.wasm' -exec {{ cp_cmd }} {} ./runtime_wasm/ \;
+
+# ------------------------- OLD RUNNING AHM -------------------------
+
+run-ahm-polkadot: submodule-init submodule-update install-doppelganger install-zombie-bite
+    just build-polkadot
+    just run-ahm "polkadot:${RUNTIME_WASM}/polkadot_runtime.compact.compressed.wasm" "asset-hub:${RUNTIME_WASM}/asset_hub_polkadot_runtime.compact.compressed.wasm"
+
+run-ahm-paseo: submodule-init submodule-update install-doppelganger install-zombie-bite
+    just build-paseo
+    just run-ahm "paseo:${RUNTIME_WASM}/paseo_runtime.compact.compressed.wasm" "asset-hub:${RUNTIME_WASM}/asset_hub_paseo_runtime.compact.compressed.wasm"
+
+run-ahm relay_runtime asset_hub_runtime: submodule-init submodule-update install-doppelganger install-zombie-bite
+    npm install
+    npm run build
+    PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH npm run ahm "./migration-run" "{{relay_runtime}}" "{{asset_hub_runtime}}"
+
+# -------------------------------- Helpers --------------------------------
+
+# Run a local relay and asset hub node to speed up snapshot creation
+run-chain:
+    ${SDK_BUILD_ARTIFACTS_PATH}/polkadot-omni-node --chain ${SDK_PATH}/cumulus/polkadot-parachain/chain-specs/asset-hub-polkadot.json -lruntime=info --sync "warp" --database paritydb --blocks-pruning 600 --state-pruning 600 --base-path ~/Downloads/ --no-hardware-benchmarks --rpc-max-request-size 100000000 --rpc-max-response-size 100000000 --rpc-port ${AH_NODE_RPC_PORT} \
+                                                                                                                          -- -lruntime=info --sync "warp" --database paritydb --blocks-pruning 600 --state-pruning 600 --base-path ~/Downloads/ --no-hardware-benchmarks --rpc-max-request-size 100000000 --rpc-max-response-size 100000000 --rpc-port ${RELAY_NODE_RPC_PORT}
+clean-westend:
+    # cleanup is required for proper porting, as the porting procedure is not idempotent
+    echo "Cleaning up any modifications to ${SDK_PATH}"
+    cd "${SDK_PATH}" && case "${PWD}" in \
+        {{ PROJECT_ROOT_PATH }}/polkadot-sdk) git reset --hard && git clean -fdx ;; \
+        *) echo "ERROR: SDK_PATH must be a 'polkadot-sdk' directory but got ["${PWD}"] instead" && exit 1 ;; \
+    esac
+
+init-westend:
+    echo "Initializing Westend for building"
+    if ! command -v zepter &> /dev/null; then cargo install --locked zepter; fi
+    flag="{{ PROJECT_ROOT_PATH }}/${SDK_PATH}/.initialized"; \
+    if [ ! -f "${flag}" ]; then \
+      just clean-westend && \
+      cd "${RUNTIMES_PATH}/integration-tests/ahm" && \
+        just port westend "{{ PROJECT_ROOT_PATH }}/${SDK_PATH}" "cumulus/test/ahm" && \
+          touch "${flag}"; \
+    else \
+      echo "Westend already initialized."; \
+    fi
+
+# Run the tests
+test:
+    npm test
+
+# Clean node_modules and package-lock.json
+clean:
+    rm -rf node_modules
+    rm -f package-lock.json
+
+# List the available commands
+help:
+    @just --list
+
+# Build the omni-node
+build-omni-node:
+    cd ${SDK_PATH} && cargo build --release -p polkadot-omni-node
+
+# creates a pre-migration snapshot for the given runtime
+create-pre-migration-snapshot runtime:
+    just build {{ runtime }}
+    PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite {{runtime}}:./runtime_wasm/{{runtime}}_runtime.compact.compressed.wasm asset-hub:./runtime_wasm/asset_hub_{{runtime}}_runtime.compact.compressed.wasm

@@ -75,6 +75,11 @@ wah-e2e-tests *TEST:
     done
     just e2e-tests $tests
 
+# Run the migration tests on westend
+run-westend-migration-tests:
+    npm run build
+    npm run compare-state
+
 # ------------------------- INSTALLING DEPENDENCIES -------------------------
 
 install-doppelganger:
@@ -86,60 +91,6 @@ install-doppelganger:
 
 install-zombie-bite:
     cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite --locked --force
-
-# -------------------------------- Helpers --------------------------------
-
-# Run a local relay and asset hub node to speed up snapshot creation
-run-chain:
-    ${SDK_BUILD_ARTIFACTS_PATH}/polkadot-omni-node --chain ${SDK_PATH}/cumulus/polkadot-parachain/chain-specs/asset-hub-polkadot.json -lruntime=info --sync "warp" --database paritydb --blocks-pruning 600 --state-pruning 600 --base-path ~/Downloads/ --no-hardware-benchmarks --rpc-max-request-size 100000000 --rpc-max-response-size 100000000 --rpc-port ${AH_NODE_RPC_PORT} \
-                                                                                                                          -- -lruntime=info --sync "warp" --database paritydb --blocks-pruning 600 --state-pruning 600 --base-path ~/Downloads/ --no-hardware-benchmarks --rpc-max-request-size 100000000 --rpc-max-response-size 100000000 --rpc-port ${RELAY_NODE_RPC_PORT}
-clean-westend:
-    # cleanup is required for proper porting, as the porting procedure is not idempotent
-    echo "Cleaning up any modifications to ${SDK_PATH}"
-    cd "${SDK_PATH}" && case "${PWD}" in \
-        {{ PROJECT_ROOT_PATH }}/polkadot-sdk) git reset --hard && git clean -fdx ;; \
-        *) echo "ERROR: SDK_PATH must be a 'polkadot-sdk' directory but got ["${PWD}"] instead" && exit 1 ;; \
-    esac
-
-init-westend:
-    echo "Initializing Westend for building"
-    if ! command -v zepter &> /dev/null; then cargo install --locked zepter; fi
-    flag="{{ PROJECT_ROOT_PATH }}/${SDK_PATH}/.initialized"; \
-    if [ ! -f "${flag}" ]; then \
-      just clean-westend && \
-      cd "${RUNTIMES_PATH}/integration-tests/ahm" && \
-        just port westend "{{ PROJECT_ROOT_PATH }}/${SDK_PATH}" "cumulus/test/ahm" && \
-          touch "${flag}"; \
-    else \
-      echo "Westend already initialized."; \
-    fi
-
-# Run the tests
-test:
-    npm test
-
-# List the available commands
-help:
-    @just --list
-
-# Clean node_modules and package-lock.json
-clean:
-    rm -rf node_modules
-    rm -f package-lock.json
-
-# Run the migration tests on westend
-run-westend-migration-tests:
-    npm run build
-    npm run compare-state
-
-# Build the omni-node
-build-omni-node:
-    cd ${SDK_PATH} && cargo build --release -p polkadot-omni-node
-
-# creates a pre-migration snapshot for the given runtime
-create-pre-migration-snapshot runtime:
-    just build {{ runtime }}
-    PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite {{runtime}}:./runtime_wasm/{{runtime}}_runtime.compact.compressed.wasm asset-hub:./runtime_wasm/asset_hub_{{runtime}}_runtime.compact.compressed.wasm
 
 # -------------------------------- Chopsticks --------------------------------
 # Run the network migration with Chopsticks (NOT SUPPORTED RIGHT NOW)
