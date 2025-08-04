@@ -70,7 +70,7 @@ export async function monitMigrationFinish(
 async function mock_finish(delay_ms: number, is_mocked: boolean) {
   mock_finish_flag = is_mocked;
   if(is_mocked) {
-    logger?.debug('Mock finish enabled, waiting', { delay_ms });
+    logger.debug('Mock finish enabled, waiting', { delay_ms });
     await delay(delay_ms);
   }
 }
@@ -81,7 +81,7 @@ function migration_done(stage: any) {
 
 async function rc_check(uri: string) {
   return new Promise(async (resolve) => {
-    logger?.info('Checking RC migration status', { uri });
+    logger.info('Checking RC migration status', { uri });
     const api = await connect(uri);
     const unsub = await api.query.rcMigrator.rcMigrationStage(
       async (raw: any) => {
@@ -91,11 +91,11 @@ async function rc_check(uri: string) {
           // Retrieve the latest header
           const lastHeader = await api.rpc.chain.getHeader();
           const number = lastHeader.number;
-          logger?.debug('RC migration finished', { blockNumber: number.toNumber() });
+          logger.debug('RC migration finished', { blockNumber: number.toNumber() });
           await finish(unsub, api);
           return resolve(number);
         } else {
-          logger?.debug('RC migration in progress', { stage });
+          logger.debug('RC migration in progress', { stage });
         }
       },
     );
@@ -104,7 +104,7 @@ async function rc_check(uri: string) {
 
 async function ah_check(uri: string) {
   return new Promise(async (resolve) => {
-    logger?.info('Checking AH migration status', { uri });
+    logger.info('Checking AH migration status', { uri });
     const api = await connect(uri);
     const unsub = await api.query.ahMigrator.ahMigrationStage(
       async (raw: any) => {
@@ -114,11 +114,11 @@ async function ah_check(uri: string) {
           // Retrieve the latest header
           const lastHeader = await api.rpc.chain.getHeader();
           const number = lastHeader.number;
-          logger?.debug('AH migration finished', { blockNumber: number.toNumber() });
+          logger.debug('AH migration finished', { blockNumber: number.toNumber() });
           await finish(unsub, api);
           return resolve(number);
         } else {
-          logger?.debug('AH migration in progress', { stage });
+          logger.debug('AH migration in progress', { stage });
         }
       },
     );
@@ -140,31 +140,31 @@ export async function scheduleMigration(migration_args?: scheduleMigrationArgs) 
   const start = migration_args && migration_args.rc_block_start || { after: 1 };
   const cool_off_end = migration_args && migration_args.cool_off_end || { after: 2 };
 
-  logger?.info('Scheduling migration', { start, cool_off_end, nonce });
+  logger.info('Scheduling migration', { start, cool_off_end, nonce });
 
   return new Promise(async (resolve, reject) => {
     const unsub: any = await api.tx.rcMigrator.scheduleMigration(start, cool_off_end)
       .signAndSend(alice, { nonce: nonce, era: 0 }, (result) => {
-        logger?.info('Migration transaction status', { status: result.status.toString() });
+        logger.info('Migration transaction status', { status: result.status.toString() });
         
         if (result.status.isInBlock) {
-          logger?.info('Transaction included in block', { 
+          logger.info('Transaction included in block', { 
             blockHash: result.status.asInBlock.toString() 
           });
           if (finalization) {
-            logger?.info('Waiting for finalization...');
+            logger.info('Waiting for finalization...');
           } else {
             finish(unsub, api);
             return resolve(true);
           }
         } else if (result.status.isFinalized) {
-          logger?.info('Transaction finalized', { 
+          logger.info('Transaction finalized', { 
             blockHash: result.status.asFinalized.toString() 
           });
           finish(unsub, api);
           return resolve(true);
         } else if (result.isError) {
-          logger?.error('Transaction error', { error: result.toHuman() });
+          logger.error('Transaction error', { error: result.toHuman() });
           finish(unsub, api);
           return reject()
         }
