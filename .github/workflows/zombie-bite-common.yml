@@ -11,7 +11,7 @@ on:
         type: string
 
 env:
-  ZOMBIE_BITE_CI_PATH: "/tmp/ci"
+  ZOMBIE_BITE_BASE_PATH: "/tmp/ci"
   AHM_BINS: "/tmp"
 
 jobs:
@@ -55,7 +55,7 @@ jobs:
       - name: create_base_dir
         shell: bash
         run: |
-          mkdir $ZOMBIE_BITE_CI_PATH
+          mkdir $ZOMBIE_BITE_BASE_PATH
 
       - name: zombie_bite_step_bite
         id: zombie_bite_step_bite
@@ -78,7 +78,7 @@ jobs:
           AH_OVERRIDE="./runtime_wasm/asset_hub_${NETWORK}_runtime.compact.compressed.wasm"
           ls $RC_OVERRIDE
           ls $AH_OVERRIDE
-          zombie-bite bite -r $NETWORK --rc-override $RC_OVERRIDE --ah-override $AH_OVERRIDE -d $ZOMBIE_BITE_CI_PATH
+          zombie-bite bite -r $NETWORK --rc-override $RC_OVERRIDE --ah-override $AH_OVERRIDE -d $ZOMBIE_BITE_BASE_PATH
 
         continue-on-error: true
 
@@ -87,17 +87,17 @@ jobs:
         with:
           name: ${{ inputs.network }}-zb-step-bite-${{ github.sha }}
           path: |
-            ${{ env.ZOMBIE_BITE_CI_PATH }}/bite
-            ${{ env.ZOMBIE_BITE_CI_PATH }}/ports.json
-            ${{ env.ZOMBIE_BITE_CI_PATH }}/ready.json
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/ports.json
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/ready.json
 
       - name: checkpoint_bite
         shell: bash
         run: |
           echo "::group::debug"
           ls /tmp/*
-          ls ${{ env.ZOMBIE_BITE_CI_PATH }}/bite
-          ls ${{ env.ZOMBIE_BITE_CI_PATH }}/bite-debug
+          ls ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite
+          ls ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite-debug
           echo "::endgroup::"
 
       - uses: actions/setup-node@v4
@@ -120,8 +120,8 @@ jobs:
           export PATH=${AHM_BINS}:$PATH
 
           echo "::group::zombie-bite-spawn"
-          nohup zombie-bite spawn -d $ZOMBIE_BITE_CI_PATH > nohup.out 2>&1 &
-          ZOMBIE_FILE="${ZOMBIE_BITE_CI_PATH}/spawn/zombie.json"
+          nohup zombie-bite spawn -d $ZOMBIE_BITE_BASE_PATH > nohup.out 2>&1 &
+          ZOMBIE_FILE="${ZOMBIE_BITE_BASE_PATH}/spawn/zombie.json"
           COUNT=0
           until [ -f "$ZOMBIE_FILE" ]; do
             echo "ZOMBIE_FILE: $ZOMBIE_FILE not present yet"
@@ -143,14 +143,14 @@ jobs:
           sleep 60
 
           echo "::group::run-migration"
-          ALICE_PORT=$(jq -r .alice_port ${ZOMBIE_BITE_CI_PATH}/ports.json)
-          COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_CI_PATH}/ports.json)
+          ALICE_PORT=$(jq -r .alice_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
+          COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
 
           node dist/zombie-bite-scripts/migration_shedule_migration.js $ALICE_PORT
-          node dist/zombie-bite-scripts/migration_finished_monitor.js $ZOMBIE_BITE_CI_PATH $ALICE_PORT $COL_PORT
+          node dist/zombie-bite-scripts/migration_finished_monitor.js $ZOMBIE_BITE_BASE_PATH $ALICE_PORT $COL_PORT
 
           # signal stop network
-          touch ${ZOMBIE_BITE_CI_PATH}/stop.txt
+          touch ${ZOMBIE_BITE_BASE_PATH}/stop.txt
           echo "::endgroup::"
         continue-on-error: true
 
@@ -159,16 +159,16 @@ jobs:
         with:
           name: ${{ inputs.network }}-zb-step-spawn-${{ github.sha }}
           path: |
-            ${{ env.ZOMBIE_BITE_CI_PATH }}/spawn
-            ${{ env.ZOMBIE_BITE_CI_PATH }}/migration_done.json
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/migration_done.json
 
       - name: checkpoint_spawn
         shell: bash
         run: |
           echo "::group::debug"
-          ls ${{ env.ZOMBIE_BITE_CI_PATH }}/spawn
-          ls ${{ env.ZOMBIE_BITE_CI_PATH }}/spawn-debug
-          ls ${{ env.ZOMBIE_BITE_CI_PATH }}
+          ls ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn
+          ls ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn-debug
+          ls ${{ env.ZOMBIE_BITE_BASE_PATH }}
           echo "::endgroup::"
 
       #
@@ -184,8 +184,8 @@ jobs:
       #     export PATH=${AHM_BINS}:$PATH
 
       #     echo "::group::zombie-bite-spawn"
-      #     nohup zombie-bite spawn -d $ZOMBIE_BITE_CI_PATH -s post > nohup-post.out 2>&1 &
-      #     ZOMBIE_FILE="$ZOMBIE_BITE_CI_PATH/spawn/zombie.json"
+      #     nohup zombie-bite spawn -d $ZOMBIE_BITE_BASE_PATH -s post > nohup-post.out 2>&1 &
+      #     ZOMBIE_FILE="$ZOMBIE_BITE_BASE_PATH/spawn/zombie.json"
       #     until [ -f "$ZOMBIE_FILE" ]; do
       #       echo "ZOMBIE_FILE: $ZOMBIE_FILE not present yet"
       #       sleep 2
@@ -208,4 +208,4 @@ jobs:
       #   with:
       #     name: ${{ inputs.network }}-zb-step-spawn-${{ github.sha }}
       #     path: |
-      #       $ZOMBIE_BITE_CI_PATH/post
+      #       $ZOMBIE_BITE_BASE_PATH/post
