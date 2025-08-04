@@ -97,7 +97,7 @@ install-doppelganger:
         --locked --root ${DOPPELGANGER_PATH}
 
 install-zombie-bite:
-    cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite --locked --force
+    cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite --locked --force --tag v0.1.14
 
 create-polkadot-pre-migration-snapshot: install-doppelganger install-zombie-bite
     just build-polkadot
