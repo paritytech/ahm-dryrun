@@ -11,9 +11,9 @@ just ahm paseo || echo "Setup failed"
 
 # Just commands
 
-We envision interaction with ahm-dryrun mainly using a set of `just` commands. Replacing any paths you want to customise in the `.env` file.
+We envision interaction with ahm-dryrun mainly using a set of `just` commands. You can adjust AHM dry-run to your needs using `.env` config file.
 
-You can run AHM for Polkadot using `just ahm polkadot` or substitute the runtime with a custom one by updating submodules to your branches/commits. There are many things you can do with it but you should not need anything other than these two at first. In case you want to contribute directly to the codebase, see Code Contribution section towards the end of the page.
+You can run AHM for Polkadot using `just ahm polkadot` or substitute the runtime with a custom one by updating submodules to point to your branches/commits. There are many things you can do with `just` but, at first, you should not need anything other than these two. In case you want to contribute directly to the codebase, see Code Contribution section towards the end of this page.
 
 ## Updating submodules
 
