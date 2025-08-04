@@ -12,9 +12,6 @@ const PORTS_FILE = "ports.json";
 const DONE_FILE = "migration_done.json";
 const ZOMBIE_JSON_FILE = "zombie.json";
 
-// zombie-bite logs
-const ZOMBIE_BITE_LOGS = `${__dirname}/logs/zombie-bite.log`;
-const zombie_bite_logs_fd = fs.openSync(ZOMBIE_BITE_LOGS, 'a');
 
 // STEP to init, default to 0
 const STEP_TO_INIT = parseInt(process.env["AHM_STEP"] || "0", 10) || 0;
@@ -70,10 +67,16 @@ class Orchestrator {
     try {
       console.log("🧑‍🔧 Starting migration process...");
 
+      // zombie-bite logs
+      const logs_path = `${base_path}/logs`;
+      await fs.promises.mkdir(logs_path, { recursive: true });
+      const zombie_bite_logs = `${logs_path}/zombie-bite.log`;
+      const zombie_bite_logs_fd = fs.openSync(zombie_bite_logs, 'a');
+
       // STEP 0: Sync and fork
       if ( STEP_TO_INIT <= 0 ) {
         // Start zombie-bite process
-        console.log("\t 🧑‍🔧 Starting zombie-bite...");
+        console.log(`\t 🧑‍🔧 Starting zombie-bite (📓 logs ${zombie_bite_logs})...`);
         const zombie_bite = spawn(
           "zombie-bite",
           [
