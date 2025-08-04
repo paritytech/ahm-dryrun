@@ -61,38 +61,6 @@ build runtime:
         exit 1
     fi
 
-# Build the kusama runtimes and copy back
-build-kusama:
-    cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --release --features=on-chain-release-build -p asset-hub-kusama-runtime -p kusama-runtime
-    {{ cp_cmd }} ${RUNTIMES_BUILD_ARTIFACTS_PATH}/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
-
-# Build the polkadot runtimes and copy back
-build-polkadot *EXTRA:
-    cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --release --features=metadata-hash {{ EXTRA }} -p asset-hub-polkadot-runtime -p polkadot-runtime
-    {{ cp_cmd }} ${RUNTIMES_BUILD_ARTIFACTS_PATH}/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
-
-# Build the paseo runtimes and copy back
-build-paseo *EXTRA:
-    cd ${PASEO_PATH} && ${CARGO_CMD} build --release --features=metadata-hash {{ EXTRA }} -p asset-hub-paseo-runtime -p paseo-runtime
-    {{ cp_cmd }} ${RUNTIMES_BUILD_ARTIFACTS_PATH}/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
-
-build-westend:
-    echo "Building Westend"
-    cd "${SDK_PATH}" && git checkout oty-donal-ahm-builds && "${CARGO_CMD}" build --release --features=metadata-hash,fast-runtime -p asset-hub-westend-runtime -p westend-runtime
-    find "${SDK_BUILD_ARTIFACTS_PATH}/wbuild" -name '*westend*.compact.compressed.wasm' -exec {{ cp_cmd }} {} ./runtime_wasm/ \;
-
-# ------------------------- CREATING SNAPSHOTS -------------------------
-create-polkadot-pre-migration-snapshot: install-doppelganger install-zombie-bite
-    just build-polkadot
-    PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite polkadot:./runtime_wasm/polkadot_runtime.compact.compressed.wasm asset-hub:./runtime_wasm/asset_hub_polkadot_runtime.compact.compressed.wasm
-
-create-paseo-pre-migration-snapshot: install-doppelganger install-zombie-bite
-    just build-paseo
-    PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite paseo:./runtime_wasm/paseo_runtime.compact.compressed.wasm asset-hub:./runtime_wasm/asset_hub_paseo_runtime.compact.compressed.wasm
-
-create-westend-pre-migration-snapshot: build-westend install-doppelganger install-zombie-bite
-    PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite westend:./runtime_wasm/westend_runtime.compact.compressed.wasm asset-hub:./runtime_wasm/asset_hub_westend_runtime.compact.compressed.wasm
-
 # ------------------------- RUNNING E2E TESTS -------------------------
 
 e2e-tests *TEST:
@@ -175,6 +143,11 @@ run-westend-migration-tests:
 # Build the omni-node
 build-omni-node:
     cd ${SDK_PATH} && cargo build --release -p polkadot-omni-node
+
+# creates a pre-migration snapshot for the given runtime
+create-pre-migration-snapshot runtime:
+    just build {{ runtime }}
+    PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH zombie-bite {{runtime}}:./runtime_wasm/{{runtime}}_runtime.compact.compressed.wasm asset-hub:./runtime_wasm/asset_hub_{{runtime}}_runtime.compact.compressed.wasm
 
 # -------------------------------- Chopsticks --------------------------------
 # Run the network migration with Chopsticks (NOT SUPPORTED RIGHT NOW)
