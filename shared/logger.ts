@@ -16,7 +16,7 @@ const colors = {
 
 winston.addColors(colors);
 
-const logger = winston.createLogger({
+export const logger = winston.createLogger({
   levels,
   format: winston.format.combine(
     winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
@@ -58,5 +58,3 @@ if (process.env.TS_LOG_CONSOLE ===  'true') {
     )
   }));
 }
-
-export default logger;
