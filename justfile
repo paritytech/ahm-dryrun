@@ -88,14 +88,6 @@ install-zombie-bite:
     cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite --locked --force
 
 # -------------------------------- Helpers --------------------------------
-# Update the runtimes submodule
-submodule-update:
-    git submodule update --remote --merge
-    @echo '\nYou probably want to now run `just build-<runtime>` for westend, kusama or polkadot'
-
-# Initialize the submodules
-submodule-init:
-    git submodule update --init --recursive
 
 # Run a local relay and asset hub node to speed up snapshot creation
 run-chain:
@@ -152,8 +144,8 @@ create-pre-migration-snapshot runtime:
 # -------------------------------- Chopsticks --------------------------------
 # Run the network migration with Chopsticks (NOT SUPPORTED RIGHT NOW)
 run:
-    just submodule-init
-    just submodule-update
+    just init
+    just setup
     just build-polkadot
     npm install
     npm run build
