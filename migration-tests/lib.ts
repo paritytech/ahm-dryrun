@@ -14,6 +14,7 @@ import { indicesTests } from "./pallets/indices.js";
 import { bountiesTests } from "./pallets/bounties.js";
 import { treasuryTests } from "./pallets/treasury.js";
 import { referendaTests } from "./pallets/referenda.js";
+import { multisigTests } from "./pallets/multisig.js";
 
 // when updating this, also update the testsByNetwork below
 type Network = "Westend" | "Paseo" | "Kusama" | "Polkadot";
@@ -28,7 +29,8 @@ const allTests = [
   proxyTests,
   voterListTests,
   vestingTests,
-  bountiesTests
+  bountiesTests,
+  multisigTests,
 ];
 
 // Excludes tests from the pool of all available tests
