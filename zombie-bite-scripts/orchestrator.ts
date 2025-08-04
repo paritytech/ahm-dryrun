@@ -4,12 +4,13 @@ import * as fs from "fs";
 import { watch } from "chokidar";
 import * as dotenv from "dotenv";
 
-import { scheduleMigration, monitMigrationFinish } from "./helpers.js";
+import { scheduleMigration, monitMigrationFinish, delay } from "./helpers.js";
 import { main as migrationTestMain } from "../migration-tests/lib.js";
 
 const READY_FILE = "ready.json";
 const PORTS_FILE = "ports.json";
 const DONE_FILE = "migration_done.json";
+const ZOMBIE_JSON_FILE = "zombie.json";
 
 // STEP to init, default to 0
 const STEP_TO_INIT = parseInt(process.env["AHM_STEP"] || "0", 10) || 0;
@@ -59,6 +60,7 @@ process.on('SIGINT', function() {
 class Orchestrator {
   private readyWatcher: any;
   private doneWatcher: any;
+  private zombieWatcher: any;
 
   async run(base_path: string, runtime_name: string, relay_runtime_path: string, asset_hub_runtime_path: string) {
     try {
@@ -124,6 +126,28 @@ class Orchestrator {
       let end_blocks = await this.waitForMigrationInfo(base_path);
       console.log("\t\t 📩 Migration info received:", end_blocks);
 
+      await stopZombieBite(base_path);
+
+      // need to spawn the network here
+      const zombieBitePost = spawn(
+        "zombie-bite",
+        [
+          "spawn",
+          "-d", base_path,
+          "-s", "post"
+        ],
+        {
+          // The signal property tells the child process (zombie-bite) to listen for abort signals
+          signal: abortController.signal,
+          stdio: "inherit",
+          env: {
+            ...process.env,
+          },
+        },
+      );
+
+      await this.waitForZombieJson(base_path, "post");
+
       // STEP 3: Run migration tests
       // Mock: Run migration tests
       console.log("🧑‍🔧 Running migration tests with ports and blocks...");
@@ -149,6 +173,7 @@ class Orchestrator {
       // console.log('🧑‍🔧  Running final PET tests...');
 
       console.log("\n✅ Migration completed successfully");
+      await stopZombieBite(base_path);
     } catch (error) {
       console.error("🧑‍🔧Error in orchestrator:", error);
       process.exit(1);
@@ -243,6 +268,47 @@ class Orchestrator {
       });
     });
   }
+
+  private async waitForZombieJson(base_path: string, step: string): Promise<void> {
+    let done_file = `${base_path}/${step}/${ZOMBIE_JSON_FILE}`;
+    return new Promise((resolve) => {
+      this.zombieWatcher = watch(base_path, {
+        persistent: true,
+        awaitWriteFinish: {
+          stabilityThreshold: 100,
+          pollInterval: 1000,
+        },
+      });
+
+      this.zombieWatcher.on("all", (event: string, info: string) => {
+        if (event == "add" && info.includes(DONE_FILE)) {
+          this.zombieWatcher.close();
+          return resolve();
+        }
+      });
+    });
+  }
+}
+
+async function stopZombieBite(base_path: string): Promise<void> {
+    // Signal zombie-bite to stop the network and
+    // generate the artifacts
+    let stop_file = `${base_path}/stop.txt`;
+    await fs.promises.writeFile(stop_file, "");
+
+    await delay(60 * 1000); // wait 1 minute
+
+    // ones the artifacts are done, the `stop.txt` file is removed
+    // So, let's check that with a limit of 5 mins.
+    let limit = 60 * 100 * 5;
+    while(fs.existsSync(stop_file)) {
+      const step = 5 * 1000;
+      await delay(5 * 1000);
+      limit -= step;
+      if(limit >= 0) {
+        throw new Error("Timeout waiting for spawn artifacts from zombie-bite!");
+      }
+    }
 }
 
 // Create just command
