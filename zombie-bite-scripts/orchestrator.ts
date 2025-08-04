@@ -60,7 +60,7 @@ class Orchestrator {
   private readyWatcher: any;
   private doneWatcher: any;
 
-  async run(base_path: string, relay_arg: string, asset_hub_arg: string) {
+  async run(base_path: string, runtime_name: string, relay_runtime_path: string, asset_hub_runtime_path: string) {
     try {
       console.log("🧑‍🔧 Starting migration process...");
 
@@ -71,8 +71,12 @@ class Orchestrator {
         const zombieBite = spawn(
           "zombie-bite",
           [
-            relay_arg || `polkadot:${process.env.RUNTIME_WASM}/polkadot_runtime.compact.compressed.wasm`,
-            asset_hub_arg || `asset-hub:${process.env.RUNTIME_WASM}/asset_hub_polkadot_runtime.compact.compressed.wasm`,
+            "bite",
+            "-r", runtime_name,
+            "--rc-override", relay_runtime_path,
+            "--ah-override", asset_hub_runtime_path,
+            "-d", base_path,
+            "--and-spawn"
           ],
           {
             // The signal property tells the child process (zombie-bite) to listen for abort signals
@@ -246,8 +250,9 @@ async function main() {
   dotenv.config({ override: true });
   const orchestrator = new Orchestrator();
   const base_path_arg = process.argv[2];
-  const relay_runtime_arg = process.argv[3];
-  const asset_hub_runtime_arg = process.argv[4];
+  const runtime_name = process.argv[3];  // e.g., "paseo", "polkadot", "kusama"
+  const relay_runtime_path = process.argv[4];  // e.g., "./runtime_wasm/paseo_runtime.compact.compressed.wasm"
+  const asset_hub_runtime_path = process.argv[5]; // e.g. "./runtime_wasm/asset_hub_paseo_runtime.compact.compressed.wasm"
   const base_path_env = process.env["AHM_BASE_PATH"];
   let base_path =
     base_path_arg || base_path_env || `./migration-run-${Date.now()}`;
@@ -259,7 +264,7 @@ async function main() {
     console.log(e);
   }
 
-  await orchestrator.run(base_path, relay_runtime_arg, asset_hub_runtime_arg);
+  await orchestrator.run(base_path, runtime_name, relay_runtime_path, asset_hub_runtime_path);
 }
 
 main().catch(console.error);
