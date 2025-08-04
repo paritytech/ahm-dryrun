@@ -36,7 +36,7 @@ const abortController = new AbortController();
 
 // Ensure to log the uncaught exceptions
 process.on("uncaughtException", async (err) => {
-  console.log(`Uncaught exception, aborting zombie-bite process...`);
+  logger.error(`Uncaught exception, aborting zombie-bite process...`);
   abortController.abort();
   console.log(err);
   process.exit(1000);
@@ -45,15 +45,15 @@ process.on("uncaughtException", async (err) => {
 // Ensure that we know about any exception thrown in a promise that we
 // accidentally don't have a 'catch' for.
 process.on("unhandledRejection", async (err, promise) => {
-  console.log(`Unhandled Rejection, aborting zombie-bite process...`);
+  logger.error(`Unhandled Rejection, aborting zombie-bite process...`);
   abortController.abort();
-  console.log(err);
-  console.log("promise", promise);
+  logger.error(err);
+  logger.error('promise', promise);
   process.exit(1001);
 });
 
 process.on('SIGINT', function() {
-  console.log("Caught interrupt signal, aborting zombie-bite process...");
+  logger.error('Caught interrupt signal, aborting zombie-bite process...');
   abortController.abort();
 });
 
@@ -89,7 +89,7 @@ class Orchestrator {
           },
         );
 
-        zombieBite.on("error", (err) => {
+        zombieBite.on('error', (err) => {
           logger.error('⚙️ Failed to start zombie-bite:', { error: err });
           process.exit(1);
         });
