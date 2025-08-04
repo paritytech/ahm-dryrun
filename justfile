@@ -22,7 +22,6 @@ setup:
     git submodule update --remote --merge
     just install-doppelganger
     just install-zombie-bite
-    npm install
 
 # ------------------------- RUNNING AHM -------------------------
 
@@ -35,6 +34,7 @@ ahm runtime *id:
         migration_id="migration-run-{{ id }}"
     fi
 
+    npm install
     npm run build
     PATH=$(pwd)/${DOPPELGANGER_PATH}/bin:$PATH \
         npm run ahm \
