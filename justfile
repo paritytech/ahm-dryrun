@@ -163,7 +163,3 @@ fetch-storage:
 report-account-migration-status:
     npm run build
     npm run report-account-migration-status
-
-# Install dependencies for testing
-test-prepare:
-    npm install
