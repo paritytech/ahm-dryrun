@@ -2,7 +2,7 @@ import "@polkadot/api-augment";
 import "@polkadot/types-augment";
 
 import { ApiPromise, WsProvider } from "@polkadot/api";
-import logger from "../shared/logger.js";
+import { logger } from "../shared/logger.js";
 import { MigrationTest, TestContext } from "./types.js";
 import { vestingTests } from "./pallets/vesting.js";
 import { assetRateTests } from './pallets/asset_rate.js';
@@ -108,7 +108,7 @@ export async function main(
   //     after_block: 11736597, // wah after second migration ended
   // };
 
-  logger.info("Setup configuration:", {
+  logger.info('Setup configuration:', {
     rc_chain_config: relayChainConfig,
     ah_chain_config: assetHubConfig
   });

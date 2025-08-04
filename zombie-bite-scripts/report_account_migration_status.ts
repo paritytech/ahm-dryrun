@@ -22,7 +22,7 @@ import type { AccountInfo } from "@polkadot/types/interfaces";
 import { performance } from "perf_hooks";
 import * as fs from "fs";
 import { config } from "dotenv";
-import logger from "../shared/logger.js";
+import { logger } from "../shared/logger.js";
 import {
   rc_migrator_network,
   TraitsScheduleDispatchTime,
@@ -77,7 +77,7 @@ async function scheduleMigration() {
   const sudoCall = RCApi.tx.Sudo.sudo({ call: call.decodedCall });
   const result = await sudoCall.signAndSubmit(aliceSigner);
 
-  logger.info("Migration scheduled", { result });
+  logger.info('Migration scheduled', { result });
 }
 
 async function fetchAndCacheAccounts(
@@ -91,7 +91,7 @@ async function fetchAndCacheAccounts(
   let totalElapsed = 0;
 
   const startTime = performance.now();
-  logger.info("Starting account fetching process");
+  logger.info('Starting account fetching process');
   
   while (true) {
     const pageStart = performance.now();
@@ -127,7 +127,7 @@ async function fetchAndCacheAccounts(
   }
   
   const totalTime = performance.now() - startTime;
-  logger.info("Finished fetching accounts", { 
+  logger.info('Finished fetching accounts', { 
     totalAccounts: totalFetched,
     totalTimeMs: totalTime.toFixed(2)
   });
@@ -164,9 +164,9 @@ async function monitorProgress(reversedMap: Record<string, number>) {
       continue;
     }
 
-    logger.debug("Processing last key", { lastKey });
+    logger.debug(`Processing last key: ${lastKey}`);
     const storageKey = createStorageKeyFromSS58(lastKey);
-    logger.debug("Looking for storage key", { storageKey });
+    logger.debug(`Looking for storage key: ${storageKey}`);
 
     const position = reversedMap[storageKey];
     if (position === undefined) {
@@ -221,5 +221,5 @@ function createStorageKeyFromSS58(lastKey: string): string {
 
 const run_schedule_migration = process.argv[2] && process.argv[2] == 'no-schedule' ? false : true;
 main(run_schedule_migration).catch((error) => {
-  logger.error("Main function error", { error });
+  logger.error('Main function error', { error });
 });

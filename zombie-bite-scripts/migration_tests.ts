@@ -1,5 +1,5 @@
 import fs from "fs";
-import logger from "../shared/logger.js";
+import { logger } from "../shared/logger.js";
 import { main as migrationTestMain } from "../migration-tests/lib.js";
 
 /*
@@ -86,5 +86,5 @@ const main = async () => {
 };
 
 main().catch((error) => {
-  logger.error("Migration tests error", { error });
+  logger.error('Migration tests error', { error });
 });

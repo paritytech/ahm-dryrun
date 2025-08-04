@@ -1,7 +1,7 @@
 import { ApiPromise, WsProvider, Keyring } from "@polkadot/api";
 import { cryptoWaitReady } from "@polkadot/util-crypto";
 import { promises as fs_promises } from "fs";
-import type { Logger } from 'winston';
+import { logger } from "../shared/logger.js";
 
 const rcPort = process.env.ZOMBIE_BITE_RC_PORT || 63168;
 const ahPort = process.env.ZOMBIE_BITE_AH_PORT || 63170;
@@ -44,16 +44,15 @@ export async function monitMigrationFinish(
   base_path?: string,
   rc_port?: string | number,
   ah_port?: string | number,
-  logger?: Logger,
 ) {
   const base_path_to_use = base_path || ".";
   const rc_uri = `ws://localhost:${rc_port || rcPort}`;
   const ah_uri = `ws://localhost:${ah_port || ahPort}`;
 
   let r = await Promise.all([
-    rc_check(rc_uri, logger),
-    ah_check(ah_uri, logger),
-    mock_finish(20 * 1000, !!process.env.ZOMBIE_BITE_AHM_MOCKED, logger),
+    rc_check(rc_uri),
+    ah_check(ah_uri),
+    mock_finish(20 * 1000, !!process.env.ZOMBIE_BITE_AHM_MOCKED),
   ]);
 
   const content = {
@@ -68,7 +67,7 @@ export async function monitMigrationFinish(
   return content;
 }
 
-async function mock_finish(delay_ms: number, is_mocked: boolean, logger?: Logger) {
+async function mock_finish(delay_ms: number, is_mocked: boolean) {
   mock_finish_flag = is_mocked;
   if(is_mocked) {
     logger?.debug('Mock finish enabled, waiting', { delay_ms });
@@ -80,7 +79,7 @@ function migration_done(stage: any) {
   return JSON.stringify(stage) == '"MigrationDone"';
 }
 
-async function rc_check(uri: string, logger?: Logger) {
+async function rc_check(uri: string) {
   return new Promise(async (resolve) => {
     logger?.info('Checking RC migration status', { uri });
     const api = await connect(uri);
@@ -103,7 +102,7 @@ async function rc_check(uri: string, logger?: Logger) {
   });
 }
 
-async function ah_check(uri: string, logger?: Logger) {
+async function ah_check(uri: string) {
   return new Promise(async (resolve) => {
     logger?.info('Checking AH migration status', { uri });
     const api = await connect(uri);
@@ -126,7 +125,7 @@ async function ah_check(uri: string, logger?: Logger) {
   });
 }
 
-export async function scheduleMigration(migration_args?: scheduleMigrationArgs, logger?: Logger) {
+export async function scheduleMigration(migration_args?: scheduleMigrationArgs) {
   const rc_uri = `ws://localhost:${migration_args && migration_args.rc_port || rcPort}`;
   await cryptoWaitReady();
 
