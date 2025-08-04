@@ -23,6 +23,18 @@ setup:
     just install-doppelganger
     just install-zombie-bite
 
+# ------------------------- INSTALLING DEPENDENCIES -------------------------
+
+install-doppelganger:
+    SKIP_WASM_BUILD=1 cargo install --git https://github.com/paritytech/doppelganger-wrapper --bin doppelganger \
+        --bin doppelganger-parachain \
+        --bin polkadot-execute-worker \
+        --bin polkadot-prepare-worker  \
+        --locked --root ${DOPPELGANGER_PATH}
+
+install-zombie-bite:
+    cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite --locked --force
+
 # ------------------------- RUNNING AHM -------------------------
 
 ahm runtime *id:
@@ -79,18 +91,6 @@ wah-e2e-tests *TEST:
 run-westend-migration-tests:
     npm run build
     npm run compare-state
-
-# ------------------------- INSTALLING DEPENDENCIES -------------------------
-
-install-doppelganger:
-    SKIP_WASM_BUILD=1 cargo install --git https://github.com/paritytech/doppelganger-wrapper --bin doppelganger \
-        --bin doppelganger-parachain \
-        --bin polkadot-execute-worker \
-        --bin polkadot-prepare-worker  \
-        --locked --root ${DOPPELGANGER_PATH}
-
-install-zombie-bite:
-    cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite --locked --force
 
 # -------------------------------- Chopsticks --------------------------------
 # Run the network migration with Chopsticks (NOT SUPPORTED RIGHT NOW)
