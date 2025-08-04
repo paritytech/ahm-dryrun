@@ -42,19 +42,6 @@ ahm runtime *id:
         "{{runtime}}:${RUNTIME_WASM}/{{runtime}}_runtime.compact.compressed.wasm" \
         "asset-hub:${RUNTIME_WASM}/asset_hub_{{runtime}}_runtime.compact.compressed.wasm"
 
-run-ahm-polkadot: submodule-init submodule-update install-doppelganger install-zombie-bite
-    just build-polkadot
-    just run-ahm "polkadot:${RUNTIME_WASM}/polkadot_runtime.compact.compressed.wasm" "asset-hub:${RUNTIME_WASM}/asset_hub_polkadot_runtime.compact.compressed.wasm"
-
-run-ahm-paseo: submodule-init submodule-update install-doppelganger install-zombie-bite
-    just build-paseo
-    just run-ahm "paseo:${RUNTIME_WASM}/paseo_runtime.compact.compressed.wasm" "asset-hub:${RUNTIME_WASM}/asset_hub_paseo_runtime.compact.compressed.wasm"
-
-run-ahm relay_runtime asset_hub_runtime: submodule-init submodule-update install-doppelganger install-zombie-bite
-    npm install
-    npm run build
-    PATH=$(pwd)/${DOPPELGANGER_PATH}/target/release:$PATH npm run ahm "./migration-run" "{{relay_runtime}}" "{{asset_hub_runtime}}"
-
 # ------------------------- BUILDING RUNTIMES -------------------------
 
 # only run once, per the runtime that you want to test.
