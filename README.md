@@ -13,7 +13,7 @@ just ahm paseo || echo "Setup failed"
 
 We envision interaction with ahm-dryrun mainly using a set of `just` commands. You can adjust AHM dry-run to your needs using `.env` config file.
 
-You can run AHM for Polkadot using `just ahm polkadot` or substitute the runtime with a custom one by updating submodules to point to your branches/commits. There are many things you can do with `just` but, at first, you should not need anything other than these two. In case you want to contribute directly to the codebase, see Code Contribution section towards the end of this page.
+You can run AHM for Polkadot using `just ahm polkadot` or substitute the runtime with a custom one by updating submodules to point to your branches/commits. There are many things you can do with `just` but, at first, you should not need anything other than these two. In case you want to contribute directly to the codebase, see Code Contribution section towards the end of th page.
 
 ## Updating submodules
 
@@ -26,16 +26,17 @@ You can run e.g. `cd runtimes && git checkout <commit_hash> && cd - && git add r
 
 ### Run zombie-bite
 
-This will override the runtime with the provided one and the output (database snapshots, chain-specs, config ) will be saved as pre - Context this is just running zombie-bite and can be spawned from ts/js or even from a `just` cmd.
+This will override the runtime with the provided one and the output (database snapshots, chain-specs, config ) will be saved as pre - Context; this is just running zombie-bite and can be spawned from ts/js or even from a `just` cmd.
 
 ### Run the network from the output of pre
 
-Trigger the migration, monitoring the progress and ones completed create the same output as post - Context: this needs start the network from the previous output (with zombie-bite ), trigger the migration and monitoring the progress and ones completed created the output files. Most of this is already working in the orchestrator (except for creating the output artifacts).
-This part need some kind of process that spawn the other ones and we can reuse some parts of the current orchestrator.
+Trigger the migration, monitoring the progress and ones completed create the same output as post - Context: this needs to start the network from the previous output (with zombie-bite ), trigger the migration and monitor the progress; ones completed create the output files. Most of this is already working in the orchestrator, except for creating the output artifacts.
+
+This part needs some kind of process that spawns the other ones. We can reuse some parts of the current orchestrator.
 
 ### Run the network from the post output
 
-On top of that network run the migration test provided. Context: This needs to spawn the network from the post state and then run the test on top. Spawning here can also be don through zombie-bite (or even from ts/js if is needed)
+On top of that network run the migration test provided. Context: This needs to spawn the network from the post state and then run the test on top. Spawning here can also be done through zombie-bite or even from ts/js, if needed.
 
 ### E2E Tests on Westend Asset Hub
 
