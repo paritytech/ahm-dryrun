@@ -30,17 +30,31 @@ interface EndBlocks {
   rc_finish_block: number;
 }
 
+// AbortController API docs https://nodejs.org/api/globals.html#class-abortcontroller
+// A utility class used to signal cancelation in selected Promise-based APIs.
+const abortController = new AbortController();
+
 // Ensure to log the uncaught exceptions
 process.on("uncaughtException", async (err) => {
-  logger.error('uncaughtException', { error: err });
+  console.log(`Uncaught exception, aborting zombie-bite process...`);
+  abortController.abort();
+  console.log(err);
   process.exit(1000);
 });
 
 // Ensure that we know about any exception thrown in a promise that we
 // accidentally don't have a 'catch' for.
 process.on("unhandledRejection", async (err, promise) => {
-  logger.error('unhandledRejection', { error: err, promise });
+  console.log(`Unhandled Rejection, aborting zombie-bite process...`);
+  abortController.abort();
+  console.log(err);
+  console.log("promise", promise);
   process.exit(1001);
+});
+
+process.on('SIGINT', function() {
+  console.log("Caught interrupt signal, aborting zombie-bite process...");
+  abortController.abort();
 });
 
 class Orchestrator {
@@ -62,6 +76,8 @@ class Orchestrator {
             asset_hub_arg || `asset-hub:${process.env.RUNTIME_WASM}/asset_hub_polkadot_runtime.compact.compressed.wasm`,
           ],
           {
+            // The signal property tells the child process (zombie-bite) to listen for abort signals
+            signal: abortController.signal,
             stdio: "inherit",
             env: {
               ...process.env,
