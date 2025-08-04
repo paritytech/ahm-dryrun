@@ -95,6 +95,7 @@ jobs:
         shell: bash
         run: |
           echo "::group::debug"
+          ls /tmp/*
           ls ${{ env.ZOMBIE_BITE_CI_PATH }}/bite
           ls ${{ env.ZOMBIE_BITE_CI_PATH }}/bite-debug
           echo "::endgroup::"
