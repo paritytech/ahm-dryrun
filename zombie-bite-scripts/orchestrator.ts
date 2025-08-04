@@ -12,6 +12,10 @@ const PORTS_FILE = "ports.json";
 const DONE_FILE = "migration_done.json";
 const ZOMBIE_JSON_FILE = "zombie.json";
 
+// zombie-bite logs
+const ZOMBIE_BITE_LOGS = `${__dirname}/logs/zombie-bite.log`;
+const zombie_bite_logs_fd = fs.openSync(ZOMBIE_BITE_LOGS, 'a');
+
 // STEP to init, default to 0
 const STEP_TO_INIT = parseInt(process.env["AHM_STEP"] || "0", 10) || 0;
 
@@ -70,7 +74,7 @@ class Orchestrator {
       if ( STEP_TO_INIT <= 0 ) {
         // Start zombie-bite process
         console.log("\t 🧑‍🔧 Starting zombie-bite...");
-        const zombieBite = spawn(
+        const zombie_bite = spawn(
           "zombie-bite",
           [
             "bite",
@@ -83,7 +87,11 @@ class Orchestrator {
           {
             // The signal property tells the child process (zombie-bite) to listen for abort signals
             signal: abortController.signal,
-            stdio: "inherit",
+            stdio: [
+              "inherit", // stdin
+              zombie_bite_logs_fd, // stdout
+              zombie_bite_logs_fd // stderr
+            ],
             env: {
               ...process.env,
               ZOMBIE_BITE_BASE_PATH: base_path,
@@ -94,7 +102,7 @@ class Orchestrator {
           },
         );
 
-        zombieBite.on("error", (err) => {
+        zombie_bite.on("error", (err) => {
           console.error("🧑‍🔧 Failed to start zombie-bite:", err);
           process.exit(1);
         });
@@ -129,7 +137,7 @@ class Orchestrator {
       await stopZombieBite(base_path);
 
       // need to spawn the network here
-      const zombieBitePost = spawn(
+      const zombie_bite_post = spawn(
         "zombie-bite",
         [
           "spawn",
@@ -139,12 +147,21 @@ class Orchestrator {
         {
           // The signal property tells the child process (zombie-bite) to listen for abort signals
           signal: abortController.signal,
-          stdio: "inherit",
+          stdio: [
+            "inherit", // stdin
+            zombie_bite_logs_fd, // stdout
+            zombie_bite_logs_fd // stderr
+          ],
           env: {
             ...process.env,
           },
         },
       );
+
+      zombie_bite_post.on("error", (err) => {
+        console.error("🧑‍🔧 Failed to start zombie-bite post step:", err);
+        process.exit(1);
+      });
 
       await this.waitForZombieJson(base_path, "post");
 
@@ -299,8 +316,8 @@ async function stopZombieBite(base_path: string): Promise<void> {
     await delay(60 * 1000); // wait 1 minute
 
     // ones the artifacts are done, the `stop.txt` file is removed
-    // So, let's check that with a limit of 5 mins.
-    let limit = 60 * 100 * 5;
+    // So, let's check that with a limit of 10 mins.
+    let limit = 60 * 1000 * 10;
     while(fs.existsSync(stop_file)) {
       const step = 5 * 1000;
       await delay(5 * 1000);
