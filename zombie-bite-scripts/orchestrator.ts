@@ -29,6 +29,8 @@ interface EndBlocks {
   rc_finish_block: number;
 }
 
+// AbortController API docs https://nodejs.org/api/globals.html#class-abortcontroller
+// A utility class used to signal cancelation in selected Promise-based APIs.
 const abortController = new AbortController();
 
 // Ensure to log the uncaught exceptions
