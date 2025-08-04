@@ -250,8 +250,8 @@ async function main() {
   dotenv.config({ override: true });
   const orchestrator = new Orchestrator();
   const base_path_arg = process.argv[2];
-  const runtime_name = process.argv[3];  // e.g., "paseo", "polkadot", "kusama"
-  const relay_runtime_path = process.argv[4];  // e.g., "./runtime_wasm/paseo_runtime.compact.compressed.wasm"
+  const runtime_name = process.argv[3];  // e.g. "paseo", "polkadot", "kusama"
+  const relay_runtime_path = process.argv[4];  // e.g. "./runtime_wasm/paseo_runtime.compact.compressed.wasm"
   const asset_hub_runtime_path = process.argv[5]; // e.g. "./runtime_wasm/asset_hub_paseo_runtime.compact.compressed.wasm"
   const base_path_env = process.env["AHM_BASE_PATH"];
   let base_path =
