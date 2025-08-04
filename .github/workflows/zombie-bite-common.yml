@@ -16,7 +16,7 @@ env:
 
 jobs:
   run_zombie_bite:
-    runs-on: parity-large
+    runs-on: parity-large-persistent
     container:
       image: docker.io/paritytech/ci-unified:bullseye-1.88.0-2025-06-27-v202507221446
     timeout-minutes: 720
@@ -26,12 +26,6 @@ jobs:
         with:
           submodules: recursive
       - uses: extractions/setup-just@v2
-
-      # - name: download_polkadot_binaries
-      #   uses: ./.github/actions/download-polkadot-binaries
-      #   with:
-      #     tag-version: "polkadot-stable2503-7"
-      #     destination-path: ${{ env.AHM_BINS }}
 
       - name: download_doppelganger_binaries
         uses: ./.github/actions/download-doppelganger-binaries
