@@ -143,8 +143,28 @@ jobs:
           node dist/zombie-bite-scripts/migration_shedule_migration.js $ALICE_PORT
           node dist/zombie-bite-scripts/migration_finished_monitor.js $ZOMBIE_BITE_BASE_PATH $ALICE_PORT $COL_PORT
 
+          echo "::endgroup::"
+
+          echo "::group::zombie-bite-stop"
+          STOP_FILE="${ZOMBIE_BITE_BASE_PATH}/stop.txt"
+          echo "creating file ${STOP_FILE}"
+
           # signal stop network
-          touch ${ZOMBIE_BITE_BASE_PATH}/stop.txt
+          touch ${STOP_FILE}
+
+          # wait until finishing packaging by checking the stop.txt existence
+          COUNT=0
+          until [ ! -f "$STOP_FILE" ]; do
+            echo "STOP_FILE: $STOP_FILE still present"
+            COUNT=$((COUNT +1))
+             if [[ $COUNT -gt 600 ]];then
+              echo "STOP_FAIL=1" >> $GITHUB_OUTPUT
+              exit 1;
+             fi;
+            sleep 2
+          done
+          echo "'stop.txt' file not present, teardown network completed..."
+
           echo "::endgroup::"
         continue-on-error: true
 
