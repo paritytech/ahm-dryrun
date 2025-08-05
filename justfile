@@ -51,8 +51,9 @@ ahm runtime *id:
     PATH=$(pwd)/${DOPPELGANGER_PATH}/bin:$PATH \
         npm run ahm \
         "./$migration_id" \
-        "{{runtime}}:${RUNTIME_WASM}/{{runtime}}_runtime.compact.compressed.wasm" \
-        "asset-hub:${RUNTIME_WASM}/asset_hub_{{runtime}}_runtime.compact.compressed.wasm"
+        "{{runtime}}" \
+        "${RUNTIME_WASM}/{{runtime}}_runtime.compact.compressed.wasm" \
+        "${RUNTIME_WASM}/asset_hub_{{runtime}}_runtime.compact.compressed.wasm"
 
 # ------------------------- BUILDING RUNTIMES -------------------------
 

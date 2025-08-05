@@ -4,12 +4,14 @@ import * as fs from "fs";
 import { watch } from "chokidar";
 import * as dotenv from "dotenv";
 
-import { scheduleMigration, monitMigrationFinish } from "./helpers.js";
+import { scheduleMigration, monitMigrationFinish, delay } from "./helpers.js";
 import { main as migrationTestMain } from "../migration-tests/lib.js";
 
 const READY_FILE = "ready.json";
 const PORTS_FILE = "ports.json";
 const DONE_FILE = "migration_done.json";
+const ZOMBIE_JSON_FILE = "zombie.json";
+
 
 // STEP to init, default to 0
 const STEP_TO_INIT = parseInt(process.env["AHM_STEP"] || "0", 10) || 0;
@@ -59,25 +61,40 @@ process.on('SIGINT', function() {
 class Orchestrator {
   private readyWatcher: any;
   private doneWatcher: any;
+  private zombieWatcher: any;
 
-  async run(base_path: string, relay_arg: string, asset_hub_arg: string) {
+  async run(base_path: string, runtime_name: string, relay_runtime_path: string, asset_hub_runtime_path: string) {
     try {
       console.log("🧑‍🔧 Starting migration process...");
+
+      // zombie-bite logs
+      const logs_path = `${base_path}/logs`;
+      await fs.promises.mkdir(logs_path, { recursive: true });
+      const zombie_bite_logs = `${logs_path}/zombie-bite.log`;
+      const zombie_bite_logs_fd = fs.openSync(zombie_bite_logs, 'a');
 
       // STEP 0: Sync and fork
       if ( STEP_TO_INIT <= 0 ) {
         // Start zombie-bite process
-        console.log("\t 🧑‍🔧 Starting zombie-bite...");
-        const zombieBite = spawn(
+        console.log(`\t 🧑‍🔧 Starting zombie-bite (📓 logs ${zombie_bite_logs})...`);
+        const zombie_bite = spawn(
           "zombie-bite",
           [
-            relay_arg || `polkadot:${process.env.RUNTIME_WASM}/polkadot_runtime.compact.compressed.wasm`,
-            asset_hub_arg || `asset-hub:${process.env.RUNTIME_WASM}/asset_hub_polkadot_runtime.compact.compressed.wasm`,
+            "bite",
+            "-r", runtime_name,
+            "--rc-override", relay_runtime_path,
+            "--ah-override", asset_hub_runtime_path,
+            "-d", base_path,
+            "--and-spawn"
           ],
           {
             // The signal property tells the child process (zombie-bite) to listen for abort signals
             signal: abortController.signal,
-            stdio: "inherit",
+            stdio: [
+              "inherit", // stdin
+              zombie_bite_logs_fd, // stdout
+              zombie_bite_logs_fd // stderr
+            ],
             env: {
               ...process.env,
               ZOMBIE_BITE_BASE_PATH: base_path,
@@ -88,7 +105,7 @@ class Orchestrator {
           },
         );
 
-        zombieBite.on("error", (err) => {
+        zombie_bite.on("error", (err) => {
           console.error("🧑‍🔧 Failed to start zombie-bite:", err);
           process.exit(1);
         });
@@ -120,6 +137,37 @@ class Orchestrator {
       let end_blocks = await this.waitForMigrationInfo(base_path);
       console.log("\t\t 📩 Migration info received:", end_blocks);
 
+      await stopZombieBite(base_path);
+
+      // need to spawn the network here
+      const zombie_bite_post = spawn(
+        "zombie-bite",
+        [
+          "spawn",
+          "-d", base_path,
+          "-s", "post"
+        ],
+        {
+          // The signal property tells the child process (zombie-bite) to listen for abort signals
+          signal: abortController.signal,
+          stdio: [
+            "inherit", // stdin
+            zombie_bite_logs_fd, // stdout
+            zombie_bite_logs_fd // stderr
+          ],
+          env: {
+            ...process.env,
+          },
+        },
+      );
+
+      zombie_bite_post.on("error", (err) => {
+        console.error("🧑‍🔧 Failed to start zombie-bite post step:", err);
+        process.exit(1);
+      });
+
+      await this.waitForZombieJson(base_path, "post");
+
       // STEP 3: Run migration tests
       // Mock: Run migration tests
       console.log("🧑‍🔧 Running migration tests with ports and blocks...");
@@ -145,6 +193,7 @@ class Orchestrator {
       // console.log('🧑‍🔧  Running final PET tests...');
 
       console.log("\n✅ Migration completed successfully");
+      await stopZombieBite(base_path);
     } catch (error) {
       console.error("🧑‍🔧Error in orchestrator:", error);
       process.exit(1);
@@ -239,6 +288,47 @@ class Orchestrator {
       });
     });
   }
+
+  private async waitForZombieJson(base_path: string, step: string): Promise<void> {
+    let done_file = `${base_path}/${step}/${ZOMBIE_JSON_FILE}`;
+    return new Promise((resolve) => {
+      this.zombieWatcher = watch(base_path, {
+        persistent: true,
+        awaitWriteFinish: {
+          stabilityThreshold: 100,
+          pollInterval: 1000,
+        },
+      });
+
+      this.zombieWatcher.on("all", (event: string, info: string) => {
+        if (event == "add" && info.includes(DONE_FILE)) {
+          this.zombieWatcher.close();
+          return resolve();
+        }
+      });
+    });
+  }
+}
+
+async function stopZombieBite(base_path: string): Promise<void> {
+    // Signal zombie-bite to stop the network and
+    // generate the artifacts
+    let stop_file = `${base_path}/stop.txt`;
+    await fs.promises.writeFile(stop_file, "");
+
+    await delay(60 * 1000); // wait 1 minute
+
+    // ones the artifacts are done, the `stop.txt` file is removed
+    // So, let's check that with a limit of 10 mins.
+    let limit = 60 * 1000 * 10;
+    while(fs.existsSync(stop_file)) {
+      const step = 5 * 1000;
+      await delay(5 * 1000);
+      limit -= step;
+      if(limit >= 0) {
+        throw new Error("Timeout waiting for spawn artifacts from zombie-bite!");
+      }
+    }
 }
 
 // Create just command
@@ -246,8 +336,9 @@ async function main() {
   dotenv.config({ override: true });
   const orchestrator = new Orchestrator();
   const base_path_arg = process.argv[2];
-  const relay_runtime_arg = process.argv[3];
-  const asset_hub_runtime_arg = process.argv[4];
+  const runtime_name = process.argv[3];  // e.g. "paseo", "polkadot", "kusama"
+  const relay_runtime_path = process.argv[4];  // e.g. "./runtime_wasm/paseo_runtime.compact.compressed.wasm"
+  const asset_hub_runtime_path = process.argv[5]; // e.g. "./runtime_wasm/asset_hub_paseo_runtime.compact.compressed.wasm"
   const base_path_env = process.env["AHM_BASE_PATH"];
   let base_path =
     base_path_arg || base_path_env || `./migration-run-${Date.now()}`;
@@ -259,7 +350,7 @@ async function main() {
     console.log(e);
   }
 
-  await orchestrator.run(base_path, relay_runtime_arg, asset_hub_runtime_arg);
+  await orchestrator.run(base_path, runtime_name, relay_runtime_path, asset_hub_runtime_path);
 }
 
 main().catch(console.error);
