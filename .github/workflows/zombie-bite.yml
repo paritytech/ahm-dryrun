@@ -6,6 +6,14 @@ on:
       sudo-key:
         description: 'Sudo key to use as override (optional, default is //Alice)'
         required: false
+      network:
+        description: 'Network to use (ALL means polkadot and paseo)'
+        default: 'ALL'
+        type: choice
+        options:
+          - ALL
+          - paseo
+          - polkadot
 
   schedule:
     - cron:  '0 0 * * *'
@@ -18,16 +26,18 @@ permissions: {}
 
 jobs:
   zombie_bite_polkadot:
+    if: ${{ inputs.network == 'ALL' || inputs.network == 'polkadot' }}
     uses: ./.github/workflows/zombie-bite-common.yml
     with:
       network: polkadot
       sudo-key: ${{ inputs.sudo-key }}
 
-  # zombie_bite_paseo:
-  #   uses: ./.github/workflows/zombie-bite-common.yml
-  #   with:
-  #     network: paseo
-  #     sudo-key: ${{ inputs.sudo-key }}
+  zombie_bite_paseo:
+    if: ${{ inputs.network == 'ALL' || inputs.network == 'paseo' }}
+    uses: ./.github/workflows/zombie-bite-common.yml
+    with:
+      network: paseo
+      sudo-key: ${{ inputs.sudo-key }}
 
   # TODO (Javier): westend doesn't works with doppelganger, I will implement fork-off (in genesis) as alternative
   # zombie_bite_westend:
