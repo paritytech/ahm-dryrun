@@ -35,8 +35,7 @@ jobs:
       - name: install_zombie_bite
         shell: bash
         run: |
-          cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite --locked --force --branch more-log-info
-          #just install-zombie-bite
+          just install-zombie-bite
 
       - name: build_runtimes
         shell: bash
