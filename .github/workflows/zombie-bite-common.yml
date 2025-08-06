@@ -166,15 +166,11 @@ jobs:
           echo "'stop.txt' file not present, teardown network completed..."
 
           echo "::endgroup::"
-        continue-on-error: true
 
-      - name: zombie_bite_upload_step
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ inputs.network }}-zb-step-spawn-${{ github.sha }}
-          path: |
-            ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn
-            ${{ env.ZOMBIE_BITE_BASE_PATH }}/migration_done.json
+          echo "::group::zombie-bite-output-post"
+          cat nohup.out
+          echo "::endgroup::"
+        continue-on-error: true
 
       - name: checkpoint_spawn
         shell: bash
@@ -184,6 +180,15 @@ jobs:
           ls ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn-debug
           ls ${{ env.ZOMBIE_BITE_BASE_PATH }}
           echo "::endgroup::"
+
+      - name: zombie_bite_upload_step
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.network }}-zb-step-spawn-${{ github.sha }}
+          path: |
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/migration_done.json
+
 
       #
       # TODO: post migration setup
