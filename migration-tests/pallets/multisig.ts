@@ -55,7 +55,6 @@ export const multisigTests: MigrationTest = {
         const { multisigEntries: rc_multisigs_before } = pre_payload.rc_pre_payload;
         const ah_pre_count = pre_payload.ah_pre_payload as number;
         
-
         // Check RC state after migration
         const rc_multisig_after = await rc_api_after.query.multisig.multisigs.entries();
         logger.info(`RC multisigs: before=${rc_multisigs_before.length}, after=${rc_multisig_after.length}`);
@@ -109,6 +108,7 @@ export const multisigTests: MigrationTest = {
                 throw error;
             }
         }
+        
         // countOfAccountsWithBalance should be equal to rc_multisigs_before.length. 
         // As each multisig has some deposits, which gets unreserved on AH, the depositor should have some balance on AH.
         assert(
