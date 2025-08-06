@@ -97,8 +97,9 @@ zb-perform-migration base_path:
     ALICE_PORT=$(jq -r .alice_port "{{ base_path }}/ports.json")
     COL_PORT=$(jq -r .collator_port "{{ base_path }}/ports.json")
 
-    node dist/zombie-bite-scripts/migration_shedule_migration.js $ALICE_PORT
-    node dist/zombie-bite-scripts/migration_finished_monitor.js {{ base_path }} $ALICE_PORT $COL_PORT
+    # node dist/zombie-bite-scripts/migration_shedule_migration.js $ALICE_PORT
+    # set a diff log level to run this
+    TS_LOG_LEVEL=debug node dist/zombie-bite-scripts/migration_finished_monitor.js {{ base_path }} $ALICE_PORT $COL_PORT
 
     STOP_FILE="{{base_path }}/stop.txt"
     echo "signal teardown network by creating file ${STOP_FILE}"
