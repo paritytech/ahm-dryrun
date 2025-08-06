@@ -1,4 +1,5 @@
 import fs from "fs";
+import { logger } from "../shared/logger.js";
 import { main as migrationTestMain } from "../migration-tests/lib.js";
 
 /*
@@ -58,7 +59,7 @@ const DEFAULT_NETWORK = "westend";
 const main = async () => {
   let maybe_network_or_path = process.argv[2];
   if(!maybe_network_or_path) {
-    console.warn(`⚠️ No path or network was provided, using default (${DEFAULT_NETWORK}) ⚠️`);
+    logger.warn(`⚠️ No path or network was provided, using default (${DEFAULT_NETWORK}) ⚠️`);
     maybe_network_or_path = DEFAULT_NETWORK
   }
 
@@ -73,7 +74,6 @@ const main = async () => {
     ah_after
   } = getInfoFn();
 
-
   await migrationTestMain(
     rc_endpoint,
     rc_before,
@@ -85,4 +85,6 @@ const main = async () => {
   process.exit(0);
 };
 
-main().catch(console.log);
+main().catch((error) => {
+  logger.error('Migration tests error', { error });
+});
