@@ -1,7 +1,7 @@
 import '@polkadot/api-augment';
 import assert from 'assert';
 import { PreCheckContext, PostCheckContext, MigrationTest, PreCheckResult } from '../types.js';
-import { logger } from "../shared/logger.js"; 
+import { logger } from "../../shared/logger.js"; 
 
 
 // Constants for validation - SS58 address length
