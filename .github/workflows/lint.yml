@@ -1,0 +1,19 @@
+name: Just
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+jobs:
+  run-just:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - uses: extractions/setup-just@v3
+
+    - name: Just init
+      run: just init
