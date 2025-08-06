@@ -4,6 +4,7 @@ import { setupNetworks } from '@acala-network/chopsticks-testing'
 import { Keyring } from '@polkadot/api';
 import { FrameSupportTokensFungibleUnionOfNativeOrWithId, XcmVersionedLocation } from '@polkadot/types/lookup';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
+import { logger } from "../shared/logger.js";
 import assert from 'assert';
 
 // Wait for crypto to be ready before creating Keyring
@@ -112,11 +113,11 @@ export async function treasury_spend(): Promise<void> {
     // find index to payout from the events
     let index = 0;
     const events = await polkadot.api.query.system.events();
-    console.log(`Events after spend block:`);
+    logger.info('Events after spend block:');
     for (const event of events) {
         if (event.event.section === 'treasury' && event.event.method === 'AssetSpendApproved') {
             index = (event.event.data[0] as any).toNumber();
-            console.log('AssetSpendApproved index:', index);
+            logger.info('AssetSpendApproved index', { index });
             break;
         }
     }

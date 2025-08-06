@@ -23,18 +23,6 @@ setup:
     just install-doppelganger
     just install-zombie-bite
 
-# ------------------------- INSTALLING DEPENDENCIES -------------------------
-
-install-doppelganger:
-    SKIP_WASM_BUILD=1 cargo install --git https://github.com/paritytech/doppelganger-wrapper --bin doppelganger \
-        --bin doppelganger-parachain \
-        --bin polkadot-execute-worker \
-        --bin polkadot-prepare-worker  \
-        --locked --root ${DOPPELGANGER_PATH}
-
-install-zombie-bite:
-    cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite --locked --force
-
 # ------------------------- RUNNING AHM -------------------------
 
 ahm runtime *id:
@@ -46,7 +34,6 @@ ahm runtime *id:
         migration_id="migration-run-{{ id }}"
     fi
 
-    npm install
     npm run build
     PATH=$(pwd)/${DOPPELGANGER_PATH}/bin:$PATH \
         npm run ahm \
@@ -81,37 +68,16 @@ e2e-tests *TEST:
 
 wah-e2e-tests *TEST:
     #!/usr/bin/env bash
-    # if no test modules are provided, run all of them
-    tests="assetHubWestend."
-    for test in {{ TEST }}; do
-        tests="$tests assetHubWestend.$test"
-    done
-    just e2e-tests $tests
+    just build {{ runtime }}
+    if [ -z "{{ id }}" ]; then
+        migration_id="migration-run-$(date +%s)"
+    else
+        migration_id="migration-run-{{ id }}"
+    fi
 
-# Run the migration tests on westend
-run-westend-migration-tests:
     npm run build
-    npm run compare-state
-
-# -------------------------------- Chopsticks --------------------------------
-# Run the network migration with Chopsticks (NOT SUPPORTED RIGHT NOW)
-run:
-    just init
-    just setup
-    just build-polkadot
-    npm install
-    npm run build
-    npm run chopsticks-migration
-
-# Run the network from the pre-migration state
-run-pre:
-    POLKADOT_BLOCK_NUMBER=${POLKADOT_BLOCK_NUMBER_PRE} POLKADOT_ASSET_HUB_BLOCK_NUMBER=${POLKADOT_ASSET_HUB_BLOCK_NUMBER_PRE}  npx @acala-network/chopsticks@latest xcm -r ./configs/polkadot.yml -p ./configs/polkadot-asset-hub.yml
-
-# Create a snapshot for polkadot RC and AH from local nodes
-fetch-storage:
-    npx @acala-network/chopsticks@latest fetch-storages '0x' --endpoint=${POLKADOT_RPC}:${RELAY_NODE_RPC_PORT} --block ${POLKADOT_BLOCK_NUMBER} --config ./configs/polkadot.yml
-    npx @acala-network/chopsticks@latest fetch-storages '0x' --endpoint=wss://polkadot-asset-hub-rpc.polkadot.io --block ${POLKADOT_ASSET_HUB_BLOCK_NUMBER} --config ./configs/polkadot-asset-hub.yml
-
-report-account-migration-status:
-    npm run build
-    npm run report-account-migration-status
+    PATH=$(pwd)/${DOPPELGANGER_PATH}/bin:$PATH \
+        npm run ahm \
+        "./$migration_id" \
+        "{{runtime}}:${RUNTIME_WASM}/{{runtime}}_runtime.compact.compressed.wasm" \
+        "asset-hub:${RUNTIME_WASM}/asset_hub_{{runtime}}_runtime.compact.compressed.wasm"
