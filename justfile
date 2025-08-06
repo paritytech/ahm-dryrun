@@ -74,6 +74,8 @@ npm-build:
 zb-bite base_path runtime:
     #!/usr/bin/env bash
     just build {{ runtime }}
+
+    PATH=$(pwd)/${DOPPELGANGER_PATH}/bin:$PATH \
     zombie-bite bite -d {{ base_path }} \
         -r {{ runtime }} \
         --rc-override "${RUNTIME_WASM}/{{runtime}}_runtime.compact.compressed.wasm" \
@@ -81,10 +83,11 @@ zb-bite base_path runtime:
 
 zb-spawn base_path *step:
     #!/usr/bin/env bash
-
     if [ -z "{{ step }}" ]; then
+        PATH=$(pwd)/${DOPPELGANGER_PATH}/bin:$PATH \
         zombie-bite spawn -d {{ base_path }}
     else
+        PATH=$(pwd)/${DOPPELGANGER_PATH}/bin:$PATH \
         zombie-bite spawn -d {{ base_path }} -s {{ step }}
     fi
 
