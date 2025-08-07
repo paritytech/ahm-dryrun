@@ -11,6 +11,10 @@ cp_cmd := `which scp || which cp`
 default:
     just ahm polkadot
 
+# List the available commands
+help:
+    @just --list
+
 # ------------------------- ONE-TIME SETUP ----------------------
 
 # only to be run the first time, or when submodules changes.
