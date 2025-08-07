@@ -23,14 +23,14 @@ You can run e.g. `cd runtimes && git checkout <commit_hash> && cd - && git add r
 
 ## AHM Flows (manual steps)
 
-The cmd `just ahm <runtime>` use the `orchestrator` as main control flow to coordinate the usage of a mix of tools (e.g:[zombie-bite](), [doppelganger]()) and `ts` scripts (under zombie-bite-scripts), but those are designed to allow you to use (and _reuse_) each _component_ manully in order to easily debug each __step__
+The cmd `just ahm <runtime>` use the `orchestrator` as main control flow to coordinate the usage of a mix of tools (e.g:[zombie-bite](https://github.com/pepoviola/zombie-bite), [doppelganger](https://github.com/paritytech/doppelganger-wrapper)) and `ts` scripts (under zombie-bite-scripts), but those are designed to allow you to use (and _reuse_) each _component_ manully in order to easily debug each __step__.
 
 ### Requerimients
 In order to use this tool you will need this binaries available in your PATH
 
 - [Doppelganger binaries](https://github.com/paritytech/doppelganger-wrapper): doppelganger, doppelganger-parachain, workers
 - [Zombie-bite](https://github.com/pepoviola/zombie-bite)
-- Node.js (v22 or higher)
+- [Node.js](https://nodejs.org) (v22 or higher)
 
 This tools are installed as part of the `setup` command.
 
@@ -65,7 +65,7 @@ _NOTE_: this step performs a _warp_ sync of both rc/ah and can take some time (2
 
 ### Step 1: `spawn` network instance (and perform migration)
 
-Ones the _step 0_ is completed, you will have all the needed artifacts for spawn a new instance of the _bited_ networks (as many times you want) with the command:
+Ones the _step 0_ is completed, you will have all the needed artifacts for spawn a new instance of the _bitted_ networks (as many times you want) with the command:
 
 ```bash
 just zb-spawn <base_path>
@@ -73,7 +73,7 @@ just zb-spawn <base_path>
 e.g: just zb-spawn ./migration-run
 ```
 
-This will run `zombie-bite` to _spawn_ a new instance of the _bited_ network and will print the network info (with direct links for `pjs`/`papi`).
+This will run `zombie-bite` to _spawn_ a new instance of the _bitted_ network and will print the network info (with direct links for `pjs`/`papi`).
 
 #### Step 1.1 Perform migration
 
@@ -89,7 +89,7 @@ e.g: just zb-perform-migration ./migration-run
 
 This will trigger the migration and a monitoring script that will keep checking the `stage` of the migration until completion.
 
-Ones the migration is completed, the network instance spawned as part of _step 1_ will be terminated and all the needed artifacts to spawn a new instance (with the _post_ migration step) will be created in the `<base_path>/spawn` (e.g: ./migration-run/bite) directory.
+Ones the migration is completed, the network instance spawned as part of _step 1_ will be terminated and all the needed artifacts to spawn a new instance (with the _post_ migration step) will be created in the `<base_path>/spawn` (e.g: ./migration-run/spawn) directory.
 
 - `config.toml` : zombienet compatible configuration to spawn an instance of the network.
 - `<runtime>-spec.json` : chain-spec of the relaychain.
@@ -160,9 +160,6 @@ combine orchestrator logs with post-ahm testing logs. You can find different lev
 - [PAPI](papi.how) + PJS for orchstrating/controlling e2e AHM flow
 - Zombie-Bite + Doppelganger for forking off the network and making migration blocks
 
-## Orchestrator a.k.a. Controller
-
-## Zombie-bite
 
 ## Migration tests
 
