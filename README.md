@@ -60,7 +60,7 @@ This directory should contain these files:
 - `asset-hub-paseo-snap.tgz` : Db snapshot of AH.
 
 
-_NOTE_: this step perform a _warp_ sync of both rc/ah and can take some time (20/25 mins on avg. for polkadot).
+_NOTE_: this step performs a _warp_ sync of both rc/ah and can take some time (20/25 mins on avg. for polkadot).
 
 
 ### Step 1: `spawn` network instance (and perform migration)
