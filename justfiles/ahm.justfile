@@ -40,3 +40,4 @@ monitor:
 	@echo "export RELAY_CHAIN_URL="ws://localhost:9944""
 	@echo "just run-backend"
 	@echo "open https://migration.paritytech.io/?backend_url=http://localhost:3000"
+# TODO @donal: Monitoring here

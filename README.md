@@ -18,13 +18,13 @@ just ahm paseo || echo "Setup failed"
 - `just zb [bite|spawn|perform-migration]` to run the Zombie-Bite commands. No args prints the help menu.
 - `just e2e-tests` to run the E2E tests
 - `just wah-e2e-tests` to run the Westend Asset Hub E2E tests
-<!--- TODO: `just ahm monitor` to run the Asset Hub Migration Monitor -->
+# TODO @donal: Mnitoring here
 
 ## AHM Flows (manual steps)
 
 The cmd `just ahm <runtime>` use the `orchestrator` as main control flow to coordinate the usage of a mix of tools (e.g:[zombie-bite](https://github.com/pepoviola/zombie-bite), [doppelganger](https://github.com/paritytech/doppelganger-wrapper)) and `ts` scripts (under zombie-bite-scripts), but those are designed to allow you to use (and _reuse_) each _component_ manully in order to easily debug each __step__.
 
-### Requerimients
+### Requirements
 In order to use this tool you will need this binaries available in your PATH
 
 - [Doppelganger binaries](https://github.com/paritytech/doppelganger-wrapper): doppelganger, doppelganger-parachain, workers
@@ -158,7 +158,7 @@ combine orchestrator logs with post-ahm testing logs. You can find different lev
 - [Chopsticks](https://github.com/AcalaNetwork/chopsticks) and PET for e2e functionality tests
 - [PAPI](papi.how) + PJS for orchstrating/controlling e2e AHM flow
 - Zombie-Bite + Doppelganger for forking off the network and making migration blocks
-
+<!-- TODO @donal: Monitoring here -->
 
 ## Migration tests
 
