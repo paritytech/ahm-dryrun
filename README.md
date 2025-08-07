@@ -18,7 +18,7 @@ just ahm paseo || echo "Setup failed"
 - `just zb [bite|spawn|perform-migration]` to run the Zombie-Bite commands. No args prints the help menu.
 - `just e2e-tests` to run the E2E tests
 - `just wah-e2e-tests` to run the Westend Asset Hub E2E tests
-# TODO @donal: Mnitoring here
+<!-- TODO @donal: Monitoring here -->
 
 ## AHM Flows (manual steps)
 
