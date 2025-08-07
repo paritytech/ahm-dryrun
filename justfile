@@ -46,7 +46,6 @@ install-monitor:
     && npm run migrate \
     && npm run push \
     && npm run build
-    cd ahm-monitor/frontend && npm install
 
 # ------------------------- BUILDING RUNTIMES -------------------
 
