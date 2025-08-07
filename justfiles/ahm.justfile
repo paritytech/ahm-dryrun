@@ -40,13 +40,7 @@ _npm-build:
     sha256sum -c .package.json.sum || (npm install && sha256sum package.json > .package.json.sum && echo "✅ npm install" && echo "✅ sha256sum saved")
     npm run build
 
-# (Untested) Run the Asset Hub Migration Monitor
+# Run the Asset Hub Migration Monitor
 monitor:
-    @echo "Currently not implemented, please check https://github.com/paritytech/asset-hub-migration-monitor"
-    @echo "You can run the following commands to run the monitor:\n"
-    @echo "git clone https://github.com/paritytech/asset-hub-migration-monitor && cd asset-hub-migration-monitor"
-    @echo "export ASSET_HUB_URL="ws://localhost:9945""
-    @echo "export RELAY_CHAIN_URL="ws://localhost:9944""
-    @echo "just run-backend"
-    @echo "open https://migration.paritytech.io/?backend_url=http://localhost:3000"
-# TODO @donal: Monitoring here
+    cd ahm-monitor/backend && yarn run start
+

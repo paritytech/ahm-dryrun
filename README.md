@@ -9,6 +9,12 @@ just setup && \
 just ahm paseo || echo "Setup failed"
 ```
 
+To add monitoring, in a separate terminal run:
+```
+just monitor
+```
+and go to [AHM Monitor]()
+
 # Just commands
 
 - `just` to see the list of commands
@@ -18,7 +24,7 @@ just ahm paseo || echo "Setup failed"
 - `just zb [bite|spawn|perform-migration]` to run the Zombie-Bite commands. No args prints the help menu.
 - `just e2e-tests` to run the E2E tests
 - `just wah-e2e-tests` to run the Westend Asset Hub E2E tests
-<!-- TODO @donal: Monitoring here -->
+- `just ahm monitor` to run the AHM Monitor and connect to the local RPCs
 
 ## AHM Flows (manual steps)
 
@@ -158,7 +164,7 @@ combine orchestrator logs with post-ahm testing logs. You can find different lev
 - [Chopsticks](https://github.com/AcalaNetwork/chopsticks) and PET for e2e functionality tests
 - [PAPI](papi.how) + PJS for orchstrating/controlling e2e AHM flow
 - Zombie-Bite + Doppelganger for forking off the network and making migration blocks
-<!-- TODO @donal: Monitoring here -->
+- [AHM Monitor](https://migration.paritytech.io?backend_url=localhost:3000) for progress tracking
 
 ## Migration tests
 

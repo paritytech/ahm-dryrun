@@ -23,6 +23,7 @@ setup:
     git submodule update --remote --merge
     just install-doppelganger
     just install-zombie-bite
+    just install-monitor
 
 # ------------------------- INSTALLING DEPENDENCIES -------------
 
@@ -37,6 +38,15 @@ install-doppelganger:
 # Install the `zombie-bite` binary on your system.
 install-zombie-bite:
     cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite --locked --force
+
+# Install the AHM Monitor
+install-monitor:
+    mkdir -p ./ahm-monitor/backend/data
+    cd ahm-monitor/backend \
+    && npm install \
+    && npm run migrate \
+    && npm run push \
+    && npm run build
 
 # ------------------------- BUILDING RUNTIMES -------------------
 
