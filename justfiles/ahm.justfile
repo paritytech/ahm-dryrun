@@ -23,7 +23,7 @@ _run runtime *base_path:
         base_path_to_use="{{ base_path }}"
     fi
 
-    just ahm npm-build && \
+    just ahm _npm-build && \
     PATH=$(pwd)/${DOPPELGANGER_PATH}/bin:$PATH \
         npm run ahm \
         "$base_path_to_use" \
