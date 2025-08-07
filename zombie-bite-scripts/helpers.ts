@@ -36,7 +36,7 @@ async function finish(unsub: any, api: any) {
   api.disconnect();
 }
 
-async function delay(ms: number) {
+export async function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
@@ -91,7 +91,7 @@ async function rc_check(uri: string) {
           // Retrieve the latest header
           const lastHeader = await api.rpc.chain.getHeader();
           const number = lastHeader.number;
-          logger.debug('RC migration finished', { blockNumber: number.toNumber() });
+          logger.info('RC migration finished', { blockNumber: number.toNumber() });
           await finish(unsub, api);
           return resolve(number);
         } else {
@@ -114,7 +114,7 @@ async function ah_check(uri: string) {
           // Retrieve the latest header
           const lastHeader = await api.rpc.chain.getHeader();
           const number = lastHeader.number;
-          logger.debug('AH migration finished', { blockNumber: number.toNumber() });
+          logger.info('AH migration finished', { blockNumber: number.toNumber() });
           await finish(unsub, api);
           return resolve(number);
         } else {
@@ -146,10 +146,10 @@ export async function scheduleMigration(migration_args?: scheduleMigrationArgs) 
     const unsub: any = await api.tx.rcMigrator.scheduleMigration(start, cool_off_end)
       .signAndSend(alice, { nonce: nonce, era: 0 }, (result) => {
         logger.info('Migration transaction status', { status: result.status.toString() });
-        
+
         if (result.status.isInBlock) {
-          logger.info('Transaction included in block', { 
-            blockHash: result.status.asInBlock.toString() 
+          logger.info('Transaction included in block', {
+            blockHash: result.status.asInBlock.toString()
           });
           if (finalization) {
             logger.info('Waiting for finalization...');
@@ -158,8 +158,8 @@ export async function scheduleMigration(migration_args?: scheduleMigrationArgs) 
             return resolve(true);
           }
         } else if (result.status.isFinalized) {
-          logger.info('Transaction finalized', { 
-            blockHash: result.status.asFinalized.toString() 
+          logger.info('Transaction finalized', {
+            blockHash: result.status.asFinalized.toString()
           });
           finish(unsub, api);
           return resolve(true);

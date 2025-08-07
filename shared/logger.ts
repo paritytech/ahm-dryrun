@@ -11,7 +11,7 @@ const colors = {
   error: 'red',
   warn: 'yellow',
   info: 'green',
-  debug: 'blue',
+  debug: 'magenta',
 };
 
 winston.addColors(colors);
@@ -26,8 +26,8 @@ export const logger = winston.createLogger({
   defaultMeta: { service: 'ahm' },
   transports: [
     // Write all logs with importance level of `error` or less to `error.log`
-    new winston.transports.File({ 
-      filename: 'logs/error.log', 
+    new winston.transports.File({
+      filename: 'logs/error.log',
       level: 'error',
       format: winston.format.combine(
         winston.format.timestamp(),
@@ -36,7 +36,8 @@ export const logger = winston.createLogger({
       )
     }),
     // Write all logs with importance level of `info` or less to `combined.log`
-    new winston.transports.File({ 
+    new winston.transports.File({
+      level: process.env.TS_LOG_LEVEL || 'info',
       filename: 'logs/combined.log',
       format: winston.format.combine(
         winston.format.timestamp(),
@@ -49,6 +50,7 @@ export const logger = winston.createLogger({
 // in case we want to log to the console, instead of the file, just set the .env variable
 if (process.env.TS_LOG_CONSOLE ===  'true') {
   logger.add(new winston.transports.Console({
+    level: process.env.TS_LOG_LEVEL || 'info',
     format: winston.format.combine(
       winston.format.colorize({ all: true }),
       winston.format.simple(),
