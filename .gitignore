@@ -1,6 +1,9 @@
 node_modules
 dist
 *.wasm
-
-# All migration runs
 migration-run*
+**/.package.json.sum
+package-lock.json
+logs/
+.claude
+zombie-bite/doppelganger/bin/
