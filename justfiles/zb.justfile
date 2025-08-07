@@ -3,8 +3,7 @@ _default: help
 help:
     @just --list zb --unsorted
 
-# First part of the Zombie-Bite flow. This "bites" off (=forks) the state of the live
-# network. and puts it into the <TODO> directory.
+# First part of the Zombie-Bite flow. This forks off the network.
 bite base_path runtime:
     #!/usr/bin/env bash
     just build {{ runtime }}

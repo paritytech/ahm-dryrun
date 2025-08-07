@@ -12,7 +12,7 @@ paseo *base_path:
 polkadot *base_path:
 	just ahm _run polkadot {{ base_path }}
 
-# (Hidden) Run the Asset Hub Migration for a given runtime and an optional base path
+# (Internal) Run the Asset Hub Migration for a given runtime and an optional base path
 _run runtime *base_path:
     #!/usr/bin/env bash
     just build {{ runtime }}
@@ -23,13 +23,19 @@ _run runtime *base_path:
         base_path_to_use="{{ base_path }}"
     fi
 
-    just npm-build && \
+    just ahm npm-build && \
     PATH=$(pwd)/${DOPPELGANGER_PATH}/bin:$PATH \
         npm run ahm \
         "$base_path_to_use" \
         "{{runtime}}" \
         "${RUNTIME_WASM}/{{runtime}}_runtime.compact.compressed.wasm" \
         "${RUNTIME_WASM}/asset_hub_{{runtime}}_runtime.compact.compressed.wasm"
+
+# (Internal) Run npm install.
+_npm-build:
+    #!/usr/bin/env bash
+    sha256sum -c .package.json.sum || (npm install && sha256sum package.json > .package.json.sum && echo "✅ npm install" && echo "✅ sha256sum saved")
+    npm run build
 
 # (Untested) Run the Asset Hub Migration Monitor
 monitor:

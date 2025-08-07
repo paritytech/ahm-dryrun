@@ -57,14 +57,6 @@ build runtime:
         exit 1
     fi
 
-# ------------------------- NPM HELPERS -------------------------
-
-# run npm install IFF needed
-npm-build:
-    #!/usr/bin/env bash
-    sha256sum -c .package.json.sum || (npm install && sha256sum package.json > .package.json.sum && echo "✅ npm install" && echo "✅ sha256sum saved")
-    npm run build
-
 # ------------------------- RUNNING E2E TESTS -------------------
 
 e2e-tests *TEST:
