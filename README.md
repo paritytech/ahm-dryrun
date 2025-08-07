@@ -11,15 +11,15 @@ just ahm paseo || echo "Setup failed"
 
 # Just commands
 
-We envision interaction with ahm-dryrun mainly using a set of `just` commands. You can adjust AHM dry-run to your needs using `.env` config file.
-
-You can run AHM for Polkadot using `just ahm polkadot` or substitute the runtime with a custom one by updating submodules to point to your branches/commits. There are many things you can do with `just` but, at first, you should not need anything other than these two. In case you want to contribute directly to the codebase, see Code Contribution section towards the end of th page.
-
-## Updating submodules
-
-Make sure to run `git submodule update --recursive` after you pull from the repo to update the submodules to the commits tracked in the repo.
-
-You can run e.g. `cd runtimes && git checkout <commit_hash> && cd - && git add runtimes && git commit` to update the commit that the runtimes submodule points to.
+The main commands are:
+- `just help` to see the list of commands
+- `just init` to initialize the repo
+- `just setup` to install dependencies
+- `just ahm [paseo|polkadot]` to run the Asset Hub Migration for a given runtime
+- `just zb [bite|spawn|perform-migration]` to run the Zombie-Bite commands
+- `just e2e-tests` to run the E2E tests
+- `just wah-e2e-tests` to run the Westend Asset Hub E2E tests
+<!--- TODO: `just ahm monitor` to run the Asset Hub Migration Monitor -->
 
 ## AHM Flows (manual steps)
 
@@ -45,9 +45,9 @@ The _first_ step consist on _biting_ a live network and ones completed create th
 In order to run the _step 0_ you can run:
 
 ```bash
-just zb-bite <base_path> <polkadot|kusama|paseo>
+just zb bite <base_path> <polkadot|kusama|paseo>
 
-e.g: just zb-bite ./migration-run polkadot
+e.g: just zb bite ./migration-run polkadot
 ```
 
 This will run `zombie-bite`, storing the resulting _artifacts_ under `<base_path>/bite` (e.g: ./migration-run/bite) directory.
@@ -68,9 +68,9 @@ _NOTE_: this step performs a _warp_ sync of both rc/ah and can take some time (2
 Ones the _step 0_ is completed, you will have all the needed artifacts for spawn a new instance of the _bitted_ networks (as many times you want) with the command:
 
 ```bash
-just zb-spawn <base_path>
+just zb spawn <base_path>
 
-e.g: just zb-spawn ./migration-run
+e.g: just zb spawn ./migration-run
 ```
 
 This will run `zombie-bite` to _spawn_ a new instance of the _bitted_ network and will print the network info (with direct links for `pjs`/`papi`).
@@ -82,9 +82,9 @@ Since the last step _spawn_ the network and _capture_ the terminal you need to r
 In order to perform the migration you need to run the following command:
 
 ```bash
-just zb-perform-migration <base_path>
+just zb perform-migration <base_path>
 
-e.g: just zb-perform-migration ./migration-run
+e.g: just zb perform-migration ./migration-run
 ```
 
 This will trigger the migration and a monitoring script that will keep checking the `stage` of the migration until completion.
@@ -114,9 +114,9 @@ The content of the file will be:
 The last step is running the _post_ migration tests, but first you need to _spawn_ an instance of the network (with the state from the previous step) with this command:
 
 ```bash
-just zb-spawn <base_path> post
+just zb spawn <base_path> post
 
-e.g: just zb-spawn ./migration-run post
+e.g: just zb spawn ./migration-run post
 ```
 
 This will spawn a new instance of the network (with the state of the previous step) and will print all the network info (ports) to run the _post migration_ tests.
@@ -167,6 +167,14 @@ combine orchestrator logs with post-ahm testing logs. You can find different lev
 
 # Code Contributions
 Make any changes to the env rather than to the bare configs.
+
+
+## Updating submodules
+
+Make sure to run `git submodule update --recursive` after you pull from the repo to update the submodules to the commits tracked in the repo.
+
+You can run e.g. `cd runtimes && git checkout <commit_hash> && cd - && git add runtimes && git commit` to update the commit that the runtimes submodule points to.
+
 
 # FAQ
 ## If you've already cloned `ahm-dryrun` repo but didn't use the recursive flag
