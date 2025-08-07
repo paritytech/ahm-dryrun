@@ -11,12 +11,11 @@ just ahm paseo || echo "Setup failed"
 
 # Just commands
 
-The main commands are:
-- `just help` to see the list of commands
+- `just` to see the list of commands
 - `just init` to initialize the repo
 - `just setup` to install dependencies
-- `just ahm [paseo|polkadot]` to run the Asset Hub Migration for a given runtime
-- `just zb [bite|spawn|perform-migration]` to run the Zombie-Bite commands
+- `just ahm [paseo|polkadot]` to run the Migration for a given runtime. No args prints the help menu.
+- `just zb [bite|spawn|perform-migration]` to run the Zombie-Bite commands. No args prints the help menu.
 - `just e2e-tests` to run the E2E tests
 - `just wah-e2e-tests` to run the Westend Asset Hub E2E tests
 <!--- TODO: `just ahm monitor` to run the Asset Hub Migration Monitor -->
