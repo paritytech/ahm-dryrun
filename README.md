@@ -13,7 +13,7 @@ To add monitoring, in a separate terminal run:
 ```
 just monitor
 ```
-and go to [AHM Monitor]()
+and go to [AHM Monitor](https://migration.paritytech.io/?backend_url=http://localhost:3000), where you can enter `localhost:3000` as the backend url.
 
 # Just commands
 

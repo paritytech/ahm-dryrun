@@ -14,13 +14,12 @@ help:
     @echo "Docs are in the README and the repo: https://github.com/paritytech/ahm-dryrun\n"
     @just --list --unsorted
 
-# Initial setup after you cloned the repo. Run it once.
+# Initialize or update the submodules.
 init:
     git submodule update --init --recursive
 
-# Install all dependencies. Run it once.
-setup:
-    git submodule update --remote --merge
+# Install all dependencies. Run it when changing branches or pulling.
+setup: init
     just install-doppelganger
     just install-zombie-bite
     just install-monitor
@@ -47,6 +46,7 @@ install-monitor:
     && npm run migrate \
     && npm run push \
     && npm run build
+    cd ahm-monitor/frontend && npm install
 
 # ------------------------- BUILDING RUNTIMES -------------------
 
