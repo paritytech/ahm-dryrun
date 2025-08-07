@@ -170,6 +170,27 @@ init-westend:
 test:
     npm test
 
+# Run as-derivative account scanning script
+as-derived-accs *NETWORK:
+    #!/usr/bin/env bash
+    case "{{ NETWORK }}" in
+        "paseo")
+            RPC_WS=wss://paseo.rpc.amforc.com node as-derivative-script/checkExtrinsic.js
+            ;;
+        "westend")
+            RPC_WS=wss://westend-rpc.polkadot.io node as-derivative-script/checkExtrinsic.js
+            ;;
+        "kusama")
+            RPC_WS=wss://kusama-rpc.n.dwellir.com node as-derivative-script/checkExtrinsic.js
+            ;;
+        *)
+            echo "Unknown network: {{ NETWORK }}"
+            echo "Available networks: paseo, westend, kusama"
+            echo "Usage: just as-derived-accs <network>"
+            exit 1
+            ;;
+    esac
+
 # List the available commands
 help:
     @just --list
