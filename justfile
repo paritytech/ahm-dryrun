@@ -59,24 +59,3 @@ build runtime:
         echo "Error: Unsupported runtime '{{ runtime }}'. Supported runtimes are: paseo, polkadot, kusama"
         exit 1
     fi
-
-# ------------------------- RUNNING E2E TESTS -------------------------
-
-e2e-tests *TEST:
-    cd ${PET_PATH} && yarn && yarn test {{ TEST }}
-
-wah-e2e-tests *TEST:
-    #!/usr/bin/env bash
-    just build {{ runtime }}
-    if [ -z "{{ id }}" ]; then
-        migration_id="migration-run-$(date +%s)"
-    else
-        migration_id="migration-run-{{ id }}"
-    fi
-
-    npm run build
-    PATH=$(pwd)/${DOPPELGANGER_PATH}/bin:$PATH \
-        npm run ahm \
-        "./$migration_id" \
-        "{{runtime}}:${RUNTIME_WASM}/{{runtime}}_runtime.compact.compressed.wasm" \
-        "asset-hub:${RUNTIME_WASM}/asset_hub_{{runtime}}_runtime.compact.compressed.wasm"
