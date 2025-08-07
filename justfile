@@ -143,20 +143,3 @@ zb-perform-migration base_path:
 
 e2e-tests *TEST:
     cd ${PET_PATH} && yarn && yarn test {{ TEST }}
-
-# Westend doesn't works with zb yet.
-# wah-e2e-tests runtime *id:
-#     #!/usr/bin/env bash
-#     just build {{ runtime }}
-#     if [ -z "{{ id }}" ]; then
-#         migration_id="migration-run-$(date +%s)"
-#     else
-#         migration_id="migration-run-{{ id }}"
-#     fi
-
-#     just npm-build
-#     PATH=$(pwd)/${DOPPELGANGER_PATH}/bin:$PATH \
-#         npm run ahm \
-#         "./$migration_id" \
-#         "{{runtime}}:${RUNTIME_WASM}/{{runtime}}_runtime.compact.compressed.wasm" \
-#         "asset-hub:${RUNTIME_WASM}/asset_hub_{{runtime}}_runtime.compact.compressed.wasm"
