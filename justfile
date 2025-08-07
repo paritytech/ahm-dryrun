@@ -37,19 +37,20 @@ install-zombie-bite:
 
 # ------------------------- RUNNING AHM -------------------------
 
-ahm runtime *id:
+ahm runtime *base_path:
     #!/usr/bin/env bash
     just build {{ runtime }}
-    if [ -z "{{ id }}" ]; then
-        migration_id="migration-run-$(date +%s)"
+    if [ -z "{{ base_path }}" ]; then
+        # no base_path supplied, generate one.
+        base_path_to_use="./migration-run-$(date +%s)"
     else
-        migration_id="migration-run-{{ id }}"
+        base_path_to_use="{{ base_path }}"
     fi
 
     just npm-build && \
     PATH=$(pwd)/${DOPPELGANGER_PATH}/bin:$PATH \
         npm run ahm \
-        "./$migration_id" \
+        "$base_path_to_use" \
         "{{runtime}}" \
         "${RUNTIME_WASM}/{{runtime}}_runtime.compact.compressed.wasm" \
         "${RUNTIME_WASM}/asset_hub_{{runtime}}_runtime.compact.compressed.wasm"
