@@ -1,4 +1,4 @@
-name: Zombie-bite
+name: AHM flow (all steps)
 
 on:
   workflow_dispatch:
