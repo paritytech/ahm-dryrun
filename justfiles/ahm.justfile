@@ -1,16 +1,19 @@
+# Run in the project root
+set working-directory := ".."
+
 _default: help
 
 # Help menu
 help:
-	@just --list ahm --unsorted
+    @just --list ahm --unsorted
 
 # Run the Asset Hub Migration for Paseo with an optional base path
 paseo *base_path:
-	just ahm _run paseo {{ base_path }}
+    @just ahm _run paseo {{ base_path }}
 
 # (Untested) Run the Asset Hub Migration for Polkadot with an optional base path
 polkadot *base_path:
-	just ahm _run polkadot {{ base_path }}
+    @just ahm _run polkadot {{ base_path }}
 
 # (Internal) Run the Asset Hub Migration for a given runtime and an optional base path
 _run runtime *base_path:
@@ -39,11 +42,11 @@ _npm-build:
 
 # (Untested) Run the Asset Hub Migration Monitor
 monitor:
-	@echo "Currently not implemented, please check https://github.com/paritytech/asset-hub-migration-monitor"
-	@echo "You can run the following commands to run the monitor:\n"
-	@echo "git clone https://github.com/paritytech/asset-hub-migration-monitor && cd asset-hub-migration-monitor"
-	@echo "export ASSET_HUB_URL="ws://localhost:9945""
-	@echo "export RELAY_CHAIN_URL="ws://localhost:9944""
-	@echo "just run-backend"
-	@echo "open https://migration.paritytech.io/?backend_url=http://localhost:3000"
+    @echo "Currently not implemented, please check https://github.com/paritytech/asset-hub-migration-monitor"
+    @echo "You can run the following commands to run the monitor:\n"
+    @echo "git clone https://github.com/paritytech/asset-hub-migration-monitor && cd asset-hub-migration-monitor"
+    @echo "export ASSET_HUB_URL="ws://localhost:9945""
+    @echo "export RELAY_CHAIN_URL="ws://localhost:9944""
+    @echo "just run-backend"
+    @echo "open https://migration.paritytech.io/?backend_url=http://localhost:3000"
 # TODO @donal: Monitoring here

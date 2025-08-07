@@ -1,3 +1,6 @@
+# Run in the project root
+set working-directory := ".."
+
 _default: help
 
 help:
@@ -28,7 +31,7 @@ spawn base_path *step:
 # Third part of the Zombie-Bite flow. This performs the migration on a forked and running network.
 perform-migration base_path:
     #!/usr/bin/env bash
-    just npm-build
+    just ahm _npm-build
     ALICE_PORT=$(jq -r .alice_port "{{ base_path }}/ports.json")
     COL_PORT=$(jq -r .collator_port "{{ base_path }}/ports.json")
 
