@@ -71,3 +71,20 @@ build runtime:
 
 e2e-tests *TEST:
     cd ${PET_PATH} && yarn && yarn test {{ TEST }}
+
+# ------------------------- CLEANING UP -------------------------
+
+# Clean up some generated clutter.
+clean:
+    rm -rf migration-run-*
+    git checkout HEAD -- .papi/descriptors/{package.json,dist/{index.d.ts,index.js,index.mjs}}
+    rm -f zombie-bite/doppelganger/{.crates.toml,.crates2.json}
+
+# Clean up everything.
+clean-harder: clean
+    rm -f package-lock.json .package.json.sum
+    rm -rf logs node_modules dist
+    rm -rf paseo-runtimes/target
+    rm -rf runtimes/target
+    rm -rf polkadot-ecosystem-tests/node_modules
+    rm -rf ahm-monitor/backend/{node_modules,dist,data}
