@@ -45,7 +45,7 @@ The _first_ step consist on _biting_ a live network and ones completed create th
 In order to run the _step 0_ you can run:
 
 ```bash
-just zb-bite <base_path>
+just zb-bite <base_path> <polkadot|kusama|paseo>
 
 e.g: just zb-bite ./migration-run polkadot
 ```
