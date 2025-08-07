@@ -22,6 +22,7 @@ import type { AccountInfo } from "@polkadot/types/interfaces";
 import { performance } from "perf_hooks";
 import * as fs from "fs";
 import { config } from "dotenv";
+import { logger } from "../shared/logger.js";
 import {
   rc_migrator_network,
   TraitsScheduleDispatchTime,
@@ -76,7 +77,7 @@ async function scheduleMigration() {
   const sudoCall = RCApi.tx.Sudo.sudo({ call: call.decodedCall });
   const result = await sudoCall.signAndSubmit(aliceSigner);
 
-  console.log("Migration scheduled:", result);
+  logger.info('Migration scheduled', { result });
 }
 
 async function fetchAndCacheAccounts(
@@ -89,7 +90,9 @@ async function fetchAndCacheAccounts(
   let page = 0;
   let totalElapsed = 0;
 
-  console.time("Total fetching time");
+  const startTime = performance.now();
+  logger.info('Starting account fetching process');
+  
   while (true) {
     const pageStart = performance.now();
     const entries = await api.query.system.account.entriesPaged({
@@ -101,7 +104,7 @@ async function fetchAndCacheAccounts(
     const pageDuration = pageEnd - pageStart;
     totalElapsed += pageDuration;
 
-    console.log(`Page ${page} took ${pageDuration.toFixed(2)} ms`);
+    logger.debug(`Page ${page} took ${pageDuration.toFixed(2)} ms`);
     if (entries.length === 0) break;
 
     for (const [storageKey] of entries) {
@@ -112,17 +115,25 @@ async function fetchAndCacheAccounts(
     startKey = entries[entries.length - 1][0].toHex();
     const totalMinutes = Math.floor(totalElapsed / 60000);
     const totalSeconds = ((totalElapsed % 60000) / 1000).toFixed(1);
-    console.log(
-      `Fetched ${entries.length} accounts on page ${page}\nTotal accounts: ${totalFetched}\nTotal time: ${totalMinutes} minutes and ${totalSeconds} seconds`,
+    logger.info(
+      `Fetched ${entries.length} accounts on page ${page}`,
+      {
+        totalAccounts: totalFetched,
+        totalTime: `${totalMinutes} minutes and ${totalSeconds} seconds`
+      }
     );
 
     page++;
   }
-  console.timeEnd("Total fetching time");
-  console.log(`Finished fetching. Total accounts fetched: ${totalFetched}`);
+  
+  const totalTime = performance.now() - startTime;
+  logger.info('Finished fetching accounts', { 
+    totalAccounts: totalFetched,
+    totalTimeMs: totalTime.toFixed(2)
+  });
 
   fs.writeFileSync(BACKUP_FILE, JSON.stringify(reversedMap, null, 2));
-  console.log(`Saved reversedMap to ${BACKUP_FILE}`);
+  logger.info(`Saved reversedMap to ${BACKUP_FILE}`);
 
   return reversedMap;
 }
@@ -139,8 +150,9 @@ async function monitorProgress(reversedMap: Record<string, number>) {
       await RCApi.query.RcMigrator.RcMigrationStage.getValue();
 
     if (!isValidMigrationStage(rcMigrationStage)) {
-      console.log(
-        `last_key is missing in the stage: ${JSON.stringify(rcMigrationStage)}`,
+      logger.warn(
+        `last_key is missing in the stage`,
+        { stage: JSON.stringify(rcMigrationStage) }
       );
       await delay(delay_ms);
       continue;
@@ -152,23 +164,27 @@ async function monitorProgress(reversedMap: Record<string, number>) {
       continue;
     }
 
-    console.log("last key", lastKey);
+    logger.debug(`Processing last key: ${lastKey}`);
     const storageKey = createStorageKeyFromSS58(lastKey);
-    console.log("looking for storage key: ", storageKey);
+    logger.debug(`Looking for storage key: ${storageKey}`);
 
     const position = reversedMap[storageKey];
     if (position === undefined) {
-      console.warn(`${storageKey} is not present in reversedMap`);
+      logger.warn(`${storageKey} is not present in reversedMap`);
     } else if (lastKeyPosition > position) {
-      console.warn(
-        `bad key transition: lastKeyPosition > position: ${lastKeyPosition} > ${position}`,
+      logger.warn(
+        `bad key transition: lastKeyPosition > position`,
+        { lastKeyPosition, position }
       );
     } else {
       const totalAccounts = Object.keys(reversedMap).length;
       const progress = (position / totalAccounts) * 100;
       lastKeyPosition = position;
-      console.log(`current/total: ${position}/${totalAccounts}`);
-      console.log(`account migration progress: ${progress.toFixed(3)}%`);
+      logger.info(`Account migration progress`, {
+        current: position,
+        total: totalAccounts,
+        progress: `${progress.toFixed(3)}%`
+      });
     }
 
     await delay(delay_ms);
@@ -204,4 +220,6 @@ function createStorageKeyFromSS58(lastKey: string): string {
 }
 
 const run_schedule_migration = process.argv[2] && process.argv[2] == 'no-schedule' ? false : true;
-main(run_schedule_migration).catch(console.error);
+main(run_schedule_migration).catch((error) => {
+  logger.error('Main function error', { error });
+});
