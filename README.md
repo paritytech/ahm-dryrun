@@ -31,7 +31,8 @@ and go to [AHM Monitor](https://migration.paritytech.io/?backend_url=http://loca
 The cmd `just ahm <runtime>` use the `orchestrator` as main control flow to coordinate the usage of a mix of tools (e.g:[zombie-bite](https://github.com/pepoviola/zombie-bite), [doppelganger](https://github.com/paritytech/doppelganger-wrapper)) and `ts` scripts (under zombie-bite-scripts), but those are designed to allow you to use (and _reuse_) each _component_ manully in order to easily debug each __step__.
 
 ### Requirements
-In order to use this tool you will need this binaries available in your PATH
+In order to use this tool you will need these binaries available in your PATH
+
 
 - [Doppelganger binaries](https://github.com/paritytech/doppelganger-wrapper): doppelganger, doppelganger-parachain, workers
 - [Zombie-bite](https://github.com/pepoviola/zombie-bite)

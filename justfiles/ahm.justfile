@@ -43,4 +43,3 @@ _npm-build:
 # Run the Asset Hub Migration Monitor
 monitor:
     cd ahm-monitor/backend && yarn run start
-
