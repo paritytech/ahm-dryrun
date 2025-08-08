@@ -28,7 +28,7 @@
     "@types/winston": "^2.4.4",
     "chokidar": "^4.0.3",
     "dotenv": "^16.4.7",
-    "polkadot-api": "^1.14.1",
+    "polkadot-api": "=1.15.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   },
