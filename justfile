@@ -14,15 +14,15 @@ help:
     @echo "Docs are in the README and the repo: https://github.com/paritytech/ahm-dryrun\n"
     @just --list --unsorted
 
-# Initial setup after you cloned the repo. Run it once.
+# Initialize or update the submodules.
 init:
     git submodule update --init --recursive
 
-# Install all dependencies. Run it once.
-setup:
-    git submodule update --remote --merge
+# Install all dependencies. Run it when changing branches or pulling.
+setup: init
     just install-doppelganger
     just install-zombie-bite
+    just install-monitor
 
 # ------------------------- INSTALLING DEPENDENCIES -------------
 
@@ -32,11 +32,20 @@ install-doppelganger:
         --bin doppelganger-parachain \
         --bin polkadot-execute-worker \
         --bin polkadot-prepare-worker  \
-        --locked --root ${DOPPELGANGER_PATH}
+        --locked --force --root ${DOPPELGANGER_PATH}
 
 # Install the `zombie-bite` binary on your system.
 install-zombie-bite:
     cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite --locked --force
+
+# Install the AHM Monitor
+install-monitor:
+    mkdir -p ./ahm-monitor/backend/data
+    cd ahm-monitor/backend \
+    && npm install \
+    && npm run migrate \
+    && npm run push \
+    && npm run build
 
 # ------------------------- BUILDING RUNTIMES -------------------
 
@@ -61,3 +70,20 @@ build runtime:
 
 e2e-tests *TEST:
     cd ${PET_PATH} && yarn && yarn test {{ TEST }}
+
+# ------------------------- CLEANING UP -------------------------
+
+# Clean up some generated clutter.
+clean:
+    rm -rf migration-run-*
+    git checkout HEAD -- .papi/descriptors/{package.json,dist/{index.d.ts,index.js,index.mjs}}
+    rm -f zombie-bite/doppelganger/{.crates.toml,.crates2.json}
+
+# Clean up everything.
+clean-harder: clean
+    rm -f package-lock.json .package.json.sum
+    rm -rf logs node_modules dist
+    rm -rf paseo-runtimes/target
+    rm -rf runtimes/target
+    rm -rf polkadot-ecosystem-tests/node_modules
+    rm -rf ahm-monitor/backend/{node_modules,dist,data}

@@ -10,3 +10,6 @@
 	path = paseo-runtimes
 	url = https://github.com/paritytech/paseo-ahm.git
 	branch = dev-ahm
+[submodule "ahm-monitor"]
+	path = ahm-monitor
+	url = https://github.com/paritytech/asset-hub-migration-monitor.git
