@@ -19,12 +19,9 @@ export const multisigTests: MigrationTest = {
 
         // Collect RC multisig data 
         const rc_multisigEntries = await rc_api_before.query.multisig.multisigs.entries();
-        logger.info(`Found ${rc_multisigEntries.length} RC multisig entries`);
 
         const rc_multisigs: MultisigEntry[] = rc_multisigEntries.map(([key, value]) => {
-            
             const multisigData = value.toJSON() as any;
-            
             return {
                 creator: multisigData.depositor,
                 deposit: multisigData.deposit.toString(),
@@ -34,16 +31,12 @@ export const multisigTests: MigrationTest = {
 
         // AH Pre-check: record current state
         const ah_multisigEntries = await ah_api_before.query.multisig.multisigs.entries();
-        logger.info(`Found ${ah_multisigEntries.length} AH multisig entries before migration`);
-
-        // Store the count for later 
-        const ah_pre_count = ah_multisigEntries.length;
 
         return {
             rc_pre_payload: {
                 multisigEntries: rc_multisigs
             },
-            ah_pre_payload: ah_pre_count 
+            ah_pre_payload: ah_multisigEntries.length
         };
     },
 
@@ -57,7 +50,6 @@ export const multisigTests: MigrationTest = {
         
         // Check RC state after migration
         const rc_multisig_after = await rc_api_after.query.multisig.multisigs.entries();
-        logger.info(`RC multisigs: before=${rc_multisigs_before.length}, after=${rc_multisig_after.length}`);
     
         // RC should be empty after migration
         assert(
@@ -71,7 +63,6 @@ export const multisigTests: MigrationTest = {
             ah_multisig_after.length === ah_pre_count,  
             `AH multisig count should be unchanged: expected ${ah_pre_count}, got ${ah_multisig_after.length}`
         );
-        logger.info(`AH multisig count: before=${ah_pre_count}, after=${ah_multisig_after.length}`);
 
         // Check that depositor accounts exist on AH and can access funds
         let countOfAccountsWithBalance = 0;
@@ -116,7 +107,6 @@ export const multisigTests: MigrationTest = {
             `Count of creator accounts with balance on AH should be equal to the number of multisig entries before migration: expected ${rc_multisigs_before.length}, got ${countOfAccountsWithBalance}`
         );
 
-        logger.info(`Post-migration count of creator accounts with balance on AH: ${countOfAccountsWithBalance}`);
     }
 } as const;
 
