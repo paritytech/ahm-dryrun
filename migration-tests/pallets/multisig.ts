@@ -44,7 +44,6 @@ export const multisigTests: MigrationTest = {
         context: PostCheckContext,
         pre_payload: PreCheckResult
     ): Promise<void> => {
-        // RC should be empty after migration
         const { rc_api_after, ah_api_after } = context;
         const rc_multisig_after = await rc_api_after.query.multisig.multisigs.entries();
         assert(
@@ -52,7 +51,6 @@ export const multisigTests: MigrationTest = {
             `RC should be empty after migration, but found ${rc_multisig_after.length} entries`
         );
         
-        // AH multisig count should remain same as before
         const ah_pre_count = pre_payload.ah_pre_payload as number;
         const ah_multisig_after = await ah_api_after.query.multisig.multisigs.entries();
         assert(
@@ -94,8 +92,6 @@ export const multisigTests: MigrationTest = {
             accountsWithBalanceCount++;
         }
         
-        // accountsWithBalanceCount should be equal to rc_multisigs_before.length. 
-        // As each multisig has some deposits, which gets unreserved on AH, the depositor should have some balance on AH.
         assert(
             accountsWithBalanceCount === rc_multisigs_before.length,
             `Expected ${rc_multisigs_before.length} depositor accounts to have balance on AH, but found ${accountsWithBalanceCount}.`
