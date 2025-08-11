@@ -20,7 +20,6 @@ init:
 
 # Install all dependencies. Run it once.
 setup:
-    git submodule update --remote --merge
     just install-doppelganger
     just install-zombie-bite
 
