@@ -175,7 +175,6 @@ Make any changes to the env rather than to the bare configs.
 ### Current submodule management system:
 - Submodule commits are locked in `SUBMODULES.yaml`
 - CI checks ensure submodule commits match the expected ones
-- Use `just update-submodules` to sync submodules to the commits specified in `SUBMODULES.yaml`
 
 ### To update a submodule:
 1. Navigate to the submodule: `cd runtimes` (or `polkadot-ecosystem-tests`, `paseo-runtimes`)
