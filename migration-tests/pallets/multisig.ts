@@ -7,7 +7,7 @@ import { logger } from "../../shared/logger.js";
 // Constants for validation - SS58 address length
 const MIN_SS58_ADDRESS_LENGTH = 48;
 interface MultisigEntry {
-    creator: string;
+    depositor: string;
     deposit: string;
     details?: string;
 }
@@ -23,7 +23,7 @@ export const multisigTests: MigrationTest = {
         const rc_multisigs: MultisigEntry[] = rc_multisigEntries.map(([key, value]) => {
             const multisigData = value.toJSON() as any;
             return {
-                creator: multisigData.depositor,
+                depositor: multisigData.depositor,
                 deposit: multisigData.deposit.toString(),
                 details: key.args?.[0]?.toString() || 'unknown',
             };
@@ -68,19 +68,19 @@ export const multisigTests: MigrationTest = {
         let countOfAccountsWithBalance = 0;
         for (const rcEntry of rc_multisigs_before) {
             try {
-                // Validate that creator is a proper account ID before querying
-                if (!rcEntry.creator || rcEntry.creator.length < MIN_SS58_ADDRESS_LENGTH) {
-                    logger.warn(`Skipping invalid creator account: ${rcEntry.creator}`);
+                // Validate that depositor is a proper account ID before querying
+                if (!rcEntry.depositor || rcEntry.depositor.length < MIN_SS58_ADDRESS_LENGTH) {
+                    logger.warn(`Skipping invalid depositor account: ${rcEntry.depositor}`);
                     continue;
                 }
 
-                const ahAccountRaw = await ah_api_after.query.system.account(rcEntry.creator);
+                const ahAccountRaw = await ah_api_after.query.system.account(rcEntry.depositor);
                 
                 // JSON approach for safer access
                 const ahAccountJson = ahAccountRaw.toJSON() as any;
                 
                 if (!ahAccountJson || !ahAccountJson.data) {
-                    logger.warn(`Account ${rcEntry.creator} not found or has no data on AH`);
+                    logger.warn(`Account ${rcEntry.depositor} not found or has no data on AH`);
                     continue;
                 }
                 
@@ -90,12 +90,12 @@ export const multisigTests: MigrationTest = {
                 // The depositor should have some balance (including the unreserved deposit)
                 assert(
                     freeBalance > 0 || reservedBalance > 0,
-                    `Depositor ${rcEntry.creator} should have balance on AH after migration`
+                    `Depositor ${rcEntry.depositor} should have balance on AH after migration`
                 );
                 countOfAccountsWithBalance++;
 
             } catch (error) {
-                logger.error(`Error checking account ${rcEntry.creator}:`, error);
+                logger.error(`Error checking account ${rcEntry.depositor}:`, error);
                 throw error;
             }
         }
@@ -104,7 +104,7 @@ export const multisigTests: MigrationTest = {
         // As each multisig has some deposits, which gets unreserved on AH, the depositor should have some balance on AH.
         assert(
             countOfAccountsWithBalance === rc_multisigs_before.length,
-            `Count of creator accounts with balance on AH should be equal to the number of multisig entries before migration: expected ${rc_multisigs_before.length}, got ${countOfAccountsWithBalance}`
+            `Count of depositor accounts with balance on AH should be equal to the number of multisig entries before migration: expected ${rc_multisigs_before.length}, got ${countOfAccountsWithBalance}`
         );
 
     }
