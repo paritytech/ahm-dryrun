@@ -19,7 +19,7 @@ init:
     git submodule update --init --recursive
 
 # Install all dependencies. Run it once.
-setup:
+setup: init
     just install-doppelganger
     just install-zombie-bite
 
