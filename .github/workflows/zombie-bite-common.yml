@@ -190,6 +190,8 @@ jobs:
           name: ${{ inputs.network }}-zb-step-spawn-${{ github.sha }}
           path: |
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/ports.json
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/ready.json
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/migration_done.json
 
 
