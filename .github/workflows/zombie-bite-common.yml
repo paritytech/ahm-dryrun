@@ -211,7 +211,7 @@ jobs:
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/rc-pre.snap
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ah-pre.snap
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/rc-post.snap
-            ${{ env.ZOMBIE_BITE_BASE_PATH }}/ah-pre.snap
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/ah-post.snap
 
       - name: try_runtime_upload_step
         uses: actions/upload-artifact@v4
