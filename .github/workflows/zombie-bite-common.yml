@@ -70,6 +70,12 @@ jobs:
           AH_OVERRIDE="./runtime_wasm/asset_hub_${NETWORK}_runtime.compact.compressed.wasm"
           ls $RC_OVERRIDE
           ls $AH_OVERRIDE
+
+          # read .env to use the variable defined there (e.g ZOMBIE_BITE_RC_PORT/ZOMBIE_BITE_AH_PORT)
+          set -a
+          source .env
+          set +a
+
           zombie-bite bite -r $NETWORK --rc-override $RC_OVERRIDE --ah-override $AH_OVERRIDE -d $ZOMBIE_BITE_BASE_PATH
 
         continue-on-error: true
@@ -184,6 +190,8 @@ jobs:
           name: ${{ inputs.network }}-zb-step-spawn-${{ github.sha }}
           path: |
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/ports.json
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/ready.json
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/migration_done.json
 
 
