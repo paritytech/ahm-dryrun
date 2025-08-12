@@ -37,6 +37,11 @@ jobs:
         run: |
           just install-zombie-bite
 
+      - name: install_try_runtime_cli
+        shell: bash
+        run: |
+          just install-try-runtime
+
       - name: build_runtimes
         shell: bash
         env:
@@ -83,7 +88,7 @@ jobs:
       - name: zombie_bite_upload_step
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.network }}-zb-step-bite-${{ github.sha }}
+          name: ${{ inputs.network }}-pre-migration-db-${{ github.sha }}
           path: |
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ports.json
@@ -97,6 +102,7 @@ jobs:
           ls ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite
           ls ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite-debug
           echo "::endgroup::"
+
 
       - uses: actions/setup-node@v4
         with:
@@ -139,13 +145,26 @@ jobs:
           echo "sleeping 1 min to bootstrap"
           sleep 60
 
-          echo "::group::run-migration"
+
           ALICE_PORT=$(jq -r .alice_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
           COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
 
+          # try-runtime snap pre
+          echo "::group::run-try-runtime"
+          try-runtime create-snapshot --uri "ws://localhost:$ALICE_PORT" "${ZOMBIE_BITE_BASE_PATH}/rc-pre.snap"
+          try-runtime create-snapshot --uri "ws://localhost:$COL_PORT" "${ZOMBIE_BITE_BASE_PATH}/ah-pre.snap"
+          echo "::endgroup::"
+
+          echo "::group::run-migration"
           node dist/zombie-bite-scripts/migration_shedule_migration.js $ALICE_PORT
           node dist/zombie-bite-scripts/migration_finished_monitor.js $ZOMBIE_BITE_BASE_PATH $ALICE_PORT $COL_PORT
 
+          echo "::endgroup::"
+
+          # try-runtime snap post
+          echo "::group::run-try-runtime"
+          try-runtime create-snapshot --uri "ws://localhost:$ALICE_PORT" "${ZOMBIE_BITE_BASE_PATH}/rc-post.snap"
+          try-runtime create-snapshot --uri "ws://localhost:$COL_PORT" "${ZOMBIE_BITE_BASE_PATH}/ah-post.snap"
           echo "::endgroup::"
 
           echo "::group::zombie-bite-stop"
@@ -187,7 +206,17 @@ jobs:
       - name: zombie_bite_upload_step
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.network }}-zb-step-spawn-${{ github.sha }}
+          name: ${{ inputs.network }}-try-runtime-snaps-${{ github.sha }}
+          path: |
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/rc-pre.snap
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/ah-pre.snap
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/rc-post.snap
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/ah-post.snap
+
+      - name: try_runtime_upload_step
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.network }}-post-migration-db-${{ github.sha }}
           path: |
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ports.json
