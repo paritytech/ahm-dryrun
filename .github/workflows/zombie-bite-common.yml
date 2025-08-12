@@ -206,7 +206,7 @@ jobs:
       - name: zombie_bite_upload_step
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.network }}-zb-step-spawn-${{ github.sha }}
+          name: ${{ inputs.network }}-try-runtime-${{ github.sha }}
           path: |
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/rc-pre.snap
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ah-pre.snap
@@ -216,7 +216,7 @@ jobs:
       - name: try_runtime_upload_step
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.network }}-try-runtime-${{ github.sha }}
+          name: ${{ inputs.network }}-zb-step-spawn-${{ github.sha }}
           path: |
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ports.json
