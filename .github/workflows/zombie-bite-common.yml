@@ -88,7 +88,7 @@ jobs:
       - name: zombie_bite_upload_step
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.network }}-zb-step-bite-${{ github.sha }}
+          name: ${{ inputs.network }}-pre-migration-db
           path: |
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ports.json
@@ -206,7 +206,7 @@ jobs:
       - name: zombie_bite_upload_step
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.network }}-try-runtime-${{ github.sha }}
+          name: ${{ inputs.network }}-try-runtime-snaps
           path: |
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/rc-pre.snap
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ah-pre.snap
@@ -216,7 +216,7 @@ jobs:
       - name: try_runtime_upload_step
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.network }}-zb-step-spawn-${{ github.sha }}
+          name: ${{ inputs.network }}-post-migration-db
           path: |
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ports.json
