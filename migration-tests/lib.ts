@@ -147,8 +147,9 @@ async function setupTestContext(
   });
 
   const rc_block_hash_before = await rc_api.rpc.chain.getBlockHash(
-    relayChainConfig.before_block,
+    relayChainConfig.before_block + 2,
   );
+  console.log("rc_block_hash_before", relayChainConfig.before_block + 2);
   const rc_api_before = await rc_api.at(rc_block_hash_before);
 
   const rc_block_hash_after = await rc_api.rpc.chain.getBlockHash(
@@ -162,7 +163,7 @@ async function setupTestContext(
   });
 
   const ah_block_hash_before = await ah_api.rpc.chain.getBlockHash(
-    assetHubConfig.before_block,
+    assetHubConfig.before_block + 2,
   );
   const ah_api_before = await ah_api.at(ah_block_hash_before);
 
