@@ -149,7 +149,6 @@ async function setupTestContext(
   const rc_block_hash_before = await rc_api.rpc.chain.getBlockHash(
     relayChainConfig.before_block + 2,
   );
-  console.log("rc_block_hash_before", relayChainConfig.before_block + 2);
   const rc_api_before = await rc_api.at(rc_block_hash_before);
 
   const rc_block_hash_after = await rc_api.rpc.chain.getBlockHash(
