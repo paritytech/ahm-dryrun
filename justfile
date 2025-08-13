@@ -65,3 +65,9 @@ build runtime:
 
 e2e-tests *TEST:
     cd ${PET_PATH} && yarn && yarn test {{ TEST }}
+
+# ------------------------- RUNNING INTEGRATION TESTS -------------------
+
+compare-state base_path:
+    npm run build
+    npm run compare-state ./migration-run
