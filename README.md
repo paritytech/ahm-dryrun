@@ -184,18 +184,9 @@ Make any changes to the env rather than to the bare configs.
 
 ## Updating submodules
 
-**Important**: This repository uses locked submodule commits to ensure reproducible builds.
+Make sure to run `git submodule update --recursive` after you pull from the repo to update the submodules to the commits tracked in the repo.
 
-### Current submodule management system:
-- Submodule commits are locked in `SUBMODULES.yaml`
-- CI checks ensure submodule commits match the expected ones
-
-### To update a submodule:
-1. Navigate to the submodule: `cd runtimes` (or `polkadot-ecosystem-tests`, `paseo-runtimes`)
-2. Checkout the desired commit: `git checkout <new-commit-hash>`
-3. Go back to root: `cd ..`
-4. Update `SUBMODULES.yaml` with the new commit hash
-5. Commit both changes: `git add . && git commit -m "Update submodule to <new-commit-hash>"`
+You can run e.g. `cd runtimes && git checkout <commit_hash> && cd - && git add runtimes && git commit` to update the commit that the runtimes submodule points to.
 
 
 # FAQ
