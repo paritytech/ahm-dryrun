@@ -336,6 +336,8 @@ async function fetch_preimage(ah_api_after: ApiDecoration<'promise'>, rcStatus: 
     }
 }
 
+// Creates maps for pallet name to index and index to pallet name.
+// It's needed to map RC calls to AH calls because their indices change after migration but names stay the same.
 function getPalletNameIndexMaps(api: ApiDecoration<'promise'>): { nameToId: Record<string, number>, idToName: Record<number, string> } {
     const nameToId: Record<string, number> = {};
     const idToName: Record<number, string> = {};
