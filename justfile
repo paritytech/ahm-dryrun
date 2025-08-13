@@ -22,6 +22,7 @@ init:
 setup: init
     just install-doppelganger
     just install-zombie-bite
+    just install-try-runtime
 
 # ------------------------- INSTALLING DEPENDENCIES -------------
 
@@ -36,6 +37,10 @@ install-doppelganger:
 # Install the `zombie-bite` binary on your system.
 install-zombie-bite:
     cargo install --git https://github.com/pepoviola/zombie-bite --bin zombie-bite --locked --force
+
+# Install the `try-runtime-cli` binary in your system
+install-try-runtime:
+    cargo install --git https://github.com/paritytech/try-runtime-cli --locked
 
 # ------------------------- BUILDING RUNTIMES -------------------
 
