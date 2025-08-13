@@ -70,4 +70,4 @@ e2e-tests *TEST:
 
 compare-state base_path:
     npm run build
-    npm run compare-state ./migration-run
+    npm run compare-state {{ base_path }}
