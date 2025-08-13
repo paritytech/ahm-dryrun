@@ -182,6 +182,7 @@ async function setupTestContext(
 
   const ah_block_to_use = await getFirstAvailableBlock(ah_api, assetHubConfig.before_block);
   const ah_block_hash_before = await ah_api.rpc.chain.getBlockHash(ah_block_to_use);
+
   const ah_api_before = await ah_api.at(ah_block_hash_before);
 
   const ah_block_hash_after = await ah_api.rpc.chain.getBlockHash(
