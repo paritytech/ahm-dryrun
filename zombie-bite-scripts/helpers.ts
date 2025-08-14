@@ -83,22 +83,24 @@ async function rc_check(uri: string) {
   return new Promise(async (resolve) => {
     logger.info('Checking RC migration status', { uri });
     const api = await connect(uri);
-    const unsub = await api.query.rcMigrator.rcMigrationStage(
-      async (raw: any) => {
-        let stage = raw.toHuman();
-        const finished = migration_done(stage) || mock_finish_flag;
-        if (finished) {
-          // Retrieve the latest header
-          const lastHeader = await api.rpc.chain.getHeader();
-          const number = lastHeader.number;
-          logger.info('RC migration finished', { blockNumber: number.toNumber() });
-          await finish(unsub, api);
-          return resolve(number);
-        } else {
-          logger.debug('RC migration in progress', { stage });
-        }
-      },
-    );
+
+    // Subscribe to finalized block headers
+    const unsub = await api.rpc.chain.subscribeFinalizedHeads(async (header) => {
+      logger.debug(`RC Finalized Block #${header.number}: ${header.hash}`);
+
+      let raw = await (await api.at(header.hash)).query.rcMigrator.rcMigrationStage();
+      // let raw = await api.query.rcMigrator.rcMigrationStage(header.hash);
+      let stage = raw.toHuman();
+      const finished = migration_done(stage) || mock_finish_flag;
+      if (finished) {
+        const number = header.number;
+        logger.info('RC migration finished', { blockNumber: number.toNumber() });
+        await finish(unsub, api);
+        return resolve(number);
+      } else {
+        logger.debug('RC migration in progress', { stage });
+      }
+    });
   });
 }
 
@@ -106,22 +108,24 @@ async function ah_check(uri: string) {
   return new Promise(async (resolve) => {
     logger.info('Checking AH migration status', { uri });
     const api = await connect(uri);
-    const unsub = await api.query.ahMigrator.ahMigrationStage(
-      async (raw: any) => {
-        let stage = raw.toHuman();
-        const finished = migration_done(stage) || mock_finish_flag;
-        if (finished) {
-          // Retrieve the latest header
-          const lastHeader = await api.rpc.chain.getHeader();
-          const number = lastHeader.number;
-          logger.info('AH migration finished', { blockNumber: number.toNumber() });
-          await finish(unsub, api);
-          return resolve(number);
-        } else {
-          logger.debug('AH migration in progress', { stage });
-        }
-      },
-    );
+
+    // Subscribe to finalized block headers
+    const unsub = await api.rpc.chain.subscribeFinalizedHeads(async (header) => {
+      logger.debug(`AH Finalized Block #${header.number}: ${header.hash}`);
+
+      let raw = await (await api.at(header.hash)).query.ahMigrator.ahMigrationStage();
+      // let raw = await api.query.ahMigrator.ahMigrationStage(header.hash);
+      let stage = raw.toHuman();
+      const finished = migration_done(stage) || mock_finish_flag;
+      if (finished) {
+        const number = header.number;
+        logger.info('AH migration finished', { blockNumber: number.toNumber() });
+        await finish(unsub, api);
+        return resolve(number);
+      } else {
+        logger.debug('AH migration in progress', { stage });
+      }
+    });
   });
 }
 
