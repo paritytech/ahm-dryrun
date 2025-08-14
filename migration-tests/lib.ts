@@ -15,6 +15,7 @@ import { bountiesTests } from "./pallets/bounties.js";
 import { treasuryTests } from "./pallets/treasury.js";
 import { referendaTests } from "./pallets/referenda.js";
 import { multisigTests } from "./pallets/multisig.js";
+import { ApiDecoration } from "@polkadot/api/types/index.js";
 
 // when updating this, also update the testsByNetwork below
 type Network = "Westend" | "Paseo" | "Kusama" | "Polkadot";
@@ -137,6 +138,24 @@ export interface ChainConfig {
   after_block: number;
 }
 
+async function getFirstAvailableBlock(api: ApiPromise, block: number): Promise<number> {
+  // only check the first 10 blocks, since should be one available in that range
+  const range = Array(10).fill(null).map((_, i) => block +i);
+  let block_to_use = range.find(async (block) => {
+    try {
+      const rc_block_hash_before = await api.rpc.chain.getBlockHash(block);
+      await api.at(rc_block_hash_before);
+      return true;
+    } catch(_) {
+      return false;
+    }
+  });
+
+  if(!block_to_use) throw new Error(`Can't find any block to use in the range(${block}, ${block+10})`);
+
+  return block_to_use;
+}
+
 async function setupTestContext(
   relayChainConfig: ChainConfig,
   assetHubConfig: ChainConfig,
@@ -146,9 +165,9 @@ async function setupTestContext(
     provider: new WsProvider(relayChainConfig.endpoint),
   });
 
-  const rc_block_hash_before = await rc_api.rpc.chain.getBlockHash(
-    relayChainConfig.before_block,
-  );
+  const rc_block_to_use = await getFirstAvailableBlock(rc_api, relayChainConfig.before_block);
+  const rc_block_hash_before = await rc_api.rpc.chain.getBlockHash(rc_block_to_use);
+
   const rc_api_before = await rc_api.at(rc_block_hash_before);
 
   const rc_block_hash_after = await rc_api.rpc.chain.getBlockHash(
@@ -161,9 +180,9 @@ async function setupTestContext(
     provider: new WsProvider(assetHubConfig.endpoint),
   });
 
-  const ah_block_hash_before = await ah_api.rpc.chain.getBlockHash(
-    assetHubConfig.before_block,
-  );
+  const ah_block_to_use = await getFirstAvailableBlock(ah_api, assetHubConfig.before_block);
+  const ah_block_hash_before = await ah_api.rpc.chain.getBlockHash(ah_block_to_use);
+
   const ah_api_before = await ah_api.at(ah_block_hash_before);
 
   const ah_block_hash_after = await ah_api.rpc.chain.getBlockHash(
