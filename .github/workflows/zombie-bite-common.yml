@@ -212,6 +212,12 @@ jobs:
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ah-pre.snap
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/rc-post.snap
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ah-post.snap
+
+      - name: zombie_bite_upload_step_logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.network }}-post-migration-logs-${{ github.sha }}
+          path: |
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn/collator/collator.log
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn/alice/alice.log
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn/bob/bob.log
