@@ -38,7 +38,6 @@ runs:
         echo "downloading snapshot from: ${DL_URL}"
         curl -sSLf \
           -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-          -H "Accept: application/octet-stream" \
           -o "${ZIP}" \
           "${DL_URL}"
 
