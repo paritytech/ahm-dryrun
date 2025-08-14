@@ -79,27 +79,40 @@ function migration_done(stage: any) {
   return JSON.stringify(stage) == '"MigrationDone"';
 }
 
+
+
 async function rc_check(uri: string) {
   return new Promise(async (resolve) => {
     logger.info('Checking RC migration status', { uri });
     const api = await connect(uri);
+    // blocks that could be not in the db from the 'bitting' process
+    let bootstraping_blocks = 3;
 
     // Subscribe to finalized block headers
     const unsub = await api.rpc.chain.subscribeFinalizedHeads(async (header) => {
       logger.debug(`RC Finalized Block #${header.number}: ${header.hash}`);
 
-      let raw = await (await api.at(header.hash)).query.rcMigrator.rcMigrationStage();
-      // let raw = await api.query.rcMigrator.rcMigrationStage(header.hash);
-      let stage = raw.toHuman();
-      const finished = migration_done(stage) || mock_finish_flag;
-      if (finished) {
-        const number = header.number;
-        logger.info('RC migration finished', { blockNumber: number.toNumber() });
-        await finish(unsub, api);
-        return resolve(number);
-      } else {
-        logger.debug('RC migration in progress', { stage });
-      }
+      try {
+        const apiAt = await api.at(header.hash);
+        // if we already have a block to check set bootstraping complete
+        bootstraping_blocks = 0;
+
+        let raw = await apiAt.query.rcMigrator.rcMigrationStage();
+        let stage = raw.toHuman();
+
+        const finished = migration_done(stage) || mock_finish_flag;
+        if (finished) {
+          const number = header.number;
+          logger.info('RC migration finished', { blockNumber: number.toNumber() });
+          await finish(unsub, api);
+          return resolve(number);
+        } else {
+          logger.debug('RC migration in progress', { stage });
+        }
+      } catch(e) {
+        if(bootstraping_blocks <= 0) throw e;
+        bootstraping_blocks -= 1;
+      };
     });
   });
 }
@@ -108,23 +121,34 @@ async function ah_check(uri: string) {
   return new Promise(async (resolve) => {
     logger.info('Checking AH migration status', { uri });
     const api = await connect(uri);
+    // blocks that could be not in the db from the 'bitting' process
+    let bootstraping_blocks = 3;
 
     // Subscribe to finalized block headers
     const unsub = await api.rpc.chain.subscribeFinalizedHeads(async (header) => {
       logger.debug(`AH Finalized Block #${header.number}: ${header.hash}`);
 
-      let raw = await (await api.at(header.hash)).query.ahMigrator.ahMigrationStage();
-      // let raw = await api.query.ahMigrator.ahMigrationStage(header.hash);
-      let stage = raw.toHuman();
-      const finished = migration_done(stage) || mock_finish_flag;
-      if (finished) {
-        const number = header.number;
-        logger.info('AH migration finished', { blockNumber: number.toNumber() });
-        await finish(unsub, api);
-        return resolve(number);
-      } else {
-        logger.debug('AH migration in progress', { stage });
-      }
+      try {
+        const apiAt = await api.at(header.hash);
+        // if we already have a block to check set bootstraping complete
+        bootstraping_blocks = 0;
+
+        let raw = await apiAt.query.ahMigrator.ahMigrationStage();
+        let stage = raw.toHuman();
+
+        const finished = migration_done(stage) || mock_finish_flag;
+        if (finished) {
+          const number = header.number;
+          logger.info('AH migration finished', { blockNumber: number.toNumber() });
+          await finish(unsub, api);
+          return resolve(number);
+        } else {
+          logger.debug('AH migration in progress', { stage });
+        }
+      } catch(e) {
+        if(bootstraping_blocks <= 0) throw e;
+        bootstraping_blocks -= 1;
+      };
     });
   });
 }
