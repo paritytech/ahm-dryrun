@@ -4,12 +4,11 @@ description: "Downloads a post-migration DB artifact and unpacks it into the des
 inputs:
   artifact-url:
     description: "Artifact URL"
-    default: "https://github.com/paritytech/ahm-dryrun/actions/runs/16961696621/artifacts/3765401233"
-    required: false
+    # default: "https://github.com/paritytech/ahm-dryrun/actions/runs/16961696621/artifacts/3765401233"
+    required: true
   destination-path:
     description: "Destination directory"
-    default: "/tmp/ci"
-    required: false
+    required: true
 
 runs:
   using: "composite"
@@ -33,7 +32,7 @@ runs:
         esac
 
         echo "downloading snapshot"
-        curl -L -o "${ZIP}" "${DL_URL}"
+        curl -sSL ${GITHUB_TOKEN:+-H "Authorization: Bearer ${GITHUB_TOKEN}"} -H "Accept: application/octet-stream" -o "${ZIP}" "${DL_URL}"
 
         unzip -q "${ZIP}" -d "${EXTRACT}"
 

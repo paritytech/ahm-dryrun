@@ -19,6 +19,8 @@ jobs:
         with:
           artifact-url: 'https://github.com/paritytech/ahm-dryrun/actions/runs/16961696621/artifacts/3765401233'
           destination-path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: verify
         shell: bash
