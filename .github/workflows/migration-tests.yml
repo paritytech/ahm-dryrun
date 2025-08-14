@@ -1,5 +1,10 @@
 name: Migration tests
-on: workflow_dispatch
+on:
+  workflow_dispatch
+  push:
+    branches: [ ci_migration_tests ]  # your branch
+  pull_request:
+    branches: [ ci_migration_tests ]
 env:
   ZOMBIE_BITE_BASE_PATH: ${{ github.workspace }}/migration-run
 
@@ -14,9 +19,6 @@ jobs:
         with:
           artifact-url: 'https://github.com/paritytech/ahm-dryrun/actions/runs/16961696621/artifacts/3765401233'
           destination-path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
-        # If the artifact needs auth, uncomment the next two lines
-        # env:
-        #   GITHUB_TOKEN: ${{ github.token }}
 
       - name: verify
         shell: bash
