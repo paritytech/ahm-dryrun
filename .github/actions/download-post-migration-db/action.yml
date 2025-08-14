@@ -13,10 +13,11 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Download
+        - name: Download
       env:
         ARTIFACT_URL: ${{ inputs.artifact-url }}
         DESTINATION_PATH: ${{ inputs.destination-path }}
+        GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
       shell: bash
       run: |
         set -euo pipefail
@@ -25,18 +26,26 @@ runs:
         EXTRACT="${TMP_DIR}/extracted"
         mkdir -p "${EXTRACT}"
 
-        # Normalize to zip endpoint and download
-        case "${ARTIFACT_URL}" in
-          */zip) DL_URL="${ARTIFACT_URL}" ;;
-          *) DL_URL="${ARTIFACT_URL}/zip" ;;
-        esac
+        # Build a proper API download URL from the artifact id in the provided URL
+        ARTIFACT_ID="$(echo "${ARTIFACT_URL}" | sed -n 's#.*/artifacts/\([0-9]\+\).*#\1#p' || true)"
+        if [ -n "${ARTIFACT_ID}" ]; then
+          DL_URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}/zip"
+        else
+          case "${ARTIFACT_URL}" in
+            */zip) DL_URL="${ARTIFACT_URL}" ;;
+            *) DL_URL="${ARTIFACT_URL}/zip" ;;
+          esac
+        fi
 
-        echo "downloading snapshot"
-        curl -sSL ${GITHUB_TOKEN:+-H "Authorization: Bearer ${GITHUB_TOKEN}"} -H "Accept: application/octet-stream" -o "${ZIP}" "${DL_URL}"
+        echo "downloading snapshot from: ${DL_URL}"
+        curl -sSLf \
+          -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+          -H "Accept: application/octet-stream" \
+          -o "${ZIP}" \
+          "${DL_URL}"
 
         unzip -q "${ZIP}" -d "${EXTRACT}"
 
-        # Replace destination with extracted content
         rm -rf "${DESTINATION_PATH}"
         mkdir -p "${DESTINATION_PATH}"
         shopt -s dotglob
