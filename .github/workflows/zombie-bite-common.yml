@@ -218,9 +218,9 @@ jobs:
         with:
           name: ${{ inputs.network }}-post-migration-logs-${{ github.sha }}
           path: |
-            ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn/collator/collator.log
-            ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn/alice/alice.log
-            ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn/bob/bob.log
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn-debug/collator/collator.log
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn-debug/alice/alice.log
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn-debug/bob/bob.log
 
       - name: try_runtime_upload_step
         uses: actions/upload-artifact@v4
