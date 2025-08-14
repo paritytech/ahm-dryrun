@@ -4,7 +4,6 @@ description: "Downloads a post-migration DB artifact and unpacks it into the des
 inputs:
   artifact-url:
     description: "Artifact URL"
-    # default: "https://github.com/paritytech/ahm-dryrun/actions/runs/16961696621/artifacts/3765401233"
     required: true
   destination-path:
     description: "Destination directory"
@@ -13,7 +12,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-        - name: Download
+    - name: Download
       env:
         ARTIFACT_URL: ${{ inputs.artifact-url }}
         DESTINATION_PATH: ${{ inputs.destination-path }}
@@ -26,7 +25,6 @@ runs:
         EXTRACT="${TMP_DIR}/extracted"
         mkdir -p "${EXTRACT}"
 
-        # Build a proper API download URL from the artifact id in the provided URL
         ARTIFACT_ID="$(echo "${ARTIFACT_URL}" | sed -n 's#.*/artifacts/\([0-9]\+\).*#\1#p' || true)"
         if [ -n "${ARTIFACT_ID}" ]; then
           DL_URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}/zip"
