@@ -1,4 +1,4 @@
-# TL;DR
+# TL;DR [![AHM flow (all steps)](https://github.com/paritytech/ahm-dryrun/actions/workflows/zombie-bite.yml/badge.svg)](https://github.com/paritytech/ahm-dryrun/actions/workflows/zombie-bite.yml)
 
 To run AHM for Paseo using Zombie-Bite:
 ```
