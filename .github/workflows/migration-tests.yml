@@ -1,0 +1,26 @@
+name: Migration tests
+on: workflow_dispatch
+env:
+  ZOMBIE_BITE_BASE_PATH: ${{ github.workspace }}/migration-run
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: download_post_migration_db
+        uses: ./.github/actions/download-post-migration-db
+        with:
+          artifact-url: 'https://github.com/paritytech/ahm-dryrun/actions/runs/16961696621/artifacts/3765401233'
+          destination-path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
+        # If the artifact needs auth, uncomment the next two lines
+        # env:
+        #   GITHUB_TOKEN: ${{ github.token }}
+
+      - name: verify
+        shell: bash
+        run: |
+          echo "::group::dest contents"
+          ls -la "$ZOMBIE_BITE_BASE_PATH" || true
+          echo "::endgroup::"

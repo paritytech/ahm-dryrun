@@ -1,0 +1,47 @@
+name: "Download Post Migration DB"
+description: "Downloads a post-migration DB artifact and unpacks it into the destination path"
+
+inputs:
+  artifact-url:
+    description: "Artifact URL"
+    default: "https://github.com/paritytech/ahm-dryrun/actions/runs/16961696621/artifacts/3765401233"
+    required: false
+  destination-path:
+    description: "Destination directory"
+    default: "/tmp/ci"
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Download
+      env:
+        ARTIFACT_URL: ${{ inputs.artifact-url }}
+        DESTINATION_PATH: ${{ inputs.destination-path }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        TMP_DIR="$(mktemp -d)"
+        ZIP="${TMP_DIR}/artifact.zip"
+        EXTRACT="${TMP_DIR}/extracted"
+        mkdir -p "${EXTRACT}"
+
+        # Normalize to zip endpoint and download
+        case "${ARTIFACT_URL}" in
+          */zip) DL_URL="${ARTIFACT_URL}" ;;
+          *) DL_URL="${ARTIFACT_URL}/zip" ;;
+        esac
+
+        echo "downloading snapshot"
+        curl -L -o "${ZIP}" "${DL_URL}"
+
+        unzip -q "${ZIP}" -d "${EXTRACT}"
+
+        # Replace destination with extracted content
+        rm -rf "${DESTINATION_PATH}"
+        mkdir -p "${DESTINATION_PATH}"
+        shopt -s dotglob
+        mv "${EXTRACT}"/* "${DESTINATION_PATH}/"
+        shopt -u dotglob
+
+        ls "${DESTINATION_PATH}"
