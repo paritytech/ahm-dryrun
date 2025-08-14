@@ -1,8 +1,8 @@
 name: Migration tests
 on:
-  workflow_dispatch
+  workflow_dispatch:
   push:
-    branches: [ ci_migration_tests ]  # your branch
+    branches: [ ci_migration_tests ] 
   pull_request:
     branches: [ ci_migration_tests ]
 env:
