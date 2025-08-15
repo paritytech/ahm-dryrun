@@ -81,3 +81,22 @@ jobs:
         run: |
           export PATH="${{ env.ZOMBIE_BITE_BASE_PATH }}:$PATH"
           just zb spawn ./migration-run post
+         
+      - name: wait_for_network
+        shell: bash
+        run: |
+          echo "Waiting for 'network is up and running' message..."
+          timeout 300 bash -c '
+            while ! grep -q "network is up and running" ${{ env.ZOMBIE_BITE_BASE_PATH }}/post/*/zombie-bite.log 2>/dev/null; do
+              echo "Still waiting for network..."
+              sleep 5
+            done
+            echo "Network is up and running!"
+          '
+
+      - name: compare_state
+        shell: bash
+        run: |
+          echo "Running state comparison..."
+          export PATH="${{ env.ZOMBIE_BITE_BASE_PATH }}:$PATH"
+          just compare-state ./migration-run
