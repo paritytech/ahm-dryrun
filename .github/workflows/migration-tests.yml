@@ -24,3 +24,27 @@ jobs:
           destination-path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
+
+      - name: verify
+        shell: bash
+        run: |
+          echo "::group::dest contents"
+          ls -la "$ZOMBIE_BITE_BASE_PATH" || true
+          echo "::endgroup::"
+
+      - name: add_state_pruning_flag
+        shell: bash
+        run: |
+          CONFIG_FILE="${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn/config.toml"
+          if [ -f "$CONFIG_FILE" ]; then
+            # Add --state-pruning=14400 to default_args if not already present
+            sed -i '/default_args = \[/,/\]/ { /--state-pruning/!s/\]$/    "--state-pruning=14400",\n]/; }' "$CONFIG_FILE"
+            
+            # Add --state-pruning=14400 to args if not already present
+            sed -i '/^args = \[/,/\]/ { /--state-pruning/!s/\]$/    "--state-pruning=14400",\n]/; }' "$CONFIG_FILE"
+            
+            echo "Modified config.toml:"
+            cat "$CONFIG_FILE"
+          else
+            echo "config.toml not found at $CONFIG_FILE"
+          fi
