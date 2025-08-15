@@ -21,16 +21,6 @@ jobs:
           submodules: recursive
       - uses: extractions/setup-just@v2
 
-      - name: download_doppelganger_binaries
-        uses: ./.github/actions/download-doppelganger-binaries
-        with:
-          destination-path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
-
-      - name: install_zombie_bite
-        shell: bash
-        run: |
-          just install-zombie-bite
-
       - name: download_post_migration_db
         uses: ./.github/actions/download-post-migration-db
         with:
@@ -38,6 +28,16 @@ jobs:
           destination-path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
+
+      - name: download_doppelganger_binaries
+        uses: ./.github/actions/download-doppelganger-binaries
+        with:
+          destination-path: ${{ env.AHM_BINS }}
+  
+      - name: install_zombie_bite
+        shell: bash
+        run: |
+          just install-zombie-bite   
 
       - name: verify
         shell: bash
