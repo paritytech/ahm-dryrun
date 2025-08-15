@@ -7,7 +7,6 @@ on:
     branches: [ ci_migration_tests ]
 env:
   ZOMBIE_BITE_BASE_PATH: ${{ github.workspace }}/migration-run
-  AHM_BINS: "/tmp"
 
 jobs:
   test:
@@ -80,5 +79,5 @@ jobs:
       - name: run_zombie_bite
         shell: bash
         run: |
-          export PATH="/tmp:$PATH"
+          export PATH="${{ env.ZOMBIE_BITE_BASE_PATH }}:$PATH"
           just zb spawn ./migration-run post
