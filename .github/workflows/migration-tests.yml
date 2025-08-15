@@ -32,7 +32,7 @@ jobs:
       - name: download_doppelganger_binaries
         uses: ./.github/actions/download-doppelganger-binaries
         with:
-          destination-path: ${{ env.AHM_BINS }}
+          destination-path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
   
       - name: install_zombie_bite
         shell: bash
