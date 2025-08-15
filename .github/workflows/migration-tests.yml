@@ -20,7 +20,7 @@ jobs:
       - name: download_post_migration_db
         uses: ./.github/actions/download-post-migration-db
         with:
-          artifact-url: 'https://github.com/paritytech/ahm-dryrun/actions/runs/16961696621/artifacts/3765401233'
+          artifact-url: 'https://github.com/paritytech/ahm-dryrun/actions/runs/16961696621/artifacts/3765401233/zip'
           destination-path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
         env:
           GITHUB_TOKEN: ${{ github.token }}

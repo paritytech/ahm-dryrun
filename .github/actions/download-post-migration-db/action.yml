@@ -21,32 +21,13 @@ runs:
       run: |
         set -euo pipefail
         TMP_DIR="$(mktemp -d)"
-        ZIP="${TMP_DIR}/artifact.zip"
-        EXTRACT="${TMP_DIR}/extracted"
-        mkdir -p "${EXTRACT}"
-
-        ARTIFACT_ID="$(echo "${ARTIFACT_URL}" | sed -n 's#.*/artifacts/\([0-9]\+\).*#\1#p' || true)"
-        if [ -n "${ARTIFACT_ID}" ]; then
-          DL_URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}/zip"
-        else
-          case "${ARTIFACT_URL}" in
-            */zip) DL_URL="${ARTIFACT_URL}" ;;
-            *) DL_URL="${ARTIFACT_URL}/zip" ;;
-          esac
-        fi
-
-        echo "downloading snapshot from: ${DL_URL}"
-        curl -sSLf \
-          -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-          -o "${ZIP}" \
-          "${DL_URL}"
-
-        unzip -q "${ZIP}" -d "${EXTRACT}"
-
+        
+        curl -sSLf -H "Authorization: Bearer ${GITHUB_TOKEN}" -o "${TMP_DIR}/artifact.zip" "${ARTIFACT_URL}"
+        
         rm -rf "${DESTINATION_PATH}"
         mkdir -p "${DESTINATION_PATH}"
-        shopt -s dotglob
-        mv "${EXTRACT}"/* "${DESTINATION_PATH}/"
-        shopt -u dotglob
+        unzip -q "${TMP_DIR}/artifact.zip" -d "${DESTINATION_PATH}"
+        
+        rm -rf "${TMP_DIR}"
 
         ls "${DESTINATION_PATH}"
