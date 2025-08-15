@@ -64,7 +64,7 @@ build runtime:
 # ------------------------- RUNNING E2E TESTS -------------------
 
 e2e-tests *TEST:
-    cd ${PET_PATH} && yarn && yarn test {{ TEST }}
+    cd "${PET_PATH}" && yarn && yarn test "{{ TEST }}"
 
 # ------------------------- RUNNING INTEGRATION TESTS -------------------
 

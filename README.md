@@ -124,12 +124,27 @@ Then you can run the test in a _different terminal_.
 
 ### E2E Tests on Westend Asset Hub
 
-Polkadot Ecosystem Tests offers, among other things, a suite of E2E tests that run against
-live networks.
-The PET submodule in this repository is set to branch `ahm-tests`, which adapts the (originally) relaychain E2E suites
-to run in post-migration Westend Asset Hub.
+Polkadot Ecosystem Tests offers, among other things, a suite of E2E tests that run against live networks.
+The PET submodule in this repository is set to branch `ahm-tests`, which adapts the (originally) relay chain E2E suites
+to run in post-migration Asset Hubs
 
-To run these E2E tests:
+In order to run PET tests on the post-migration Asset Hub chain of a network created by `zombie-bite`, assume it is
+named `<network-name>`, and do the following:
+
+1. Start the network with `just zb spawn <base_path> post` (if it is not already running)
+2. Note the port number `<collator-port>` the collator is running on, and the `<block-number>` the AH chain is on
+3. in `./polkadot-ecosystem-tests/.env`, add the following data
+    ```sh
+    ASSETHUB<network-name>_ENDPOINT=ws://[::1]:<collator-port>
+    ASSETHUB<network-name>_BLOCK_NUMBER=<block-number>
+    ```
+4. Run `just e2e-tests packages/<network-name>`
+
+The AHM has already occurred on Westend, so there, you can ignore all steps but the last.
+
+#### Notes on E2E `just e2e-tests` command
+
+It accepts multiple arguments, which are then passed to `yarn` to further specify the scope of the tests.
 
 ```sh
 # runs every PET test
@@ -137,11 +152,12 @@ To run these E2E tests:
 # incompatible with relaychain
 just e2e-tests
 
-# runs all E2E suites that have been adapted to WAH
-just wah-e2e-tests
-
-# run specific test suite(s)
-just e2e-tests scheduler
+# run every test that exists for Paseo chains: relay, AH
+just e2e-tests packages/paseo
+# run every test suite that exists for WAH, E2E or otherwise
+just e2e-tests assetHubWestend
+# run the E2E test suite for the scheduler pallet
+just e2e-tests paseo.scheduler
 just e2e-tests staking nominationPools
 ...
 ```
@@ -161,8 +177,6 @@ combine orchestrator logs with post-ahm testing logs. You can find different lev
 <!-- TODO @donal: Monitoring here -->
 
 ## Migration tests
-
-## PET tests
 
 # Code Contributions
 Make any changes to the env rather than to the bare configs.
