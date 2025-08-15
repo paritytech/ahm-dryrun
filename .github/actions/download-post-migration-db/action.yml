@@ -22,7 +22,7 @@ runs:
         set -euo pipefail
         TMP_DIR="$(mktemp -d)"
         
-        curl -sSLf -H "Authorization: Bearer ${GITHUB_TOKEN}" "${ARTIFACT_URL}"
+        curl -sSLf -H "Authorization: Bearer ${GITHUB_TOKEN}" -o "${TMP_DIR}/artifact.zip" "${ARTIFACT_URL}"
         
         rm -rf "${DESTINATION_PATH}"
         mkdir -p "${DESTINATION_PATH}"
