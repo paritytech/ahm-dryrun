@@ -68,6 +68,15 @@ jobs:
             echo "config.toml not found at $CONFIG_FILE"
           fi
 
+      - name: check_binaries
+        shell: bash
+        run: |
+          echo "Checking /tmp for doppelganger binaries:"
+          ls -la /tmp/doppelganger* || echo "No doppelganger binaries found"
+          echo "PATH: $PATH"
+          which doppelganger || echo "doppelganger not in PATH"
+          which doppelganger-parachain || echo "doppelganger-parachain not in PATH"
+
       - name: run_zombie_bite
         shell: bash
         run: |
