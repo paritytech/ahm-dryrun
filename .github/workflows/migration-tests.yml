@@ -16,6 +16,9 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: extractions/setup-just@v2
 
       - name: download_post_migration_db
         uses: ./.github/actions/download-post-migration-db
@@ -58,4 +61,3 @@ jobs:
         shell: bash
         run: |
           just zb spawn ./migration-run post
-          
