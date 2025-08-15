@@ -22,7 +22,6 @@ runs:
         set -euo pipefail
         TMP_DIR="$(mktemp -d)"
         
-        echo "Token length: ${#GITHUB_TOKEN}"
         curl -sSLf -H "Authorization: Bearer ${GITHUB_TOKEN}" "${ARTIFACT_URL}"
         
         rm -rf "${DESTINATION_PATH}"
