@@ -37,11 +37,15 @@ jobs:
         run: |
           CONFIG_FILE="${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn/config.toml"
           if [ -f "$CONFIG_FILE" ]; then
-            # Add --state-pruning=14400 to default_args if not already present
-            sed -i '/default_args = \[/,/\]/ { /--state-pruning/!s/\]$/    "--state-pruning=14400",\n]/; }' "$CONFIG_FILE"
+            # Only add if not already present in default_args
+            if ! grep -A 20 'default_args = \[' "$CONFIG_FILE" | grep -q -- '--state-pruning'; then
+              sed -i '/default_args = \[/,/\]/ s/\]$/    "--state-pruning=14400",\n]/' "$CONFIG_FILE"
+            fi
             
-            # Add --state-pruning=14400 to args if not already present
-            sed -i '/^args = \[/,/\]/ { /--state-pruning/!s/\]$/    "--state-pruning=14400",\n]/; }' "$CONFIG_FILE"
+            # Only add if not already present in args
+            if ! grep -A 20 '^args = \[' "$CONFIG_FILE" | grep -q -- '--state-pruning'; then
+              sed -i '/^args = \[/,/\]/ s/\]$/    "--state-pruning=14400",\n]/' "$CONFIG_FILE"
+            fi
             
             echo "Modified config.toml:"
             cat "$CONFIG_FILE"
