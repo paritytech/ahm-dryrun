@@ -47,8 +47,15 @@ jobs:
               sed -i '/^args = \[/,/\]/ s/\]$/    "--state-pruning=14400",\n]/' "$CONFIG_FILE"
             fi
             
+            # TODO remove this
             echo "Modified config.toml:"
             cat "$CONFIG_FILE"
           else
             echo "config.toml not found at $CONFIG_FILE"
           fi
+
+      - name: run_zombie_bite
+        shell: bash
+        run: |
+          just zb spawn ./migration-run post
+          
