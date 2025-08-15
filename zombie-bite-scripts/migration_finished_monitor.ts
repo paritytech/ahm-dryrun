@@ -9,11 +9,13 @@
  */
 
 import { monitMigrationFinish } from "./helpers.js";
+import { logger } from "../shared/logger.js";
 
 const main = async () => {
   let base_path = process.argv[2];
   let rc_port = process.argv[3];
   let ah_port = process.argv[4];
+  logger.info("🔎 Starting monitoring process...");
   await monitMigrationFinish(base_path, rc_port, ah_port);
   process.exit(0);
 };
