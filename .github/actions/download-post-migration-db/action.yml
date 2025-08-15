@@ -22,12 +22,12 @@ runs:
         set -euo pipefail
         TMP_DIR="$(mktemp -d)"
         
+        echo "Token length: ${#GITHUB_TOKEN}"
         curl -sSLf -H "Authorization: Bearer ${GITHUB_TOKEN}" -o "${TMP_DIR}/artifact.zip" "${ARTIFACT_URL}"
         
         rm -rf "${DESTINATION_PATH}"
         mkdir -p "${DESTINATION_PATH}"
         unzip -q "${TMP_DIR}/artifact.zip" -d "${DESTINATION_PATH}"
-        
         rm -rf "${TMP_DIR}"
-
+        
         ls "${DESTINATION_PATH}"
