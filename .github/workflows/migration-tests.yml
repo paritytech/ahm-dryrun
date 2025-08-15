@@ -71,4 +71,5 @@ jobs:
       - name: run_zombie_bite
         shell: bash
         run: |
+          export PATH="/tmp:$PATH"
           just zb spawn ./migration-run post
