@@ -79,8 +79,6 @@ function migration_done(stage: any) {
   return JSON.stringify(stage) == '"MigrationDone"';
 }
 
-
-
 async function rc_check(uri: string) {
   return new Promise(async (resolve) => {
     logger.info('Checking RC migration status', { uri });
