@@ -23,7 +23,7 @@ runs:
         TMP_DIR="$(mktemp -d)"
         
         echo "Token length: ${#GITHUB_TOKEN}"
-        curl -L -o "${TMP_DIR}/artifact.zip" "${ARTIFACT_URL}"
+        curl -sSLf -H "Authorization: Bearer ${GITHUB_TOKEN}" "${ARTIFACT_URL}"
         
         rm -rf "${DESTINATION_PATH}"
         mkdir -p "${DESTINATION_PATH}"
