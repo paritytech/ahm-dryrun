@@ -17,15 +17,14 @@ just ahm paseo || echo "Setup failed"
 - `just ahm [paseo|polkadot]` to run the Migration for a given runtime. No args prints the help menu.
 - `just zb [bite|spawn|perform-migration]` to run the Zombie-Bite commands. No args prints the help menu.
 - `just e2e-tests` to run the E2E tests
-- `just wah-e2e-tests` to run the Westend Asset Hub E2E tests
 <!-- TODO @donal: Monitoring here -->
 
 ## AHM Flows (manual steps)
 
-The cmd `just ahm <runtime>` use the `orchestrator` as main control flow to coordinate the usage of a mix of tools (e.g:[zombie-bite](https://github.com/pepoviola/zombie-bite), [doppelganger](https://github.com/paritytech/doppelganger-wrapper)) and `ts` scripts (under zombie-bite-scripts), but those are designed to allow you to use (and _reuse_) each _component_ manully in order to easily debug each __step__.
+The cmd `just ahm <runtime>` uses the `orchestrator` as main control flow to coordinate the usage of a mix of tools (e.g:[zombie-bite](https://github.com/pepoviola/zombie-bite), [doppelganger](https://github.com/paritytech/doppelganger-wrapper)) and `ts` scripts (under zombie-bite-scripts), but those are designed to allow you to use (and _reuse_) each _component_ manully in order to easily debug each __step__.
 
 ### Requirements
-In order to use this tool you will need these binaries available in your PATH
+In order to use this tool you will need these binaries available in your PATH:
 
 - [Doppelganger binaries](https://github.com/paritytech/doppelganger-wrapper): doppelganger, doppelganger-parachain, workers
 - [Zombie-bite](https://github.com/pepoviola/zombie-bite)
@@ -39,9 +38,9 @@ One important concept to run all the needed steps is defining the `base_path`, t
 
 ### Step 0: `bite` the live network
 
-The _first_ step consist on _biting_ a live network and ones completed create the _artifacts_ needed to _spawn_ a new instance of this network (rc/ah) and ensure block production.
+The _first_ step consists of _biting_ a live network, and once completed, creating the _artifacts_ needed to _spawn_ a new instance of this network (rc/ah) and ensure block production.
 
-In order to run the _step 0_ you can run:
+In order to run _step 0_, you can run:
 
 ```bash
 just zb bite <base_path> <polkadot|kusama|paseo>
@@ -64,7 +63,7 @@ _NOTE_: this step performs a _warp_ sync of both rc/ah and can take some time (2
 
 ### Step 1: `spawn` network instance (and perform migration)
 
-Ones the _step 0_ is completed, you will have all the needed artifacts for spawn a new instance of the _bitted_ networks (as many times you want) with the command:
+Once _step 0_ is completed, you will have all the needed artifacts to spawn a new instance of the _bitten_ networks (as many times as you want) with the command:
 
 ```bash
 just zb spawn <base_path>
@@ -76,9 +75,8 @@ This will run `zombie-bite` to _spawn_ a new instance of the _bitted_ network an
 
 #### Step 1.1 Perform migration
 
-Since the last step _spawn_ the network and _capture_ the terminal you need to run the next _sub-steps_ in a different terminal.
-
-In order to perform the migration you need to run the following command:
+Since the last step _spawn_ the network and _capture_ the terminal, you need open a new terminal instance to run the next _sub-steps_.
+In order to perform the migration, you need to run the following command:
 
 ```bash
 just zb perform-migration <base_path>
@@ -88,7 +86,7 @@ e.g: just zb perform-migration ./migration-run
 
 This will trigger the migration and a monitoring script that will keep checking the `stage` of the migration until completion.
 
-Ones the migration is completed, the network instance spawned as part of _step 1_ will be terminated and all the needed artifacts to spawn a new instance (with the _post_ migration step) will be created in the `<base_path>/spawn` (e.g: ./migration-run/spawn) directory.
+Once the migration is completed, the network instance spawned as part of _step 1_ will be terminated and all the needed artifacts to spawn a new instance (with the _post_ migration step) will be created in the `<base_path>/spawn` (e.g: ./migration-run/spawn) directory.
 
 - `config.toml` : zombienet compatible configuration to spawn an instance of the network.
 - `<runtime>-spec.json` : chain-spec of the relaychain.
@@ -106,7 +104,6 @@ The content of the file will be:
     "ah_finish_block": <block number>
 }
 ```
-
 
 ### Step 2: `spawn` network instance (and run post-migration tests)
 
@@ -195,5 +192,31 @@ You can run:
 ```
 git submodule update --init
 ```
+
+## Node/`npm` errors
+
+If errors like
+
+```
+npm warn Unknown project config "// ensure node engine version". This will stop working in the next major version of npm.
+npm error code EBADENGINE
+npm error engine Unsupported engine
+```
+
+occur, an update to the local version of `node/npm` may be necessary.
+
+## `zombie-bite` and nested logs
+
+When shown a log line similar to
+
+```
+...
+2025-08-07 16:21:55 [info]: 	 ⚙️ Starting zombie-bite (📓 logs ./migration-run-1754580086/logs/zombie-bite.log)... {
+...
+```
+
+note that the logs in the file mentioned may be static, and that for further information on the state of the process, a
+nested log file, mentioned in the file above by path, should be opened.
+
 ## Help
 List the other available commands with `just help`.
