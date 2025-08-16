@@ -161,6 +161,9 @@ jobs:
 
           echo "::endgroup::"
 
+          echo "sleeping 1 min before creating snaps"
+          sleep 60
+
           # try-runtime snap post
           echo "::group::run-try-runtime"
           try-runtime create-snapshot --uri "ws://localhost:$ALICE_PORT" "${ZOMBIE_BITE_BASE_PATH}/rc-post.snap"
