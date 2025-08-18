@@ -23,16 +23,16 @@ type Network = "Westend" | "Paseo" | "Kusama" | "Polkadot";
 
 // All available tests
 const allTests = [
-  // treasuryTests,
-  // referendaTests,
-  // assetRateTests,
-  // convictionVotingTests,
-  // indicesTests,
-  // proxyTests,
-  // voterListTests,
-  // vestingTests,
-  // bountiesTests,
-  // multisigTests,
+  treasuryTests,
+  referendaTests,
+  assetRateTests,
+  convictionVotingTests,
+  indicesTests,
+  proxyTests,
+  voterListTests,
+  vestingTests,
+  bountiesTests,
+  multisigTests,
   generalStakingTests,
 ];
 
