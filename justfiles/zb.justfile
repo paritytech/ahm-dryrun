@@ -9,7 +9,10 @@ help:
 # First part of the Zombie-Bite flow. This forks off the network.
 bite base_path runtime:
     #!/usr/bin/env bash
+    set -xe
+
     just build {{ runtime }}
+    mkdir -p {{ base_path }}
 
     PATH=$(pwd)/${DOPPELGANGER_PATH}/bin:$PATH \
     zombie-bite bite -d {{ base_path }} \
