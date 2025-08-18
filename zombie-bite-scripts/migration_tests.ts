@@ -33,12 +33,12 @@ const extractFromPath = (base_path: string) => {
 
   let alice_port = parseInt(ports.alice_port, 10);
   const rc_endpoint = `ws://localhost:${alice_port}`;
-  const rc_before = parseInt(start_blocks.rc_start_block, 10);
+  const rc_before = parseInt(start_blocks.rc_start_block + 2, 10);
   const rc_after = parseInt(end_blocks.rc_finish_block, 10);
 
   let collator_port = parseInt(ports.collator_port, 10);
   const ah_endpoint = `ws://localhost:${collator_port}`;
-  const ah_before = parseInt(start_blocks.ah_start_block, 10);
+  const ah_before = parseInt(start_blocks.ah_start_block + 2, 10);
   const ah_after = parseInt(end_blocks.ah_finish_block, 10);
 
   return {
