@@ -74,6 +74,7 @@ const main = async () => {
     ah_after
   } = getInfoFn();
 
+  // TODO: add network (default is Westend) parameter to the main function
   await migrationTestMain(
     rc_endpoint,
     rc_before,
