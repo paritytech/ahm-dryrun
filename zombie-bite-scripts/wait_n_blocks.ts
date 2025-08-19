@@ -1,3 +1,10 @@
+// Waits for `n` blocks to be produced on a given endpoint.
+//
+// Usage:
+//  - node wait_n_blocks.js <endpoint> <block_count>
+//
+// Example:
+//  - node wait_n_blocks.js ws://localhost:9944 3
 import { ApiPromise, WsProvider } from "@polkadot/api";
 
 async function connect(apiUrl: string) {

@@ -1,3 +1,9 @@
+// Gets matching block hashes for RC and AH for taking a snapshot.
+// Without this script it could happen that try-runtime-cli takes a snapshot of an AH block
+// that was not backed in the RC block that it would download.
+//
+// Usage:
+//  - node snapshot_block_numbers.js <rc_port> <ah_port>
 import { ApiPromise, WsProvider } from "@polkadot/api";
 
 async function connect(apiUrl: string) {
