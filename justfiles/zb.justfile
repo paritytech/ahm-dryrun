@@ -34,6 +34,7 @@ spawn base_path *step:
 # Third part of the Zombie-Bite flow. This performs the migration on a forked and running network.
 perform-migration base_path:
     #!/usr/bin/env bash
+
     just ahm _npm-build
     ALICE_PORT=$(jq -r .alice_port "{{ base_path }}/ports.json")
     COL_PORT=$(jq -r .collator_port "{{ base_path }}/ports.json")
@@ -60,3 +61,29 @@ perform-migration base_path:
     sleep 2
     done
     echo "'stop.txt' file not present anymore, teardown network completed..."
+
+# Take Rust snapshots of the network. Example: just zb snapshot paseo paseo-bite pre
+snapshot runtime base_path pre_or_post:
+    #!/usr/bin/env bash
+    set -xe
+
+    if [ ! -d "{{ base_path }}" ]; then
+        echo "Error: base_path '{{ base_path }}' does not exist"
+        exit 1
+    fi
+
+    if ! command -v try-runtime &> /dev/null; then
+        cargo install --git https://github.com/paritytech/try-runtime-cli --locked
+    fi
+
+    just ahm _npm-build
+    RC_PORT=$(jq -r .alice_port "{{ base_path }}/ports.json")
+    AH_PORT=$(jq -r .collator_port "{{ base_path }}/ports.json")
+
+    # Get block numbers for synchronized snapshots
+    BLOCK_INFO=$(node dist/zombie-bite-scripts/snapshot_block_numbers.js ${RC_PORT} ${AH_PORT})
+    RC_BLOCK=$(echo ${BLOCK_INFO} | jq -r .rc_block_hash)
+    AH_BLOCK=$(echo ${BLOCK_INFO} | jq -r .ah_block_hash)
+
+    try-runtime create-snapshot --uri ws://127.0.0.1:${RC_PORT} --at ${RC_BLOCK} "{{ runtime }}-rc-{{ pre_or_post }}.snap"
+    try-runtime create-snapshot --uri ws://127.0.0.1:${AH_PORT} --at ${AH_BLOCK} "{{ runtime }}-ah-{{ pre_or_post }}.snap"
