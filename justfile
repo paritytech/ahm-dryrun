@@ -28,7 +28,7 @@ setup: init
 
 # Install the `doppelganger` binary on your system.
 install-doppelganger:
-    SKIP_WASM_BUILD=1 cargo install --path ../doppelganger-wrapper --bin doppelganger \
+    SKIP_WASM_BUILD=1 cargo install --git https://github.com/paritytech/doppelganger-wrapper --bin doppelganger \
         --bin doppelganger-parachain \
         --bin polkadot-execute-worker \
         --bin polkadot-prepare-worker  \
