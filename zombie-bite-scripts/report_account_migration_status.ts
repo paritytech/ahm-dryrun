@@ -3,7 +3,7 @@
  * The script may run in the background and output the logs to a file.
  *
  * Script flow:
- *   - connects to zombie-bite RC which runs on port ${ZOMBIE_BITE_RC_PORT}
+ *   - connects to zombie-bite RC which runs on port ${ZOMBIE_BITE_ALICE_PORT}
  *   - preprocessing:
  *       - reads all the accounts by batches of 1000
  *       - reports progress
@@ -54,7 +54,7 @@ const aliceSigner = getPolkadotSigner(
 
 const BACKUP_FILE = "reversedMap.json";
 config();
-const WS_URL = `ws://localhost:${process.env.ZOMBIE_BITE_RC_PORT}`;
+const WS_URL = `ws://localhost:${process.env.ZOMBIE_BITE_ALICE_PORT}`;
 
 async function main(run_schedule_migration:boolean = true) {
   const wsProvider = new WsProvider(WS_URL);
@@ -92,7 +92,7 @@ async function fetchAndCacheAccounts(
 
   const startTime = performance.now();
   logger.info('Starting account fetching process');
-  
+
   while (true) {
     const pageStart = performance.now();
     const entries = await api.query.system.account.entriesPaged({
@@ -125,9 +125,9 @@ async function fetchAndCacheAccounts(
 
     page++;
   }
-  
+
   const totalTime = performance.now() - startTime;
-  logger.info('Finished fetching accounts', { 
+  logger.info('Finished fetching accounts', {
     totalAccounts: totalFetched,
     totalTimeMs: totalTime.toFixed(2)
   });

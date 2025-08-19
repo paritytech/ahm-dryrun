@@ -41,7 +41,7 @@ by running
 just report-account-migration-status
 ```
 
-For both you need to set the _env var_ `ZOMBIE_BITE_RC_PORT` from the rpc port of alice.
+For both you need to set the _env var_ `ZOMBIE_BITE_ALICE_PORT` from the rpc port of alice.
 
 
 You should get a new network with the `live state` running locally.
