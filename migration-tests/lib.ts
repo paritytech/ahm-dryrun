@@ -143,10 +143,12 @@ async function getFirstAvailableBlock(api: ApiPromise, block: number): Promise<n
   const range = Array(10).fill(null).map((_, i) => block +i);
   let block_to_use = range.find(async (block) => {
     try {
+      logger.info('Checkig block:', { block } );
       const rc_block_hash_before = await api.rpc.chain.getBlockHash(block);
       await api.at(rc_block_hash_before);
       return true;
     } catch(_) {
+      logger.warn('Block not available:', { block } );
       return false;
     }
   });
