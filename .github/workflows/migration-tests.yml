@@ -8,18 +8,19 @@ on:
 env:
   ZOMBIE_BITE_BASE_PATH: ${{ github.workspace }}/migration-run
 
+permissions: {}
+
 jobs:
   ts-tests:
-    runs-on: ubuntu-latest
-    permissions:
-      actions: read
-      contents: read
+    runs-on: parity-default
+    container:
+      image: docker.io/paritytech/ci-unified:bullseye-1.88.0-2025-06-27-v202507221446
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - uses: extractions/setup-just@v2
 
+      - uses: extractions/setup-just@v2
 
       - name: download_pre_migration_db
         uses: ./.github/actions/download-artifact
