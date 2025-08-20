@@ -37,7 +37,7 @@ jobs:
           gh-token: ${{ env.GH_TOKEN }}
           destination-path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
           run-id: ${{ env.RUN_ID }}
-          name-pattern: "${NETWORK}-post-migration-db-*"
+          name-pattern: "${{ env.NETWORK }}-post-migration-db-*"
 
       - name: download_doppelganger_binaries
         uses: ./.github/actions/download-doppelganger-binaries
