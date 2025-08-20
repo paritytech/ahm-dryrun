@@ -24,6 +24,8 @@ jobs:
   ts-tests:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - uses: extractions/setup-just@v2
 
       - name: download_post_migration_db

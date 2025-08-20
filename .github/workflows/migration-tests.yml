@@ -15,8 +15,10 @@ concurrency:
 permissions: {}
 
 jobs:
-  ts-tests:
+  get-run-id:
     runs-on: ubuntu-latest
+    outputs:
+      RUN_ID: ${{ steps.get_run_id.outputs.RUN_ID }}
     steps:
       - uses: actions/checkout@v4
 
@@ -26,10 +28,13 @@ jobs:
         with:
           gh-token: ${{ github.token }}
 
-      - name: tests
-        uses: ./.github/workflows/migration-test-common.yml
-        with:
-          run-id: ${{ steps.get_run_id.output.RUN_ID }}
-          gh-token: ${{ github.token }}
-          network: paseo
-          base_path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
+  run-tests:
+    needs: [get-run-id]
+    uses: ./.github/workflows/migration-test-common.yml
+    with:
+      run-id: ${{ needs.get-run-id.outputs.RUN_ID }}
+      gh-token: ${{ github.token }}
+      network: paseo
+      base_path: ${{ github.workspace }}/migration-run
+
+
