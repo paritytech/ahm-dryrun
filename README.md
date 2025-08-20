@@ -169,7 +169,7 @@ combine orchestrator logs with post-ahm testing logs. You can find different lev
 ## Tech stack
 
 - [Chopsticks](https://github.com/AcalaNetwork/chopsticks) and PET for e2e functionality tests
-- [PAPI](papi.how) + PJS for orchstrating/controlling e2e AHM flow
+- [PAPI](.papi) + PJS for orchstrating/controlling e2e AHM flow
 - Zombie-Bite + Doppelganger for forking off the network and making migration blocks
 <!-- TODO @donal: Monitoring here -->
 
