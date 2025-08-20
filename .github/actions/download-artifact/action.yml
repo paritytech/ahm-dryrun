@@ -2,6 +2,9 @@ name: "Download artifact"
 description: "Downloads artifact from CI"
 
 inputs:
+  gh-token:
+    description: "GH token"
+    require: true
   run-id:
     description: "run-id of the artifacts to download"
     required: true
@@ -22,6 +25,7 @@ runs:
         NAME_PATTERN: ${{ inputs.name-pattern }}
         DESTINATION_PATH: ${{ inputs.destination-path }}
         TMP_DIR: "/tmp/download-tmp"
+        GH_TOKEN: ${{ inputs.gh-token }}
 
       shell: bash
       run: |

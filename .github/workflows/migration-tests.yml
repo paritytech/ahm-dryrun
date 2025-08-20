@@ -21,9 +21,10 @@ jobs:
       - uses: extractions/setup-just@v2
 
 
-      - name: download_post_migration_db
+      - name: download_pre_migration_db
         uses: ./.github/actions/download-artifact
         with:
+          gh-token: ${{ github.token }}
           destination-path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
           run-id: 17085108348
           name-pattern: "paseo-pre-migration-db-*"
@@ -31,6 +32,7 @@ jobs:
       - name: download_post_migration_db
         uses: ./.github/actions/download-artifact
         with:
+          gh-token: ${{ github.token }}
           destination-path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
           run-id: 17085108348
           name-pattern: "paseo-post-migration-db-*"
