@@ -28,15 +28,14 @@ export const generalStakingTests: MigrationTest = {
         assert(activeEra.isSome, 'Assert activeEra is Some');
 
         const currentMultiBlockPhase = await ah_api_after.query.multiBlockElection.currentPhase();
-        console.log('currentMultiBlockPhase is ', currentMultiBlockPhase.toHuman());
 
         // TODO: check for session report. Is it an event or a query?
         if (currentMultiBlockPhase.toHuman() === 'Off') {
             // If phase is Off, current era should be the same as active era
-            assert(currentEra.unwrap().toNumber() === (activeEra.toJSON() as any).index, 'Assert currentEra matches activeEra index');
+            assert(currentEra.unwrap().toNumber() === activeEra.unwrap().index.toNumber(), 'Assert currentEra matches activeEra index');
         } else {
             // If phase IS NOT Off, current era should equal to active era + 1
-            assert(currentEra.unwrap().toNumber() === (activeEra.toJSON() as any).index + 1, 'Assert currentEra matches activeEra index + 1');
+            assert(currentEra.unwrap().toNumber() === activeEra.unwrap().index.toNumber() + 1, 'Assert currentEra matches activeEra index + 1');
         }
 
     }
