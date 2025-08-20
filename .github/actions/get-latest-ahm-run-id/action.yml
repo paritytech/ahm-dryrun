@@ -8,11 +8,13 @@ inputs:
 outputs:
   RUN_ID:
     description: "RUN_ID available"
+    value: ${{ steps.get_id.outputs.RUN_ID }}
 
 runs:
   using: "composite"
   steps:
     - name: Get ID
+      id: get_id
       env:
         GH_TOKEN: ${{ inputs.gh-token }}
 
@@ -22,5 +24,5 @@ runs:
         gh run list --workflow zombie-bite.yml -b main -e schedule -L 1 -s completed
         RUN_ID=$(gh run list --workflow zombie-bite.yml -b main -e schedule -L 1 -s completed --json databaseId | jq -r '.[].databaseId')
         echo "RUN_ID: $RUN_ID"
-        echo "RUN_ID=$RUN_ID" >> $GITHUB_OUTPUT
+        echo "RUN_ID=$RUN_ID" >> "$GITHUB_OUTPUT"
 
