@@ -2,7 +2,7 @@ name: Migration tests
 on:
   workflow_dispatch:
   push:
-    branches: [ ci_migration_tests ] 
+    branches: [ ci_migration_tests ]
   pull_request:
     branches: [ ci_migration_tests ]
 env:
@@ -20,23 +20,30 @@ jobs:
           submodules: recursive
       - uses: extractions/setup-just@v2
 
+
       - name: download_post_migration_db
-        uses: ./.github/actions/download-post-migration-db
+        uses: ./.github/actions/download-artifact
         with:
-          artifact-url: 'https://api.github.com/repos/paritytech/ahm-dryrun/actions/artifacts/3765401233/zip'
           destination-path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+          run-id: 17085108348
+          name-pattern: "paseo-pre-migration-db-*"
+
+      - name: download_post_migration_db
+        uses: ./.github/actions/download-artifact
+        with:
+          destination-path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
+          run-id: 17085108348
+          name-pattern: "paseo-post-migration-db-*"
 
       - name: download_doppelganger_binaries
         uses: ./.github/actions/download-doppelganger-binaries
         with:
           destination-path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
-  
+
       - name: install_zombie_bite
         shell: bash
         run: |
-          just install-zombie-bite   
+          just install-zombie-bite
 
       - name: verify
         shell: bash
@@ -45,54 +52,25 @@ jobs:
           ls -la "$ZOMBIE_BITE_BASE_PATH" || true
           echo "::endgroup::"
 
-      - name: add_state_pruning_flag
-        shell: bash
-        run: |
-          CONFIG_FILE="${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn/config.toml"
-          if [ -f "$CONFIG_FILE" ]; then
-            # Only add if not already present in default_args
-            if ! grep -A 20 'default_args = \[' "$CONFIG_FILE" | grep -q -- '--state-pruning'; then
-              sed -i '/default_args = \[/,/\]/ s/\]$/    "--state-pruning=14400",\n]/' "$CONFIG_FILE"
-            fi
-            
-            # Only add if not already present in args
-            if ! grep -A 20 '^args = \[' "$CONFIG_FILE" | grep -q -- '--state-pruning'; then
-              sed -i '/^args = \[/,/\]/ s/\]$/    "--state-pruning=14400",\n]/' "$CONFIG_FILE"
-            fi
-            
-            # TODO remove this
-            echo "Modified config.toml:"
-            cat "$CONFIG_FILE"
-          else
-            echo "config.toml not found at $CONFIG_FILE"
-          fi
-
       - name: check_binaries
         shell: bash
         run: |
-          echo "Checking /tmp for doppelganger binaries:"
-          ls -la /tmp/doppelganger* || echo "No doppelganger binaries found"
+          echo "Checking ${{ env.ZOMBIE_BITE_BASE_PATH }} for doppelganger binaries:"
+          export PATH="${{ env.ZOMBIE_BITE_BASE_PATH }}:$PATH"
           echo "PATH: $PATH"
-          which doppelganger || echo "doppelganger not in PATH"
-          which doppelganger-parachain || echo "doppelganger-parachain not in PATH"
+          (which doppelganger && doppelganger-parachain) > /dev/null || { echo "missing binary in PATH"; exit 1 }
+
+          echo "content of ${{ env.ZOMBIE_BITE_BASE_PATH }}"
+          ls ${{ env.ZOMBIE_BITE_BASE_PATH }}
 
       - name: run_zombie_bite
         shell: bash
         run: |
           export PATH="${{ env.ZOMBIE_BITE_BASE_PATH }}:$PATH"
-          just zb spawn ./migration-run post
-         
+          nohup just zb spawn ./migration-run post > nohup.out 2>&1 &
+
       - name: wait_for_network
-        shell: bash
-        run: |
-          echo "Waiting for 'network is up and running' message..."
-          timeout 300 bash -c '
-            while ! grep -q "network is up and running" ${{ env.ZOMBIE_BITE_BASE_PATH }}/post/*/zombie-bite.log 2>/dev/null; do
-              echo "Still waiting for network..."
-              sleep 5
-            done
-            echo "Network is up and running!"
-          '
+        uses: ./.github/actions/wait-zb-network-ready
 
       - name: compare_state
         shell: bash

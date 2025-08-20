@@ -1,0 +1,43 @@
+name: "Download artifact"
+description: "Downloads artifact from CI"
+
+inputs:
+  run-id:
+    description: "run-id of the artifacts to download"
+    required: true
+  name-pattern:
+    description: "pattern of the name of the artifct to download, if not present all artifacts will be downloaded"
+    required: true
+  destination-path:
+    description: "Destination path for downloaded files, default  /tmp"
+    default: "/tmp"
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Download
+      env:
+        RUN_ID: ${{ inputs.run-id }}
+        NAME_PATTERN: ${{ inputs.name-pattern }}
+        DESTINATION_PATH: ${{ inputs.destination-path }}
+        TMP_DIR: "/tmp/download-tmp"
+
+      shell: bash
+      run: |
+        mkdir -p $TMP_DIR
+        mkdir -p $DESTINATION_PATH
+
+        echo "downloading artifacts from https://github.com/paritytech/ahm-dryrun/actions/runs/${RUN_ID}"
+
+        if [[ $NAME_PATTERN == "" ]]; then
+          gh run download $RUN_ID -p "${NAME_PATTERN}" -D $TMP_DIR
+        else
+          gh run download $RUN_ID -p "${NAME_PATTERN}" -D $TMP_DIR
+        fi;
+
+        ARTIFACTS_DIR=$(ls -t $TMP_DIR|head -1)
+        mv $ARTIFACTS_DIR/* $DESTINATION_PATH
+        echo "::group::download-artifact check destination_path"
+        ls $DESTINATION_PATH;
+        echo "::endgroup::"
