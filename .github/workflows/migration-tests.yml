@@ -18,6 +18,8 @@ jobs:
   ts-tests:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - name: get_run_id
         id: get_run_id
         uses: ./.github/actions/get-latest-ahm-run-id
