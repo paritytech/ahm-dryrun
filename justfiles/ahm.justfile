@@ -61,8 +61,6 @@ permatest runtime base_path repeat:
     # Redirect and Tee all output to the log file
     exec > >(tee -a "$LOGFILE") 2>&1
 
-    just build {{ runtime }}
-
     for i in {1..{{ repeat }}}; do
         just ahm permatest-once {{ runtime }} {{ base_path }}
         echo "--------------------------------"
