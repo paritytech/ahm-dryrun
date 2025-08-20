@@ -15,6 +15,7 @@ import { bountiesTests } from "./pallets/bounties.js";
 import { treasuryTests } from "./pallets/treasury.js";
 import { referendaTests } from "./pallets/referenda.js";
 import { multisigTests } from "./pallets/multisig.js";
+import { generalStakingTests } from "./pallets/staking/general.js";
 import { ApiDecoration } from "@polkadot/api/types/index.js";
 
 // when updating this, also update the testsByNetwork below
@@ -32,6 +33,7 @@ const allTests = [
   vestingTests,
   bountiesTests,
   multisigTests,
+  generalStakingTests,
 ];
 
 // Excludes tests from the pool of all available tests
