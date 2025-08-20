@@ -15,11 +15,9 @@ on:
         type: string
         description: "run-id of the artifacts to download"
         required: true
-      gh-token:
-        type: string
-        description: "GH token"
-        required: false
-        default: ${{ github.token }}
+
+env:
+  ZOMBIE_BITE_BASE_PATH: ${{ github.workspace }}/migration-run
 
 jobs:
   ts-tests:
@@ -33,12 +31,11 @@ jobs:
         uses: ./.github/actions/download-artifact
         env:
           RUN_ID: ${{ inputs.run-id }}
-          DESTINATION_PATH: ${{ inputs.base_path }}
-          GH_TOKEN: ${{ inputs.gh-token }}
+          GH_TOKEN: ${{ github.token }}
           NETWORK: ${{ inputs.network }}
         with:
           gh-token: $GH_TOKEN
-          destination-path: $DESTINATION_PATH
+          destination-path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
           run-id: $RUN_ID
           name-pattern: "${NETWORK}-post-migration-db-*"
 
