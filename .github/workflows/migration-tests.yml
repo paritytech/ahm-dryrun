@@ -4,12 +4,12 @@ on:
   push:
     branches: [ ci_migration_tests ]
   pull_request:
-    branches: [ ci_migration_tests ]
+    branches: [ ci_migration_tests, main ]
 env:
   ZOMBIE_BITE_BASE_PATH: ${{ github.workspace }}/migration-run
 
 jobs:
-  test:
+  ts-tests:
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -53,6 +53,10 @@ jobs:
           echo "::group::dest contents"
           ls -la "$ZOMBIE_BITE_BASE_PATH" || true
           echo "::endgroup::"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
       - name: run_zombie_bite
         shell: bash
