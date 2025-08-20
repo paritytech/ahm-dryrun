@@ -69,5 +69,5 @@ e2e-tests *TEST:
 # ------------------------- RUNNING INTEGRATION TESTS -------------------
 
 compare-state base_path:
-    npm run build
+    just ahm _npm-build
     npm run compare-state {{ base_path }}
