@@ -1,6 +1,18 @@
 name: Migration tests
 on:
   workflow_dispatch:
+    inputs:
+      run-id:
+        description: "Optional run-id to download artifacts"
+        required: false
+      network:
+        description: "network to use, default paseo"
+        default: 'paseo'
+        type: choice
+        options:
+          - paseo
+          - polkadot
+
   push:
     branches: [ ci_migration_tests ]
   pull_request:
@@ -17,9 +29,9 @@ permissions: {}
 jobs:
   get-run-id:
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.run-id == '' }}
     outputs:
       RUN_ID: ${{ steps.get_run_id.outputs.RUN_ID }}
-
     steps:
       - uses: actions/checkout@v4
 
@@ -34,11 +46,17 @@ jobs:
         run: |
           echo "RUN_ID: ${{ steps.get_run_id.outputs.RUN_ID }}"
 
-  run-tests:
+  run-tests-without-id:
     needs: [get-run-id]
     uses: ./.github/workflows/migration-test-common.yml
     with:
       run-id: ${{ needs.get-run-id.outputs.RUN_ID }}
-      network: paseo
+      network: ${{ inputs.network }}
 
+  run-tests-with-id:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.run-id != '' }}
+    uses: ./.github/workflows/migration-test-common.yml
+    with:
+      run-id: ${{ inputs.run-id }}
+      network: ${{ inputs.network }}
 
