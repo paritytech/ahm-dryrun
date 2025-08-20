@@ -2,11 +2,6 @@ name: Migration Tests Common
 on:
   workflow_call:
     inputs:
-      base_path:
-        type: string
-        description: base_path to use in the whole workflow
-        required: false
-        default: ${{ github.workspace }}/migration-run
       network:
         type: string
         required: false
@@ -42,7 +37,7 @@ jobs:
       - name: download_doppelganger_binaries
         uses: ./.github/actions/download-doppelganger-binaries
         with:
-          destination-path: ${{ inputs.base_path }}
+          destination-path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
 
       - name: install_zombie_bite
         shell: bash
@@ -63,7 +58,7 @@ jobs:
       - name: run_zombie_bite
         shell: bash
         env:
-          BASE_PATH: ${{ inputs.base_path }}
+          BASE_PATH: ${{ env.ZOMBIE_BITE_BASE_PATH }}
         run: |
           export PATH="${BASE_PATH}:$PATH"
           nohup just zb spawn ./migration-run post > nohup.out 2>&1 &
@@ -75,7 +70,7 @@ jobs:
         shell: bash
         timeout-minutes: 10
         env:
-          BASE_PATH: ${{ inputs.base_path }}
+          BASE_PATH: ${{ env.ZOMBIE_BITE_BASE_PATH }}
         run: |
           echo "Running state comparison..."
           export PATH="${BASE_PATH}:$PATH"
