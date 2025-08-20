@@ -1,0 +1,21 @@
+name: "Get latest run id of AHM workflow"
+description: "Get the latest, completed, run-id of the AHM workflow to download the artifacts"
+
+inputs:
+  gh-token:
+    description: "GH token"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Get ID
+      env:
+        GH_TOKEN: ${{ inputs.gh-token }}
+
+      shell: bash
+      run: |
+        echo "getting the latest completed run"
+        RUN_ID=$(gh run list --workflow zombie-bite.yml -b main -e schedule -L 1 -s completed --json databaseId | jq -r '.[].databaseId')
+        echo "RUN_ID=$RUN_ID" >> $GITHUB_OUTPUT
+

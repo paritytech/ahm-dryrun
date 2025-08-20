@@ -18,62 +18,16 @@ jobs:
   ts-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - uses: extractions/setup-just@v2
-
-      - name: download_pre_migration_db
-        uses: ./.github/actions/download-artifact
+      - name: get_run_id
+        id: get_run_id
+        uses: ./.github/actions/get-latest-ahm-run-id
         with:
           gh-token: ${{ github.token }}
-          destination-path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
-          run-id: 17085108348
-          name-pattern: "paseo-pre-migration-db-*"
 
-      - name: download_post_migration_db
-        uses: ./.github/actions/download-artifact
+      - name: tests
+        uses: ./.github/workflows/migration-test-common.yml
         with:
+          run-id: ${{ steps.get_run_id.output.RUN_ID }}
           gh-token: ${{ github.token }}
-          destination-path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
-          run-id: 17085108348
-          name-pattern: "paseo-post-migration-db-*"
-
-      - name: download_doppelganger_binaries
-        uses: ./.github/actions/download-doppelganger-binaries
-        with:
-          destination-path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
-
-      - name: install_zombie_bite
-        shell: bash
-        run: |
-          just install-zombie-bite
-
-      - name: verify
-        shell: bash
-        run: |
-          echo "::group::dest contents"
-          ls -la "$ZOMBIE_BITE_BASE_PATH" || true
-          echo "::endgroup::"
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: run_zombie_bite
-        shell: bash
-        run: |
-          export PATH="${{ env.ZOMBIE_BITE_BASE_PATH }}:$PATH"
-          nohup just zb spawn ./migration-run post > nohup.out 2>&1 &
-
-      - name: wait_for_network
-        uses: ./.github/actions/wait-zb-network-ready
-
-      - name: compare_state
-        shell: bash
-        timeout-minutes: 10
-        run: |
-          echo "Running state comparison..."
-          export PATH="${{ env.ZOMBIE_BITE_BASE_PATH }}:$PATH"
-          just compare-state ./migration-run
+          network: paseo
+          base_path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
