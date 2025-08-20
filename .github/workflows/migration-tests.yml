@@ -54,17 +54,6 @@ jobs:
           ls -la "$ZOMBIE_BITE_BASE_PATH" || true
           echo "::endgroup::"
 
-      - name: check_binaries
-        shell: bash
-        run: |
-          echo "Checking ${{ env.ZOMBIE_BITE_BASE_PATH }} for doppelganger binaries:"
-          export PATH="${{ env.ZOMBIE_BITE_BASE_PATH }}:$PATH"
-          echo "PATH: $PATH"
-          (which doppelganger && doppelganger-parachain) > /dev/null || { echo "missing binary in PATH"; exit 1 }
-
-          echo "content of ${{ env.ZOMBIE_BITE_BASE_PATH }}"
-          ls ${{ env.ZOMBIE_BITE_BASE_PATH }}
-
       - name: run_zombie_bite
         shell: bash
         run: |
