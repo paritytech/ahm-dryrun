@@ -18,7 +18,8 @@ on:
       gh-token:
         type: string
         description: "GH token"
-        required: true
+        required: false
+        default: ${{ github.token }}
 
 jobs:
   ts-tests:
