@@ -51,7 +51,7 @@ build runtime:
     mkdir -p ./runtime_wasm
 
     if [ "{{ runtime }}" = "paseo" ]; then
-        cd ${PASEO_PATH} && ${CARGO_CMD} build --profile production --features on-chain-release-build --features paseo -p asset-hub-paseo-runtime -p paseo-runtime && cd ..
+        cd ${PASEO_PATH} && ${CARGO_CMD} build --profile production --features on-chain-release-build -p asset-hub-paseo-runtime -p paseo-runtime && cd ..
         cp ${PASEO_PATH}/target/production/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
     elif [ "{{ runtime }}" = "polkadot" ]; then
         cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --profile production --features on-chain-release-build -p asset-hub-polkadot-runtime -p polkadot-runtime && cd ..

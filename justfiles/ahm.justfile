@@ -73,6 +73,9 @@ permatest-once runtime base_path:
     #!/usr/bin/env bash
     set -ex
 
+    rm -rf {{ base_path }}
+    unzip {{ base_path }}.zip
+
     just ahm _npm-build
 
     # Set exit hook to kill the network
