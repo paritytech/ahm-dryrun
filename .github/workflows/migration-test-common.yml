@@ -34,9 +34,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           NETWORK: ${{ inputs.network }}
         with:
-          gh-token: $GH_TOKEN
+          gh-token: ${{ env.GH_TOKEN }}
           destination-path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
-          run-id: $RUN_ID
+          run-id: ${{ env.RUN_ID }}
           name-pattern: "${NETWORK}-post-migration-db-*"
 
       - name: download_doppelganger_binaries
