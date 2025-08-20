@@ -5,6 +5,9 @@ inputs:
   gh-token:
     description: "GH token"
     required: true
+outputs:
+  RUN_ID:
+    description: "RUN_ID available"
 
 runs:
   using: "composite"
