@@ -19,8 +19,8 @@ runs:
           echo "Waiting for 'network is up and running' message..."
           timeout 300 bash -c '
             while ! grep -q "network is up and running" $LOG_FILE 2>/dev/null; do
-              echo "Still waiting for network..."
-              tail -2 $LOG_FILE
+              echo "Still waiting for network... last log line:"
+              tail -1 $LOG_FILE
               sleep 5
             done
             echo "Network is up and running!"

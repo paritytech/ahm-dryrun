@@ -72,6 +72,7 @@ jobs:
 
       - name: compare_state
         shell: bash
+        timeout-minutes: 10
         run: |
           echo "Running state comparison..."
           export PATH="${{ env.ZOMBIE_BITE_BASE_PATH }}:$PATH"

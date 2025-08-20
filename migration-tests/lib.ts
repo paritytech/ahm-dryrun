@@ -140,20 +140,24 @@ export interface ChainConfig {
 
 async function getFirstAvailableBlock(api: ApiPromise, block: number): Promise<number> {
   // only check the first 10 blocks, since should be one available in that range
-  const range = Array(10).fill(null).map((_, i) => block +i);
-  let block_to_use = range.find(async (block) => {
+  // const range = Array(10).fill(null).map((_, i) => block +i);
+  let block_to_use: number|undefined = undefined;
+  // for(let thisBlock in range) {
+  for(let i=block; i<= block+10; i++) {
     try {
-      logger.info('Checkig block:', { block } );
-      const rc_block_hash_before = await api.rpc.chain.getBlockHash(block);
+      logger.info('Checkig block:', { i } );
+      const rc_block_hash_before = await api.rpc.chain.getBlockHash(i);
       await api.at(rc_block_hash_before);
-      return true;
+      block_to_use = i;
+      break;
     } catch(_) {
-      logger.warn('Block not available:', { block } );
-      return false;
+      logger.warn('Block not available:', { "block": i } );
     }
-  });
+  }
 
   if(!block_to_use) throw new Error(`Can't find any block to use in the range(${block}, ${block+10})`);
+
+  logger.info("Available block:", { "block": block_to_use });
 
   return block_to_use;
 }
