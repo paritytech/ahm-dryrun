@@ -16,6 +16,7 @@ runs:
       shell: bash
       run: |
         echo "getting the latest completed run..."
+        gh run list --workflow zombie-bite.yml -b main -e schedule -L 1 -s completed
         RUN_ID=$(gh run list --workflow zombie-bite.yml -b main -e schedule -L 1 -s completed --json databaseId | jq -r '.[].databaseId')
         echo "RUN_ID=$RUN_ID" >> $GITHUB_OUTPUT
 
