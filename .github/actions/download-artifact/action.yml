@@ -45,7 +45,7 @@ runs:
         ls $TMP_DIR
         echo "artifact"
         ls "${TMP_DIR}/${ARTIFACTS_DIR}"
-        mv "${TMP_DIR}/${ARTIFACTS_DIR}/*" $DESTINATION_PATH
+        mv ${TMP_DIR}/${ARTIFACTS_DIR}/* $DESTINATION_PATH
         echo "::group::download-artifact check destination_path"
         ls $DESTINATION_PATH;
         echo "::endgroup::"
