@@ -76,7 +76,7 @@ jobs:
           ls $RC_OVERRIDE
           ls $AH_OVERRIDE
 
-          # read .env to use the variable defined there (e.g ZOMBIE_BITE_RC_PORT/ZOMBIE_BITE_AH_PORT)
+          # read .env to use the variable defined there (e.g ZOMBIE_BITE_ALICE_PORT/ZOMBIE_BITE_AH_PORT)
           set -a
           source .env
           set +a

@@ -3,7 +3,7 @@ import { cryptoWaitReady } from "@polkadot/util-crypto";
 import { promises as fs_promises } from "fs";
 import { logger } from "../shared/logger.js";
 
-const rcPort = process.env.ZOMBIE_BITE_RC_PORT || 63168;
+const rcPort = process.env.ZOMBIE_BITE_ALICE_PORT || 63168;
 const ahPort = process.env.ZOMBIE_BITE_AH_PORT || 63170;
 const finalization = false;
 let mock_finish_flag = false;
