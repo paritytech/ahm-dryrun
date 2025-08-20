@@ -41,6 +41,10 @@ runs:
         fi;
 
         ARTIFACTS_DIR=$(ls -t $TMP_DIR|head -1)
+        echo "tmp"
+        ls $TMP_DIR
+        echo "artifact"
+        ls "${TMP_DIR}/${ARTIFACTS_DIR}"
         mv "${TMP_DIR}/${ARTIFACTS_DIR}/*" $DESTINATION_PATH
         echo "::group::download-artifact check destination_path"
         ls $DESTINATION_PATH;
