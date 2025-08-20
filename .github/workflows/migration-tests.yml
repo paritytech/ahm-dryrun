@@ -8,13 +8,15 @@ on:
 env:
   ZOMBIE_BITE_BASE_PATH: ${{ github.workspace }}/migration-run
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions: {}
 
 jobs:
   ts-tests:
-    runs-on: parity-default
-    container:
-      image: docker.io/paritytech/ci-unified:bullseye-1.88.0-2025-06-27-v202507221446
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
