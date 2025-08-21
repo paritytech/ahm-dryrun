@@ -22,7 +22,18 @@ runs:
       run: |
         echo "getting the latest completed run..."
         gh run list --workflow zombie-bite.yml -b main -e schedule -L 1 -s completed
-        RUN_ID=$(gh run list --workflow zombie-bite.yml -b main -e schedule -L 1 -s completed --json databaseId | jq -r '.[].databaseId')
+        RUN_ID=""
+        for id in $(gh run list --workflow zombie-bite.yml -b main -L 20 -s completed --json databaseId | jq -r '.[].databaseId');do
+          CONCLUSION=$(gh run view $id  --json jobs | jq -r '.jobs[] | select(.name == "zombie_bite_paseo / run_zombie_bite") | .conclusion);
+          if [[ $CONCLUSION == "success" ]]; then
+            RUN_ID=$id;
+            break
+          fi;
+        done;
+        if [[ $RUN_ID == "" ]]; then
+          echo "ERR: no run_id available in the last 20 runs";
+          exit 1
+        fi;
         echo "RUN_ID: $RUN_ID"
         echo "RUN_ID=$RUN_ID" >> "$GITHUB_OUTPUT"
 
