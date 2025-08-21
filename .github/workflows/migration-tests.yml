@@ -1,0 +1,60 @@
+name: Migration tests
+on:
+  workflow_dispatch:
+    inputs:
+      run-id:
+        description: "Optional run-id to download artifacts"
+        required: false
+      network:
+        description: "network to use, default paseo"
+        default: 'paseo'
+        type: choice
+        options:
+          - paseo
+          - polkadot
+
+  pull_request:
+    branches: [ main ]
+env:
+  ZOMBIE_BITE_BASE_PATH: ${{ github.workspace }}/migration-run
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  get-run-id:
+    runs-on: ubuntu-latest
+    if: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.run-id == '') || 'true' }}
+    outputs:
+      RUN_ID: ${{ steps.get_run_id.outputs.RUN_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: get_run_id
+        id: get_run_id
+        uses: ./.github/actions/get-latest-ahm-run-id
+        with:
+          gh-token: ${{ github.token }}
+
+      - name: verify
+        shell: bash
+        run: |
+          echo "RUN_ID: ${{ steps.get_run_id.outputs.RUN_ID }}"
+
+  run-tests-without-id:
+    needs: [get-run-id]
+    uses: ./.github/workflows/migration-test-common.yml
+    with:
+      run-id: ${{ needs.get-run-id.outputs.RUN_ID }}
+      network: ${{ inputs.network || 'paseo' }}
+
+  run-tests-with-id:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.run-id != '' }}
+    uses: ./.github/workflows/migration-test-common.yml
+    with:
+      run-id: ${{ inputs.run-id }}
+      network: ${{ inputs.network || 'paseo' }}
+

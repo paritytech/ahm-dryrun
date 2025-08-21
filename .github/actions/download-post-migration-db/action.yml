@@ -1,0 +1,32 @@
+name: "Download Post Migration DB"
+description: "Downloads a post-migration DB artifact and unpacks it into the destination path"
+
+inputs:
+  artifact-url:
+    description: "Artifact URL"
+    required: true
+  destination-path:
+    description: "Destination directory"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Download
+      env:
+        ARTIFACT_URL: ${{ inputs.artifact-url }}
+        DESTINATION_PATH: ${{ inputs.destination-path }}
+        GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        TMP_DIR="$(mktemp -d)"
+        
+        curl -sSLf -H "Authorization: Bearer ${GITHUB_TOKEN}" -o "${TMP_DIR}/artifact.zip" "${ARTIFACT_URL}"
+        
+        rm -rf "${DESTINATION_PATH}"
+        mkdir -p "${DESTINATION_PATH}"
+        unzip -q "${TMP_DIR}/artifact.zip" -d "${DESTINATION_PATH}"
+        rm -rf "${TMP_DIR}"
+        
+        ls "${DESTINATION_PATH}"
