@@ -71,6 +71,6 @@ e2e-tests *TEST:
 
 # ------------------------- RUNNING INTEGRATION TESTS -------------------
 
-compare-state base_path:
+compare-state base_path network="Westend":
     npm run build
-    npm run compare-state {{ base_path }}
+    npm run compare-state {{ base_path }} {{ network }}
