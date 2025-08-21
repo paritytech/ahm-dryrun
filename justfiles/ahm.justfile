@@ -62,14 +62,14 @@ permatest runtime base_path repeat:
     exec > >(tee -a "$LOGFILE") 2>&1
 
     for i in {1..{{ repeat }}}; do
-        just ahm permatest-once {{ runtime }} {{ base_path }}
+        just ahm test-once {{ runtime }} {{ base_path }}
         echo "--------------------------------"
         echo " MIGRATION FINISHED ITERATION #${i}"
         echo "--------------------------------"
     done
 
 # Permatest paseo
-permatest-once runtime base_path:
+test-once runtime base_path:
     #!/usr/bin/env bash
     set -ex
 
