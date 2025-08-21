@@ -13,10 +13,8 @@ on:
           - paseo
           - polkadot
 
-  push:
-    branches: [ ci_migration_tests ]
   pull_request:
-    branches: [ ci_migration_tests, main ]
+    branches: [ main ]
 env:
   ZOMBIE_BITE_BASE_PATH: ${{ github.workspace }}/migration-run
 

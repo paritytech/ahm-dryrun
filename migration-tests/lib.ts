@@ -142,12 +142,10 @@ export interface ChainConfig {
 
 async function getFirstAvailableBlock(api: ApiPromise, block: number): Promise<number> {
   // only check the first 10 blocks, since should be one available in that range
-  // const range = Array(10).fill(null).map((_, i) => block +i);
   let block_to_use: number|undefined = undefined;
-  // for(let thisBlock in range) {
   for(let i=block; i<= block+10; i++) {
     try {
-      logger.info('Checkig block:', { i } );
+      logger.debug('Checkig block:', { i } );
       const rc_block_hash_before = await api.rpc.chain.getBlockHash(i);
       await api.at(rc_block_hash_before);
       block_to_use = i;
