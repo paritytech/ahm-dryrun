@@ -96,7 +96,7 @@ test-once runtime base_path:
             break
         fi
 
-        sleep 10s
+        sleep 10
     done
 
     # Start the migration
@@ -108,7 +108,7 @@ test-once runtime base_path:
     echo "Migration finished"
 
     # Wait a bit for Node DB to properly write everything
-    sleep 10s
+    sleep 10
     just zb snapshot {{ runtime }} {{ base_path }} post
 
     # We already took snapshots so we can force kill it.
