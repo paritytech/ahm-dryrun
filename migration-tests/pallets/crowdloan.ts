@@ -9,7 +9,6 @@ import {
 import type { Codec } from "@polkadot/types/types";
 import type { ParaId } from "@polkadot/types/interfaces";
 
-
 interface CrowdloanFund {
   para_id: number;
   fund_index: number;
@@ -34,3 +33,41 @@ interface CrowdloanContribution {
   amount: string;
   memo: string;
 }
+
+export const crowdloanTests: MigrationTest = {
+  name: "crowdloan_pallet",
+  pre_check: async (context: PreCheckContext): Promise<PreCheckResult> => {
+    const { rc_api_before, ah_api_before } = context;
+
+    // Collect RC crowdloan funds data
+    const rc_funds = await rc_api_before.query.crowdloan.funds.entries();
+    const rc_funds_data: CrowdloanFund[] = rc_funds.map(([key, value]) => {
+      const para_id = (key.args[0] as any).toNumber();
+      const fund = value as any;
+      return {
+        para_id,
+        fund_index: fund.fundIndex.toNumber(),
+        depositor: fund.depositor.toString(),
+        deposit: fund.deposit.toString(),
+        raised: fund.raised.toString(),
+        end: fund.end.toNumber(),
+        cap: fund.cap.toString(),
+        first_period: fund.firstPeriod.toNumber(),
+        last_period: fund.lastPeriod.toNumber(),
+        trie_index: fund.trieIndex.toNumber(),
+      };
+    });
+
+    return {
+      rc_pre_payload: {},
+      ah_pre_payload: undefined,
+    };
+  },
+
+  post_check: async (
+    context: PostCheckContext,
+    pre_payload: PreCheckResult
+  ): Promise<void> => {
+    // TODO: Implement post-check logic
+  },
+} as const;
