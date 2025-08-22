@@ -71,7 +71,8 @@ jobs:
         timeout-minutes: 10
         env:
           BASE_PATH: ${{ env.ZOMBIE_BITE_BASE_PATH }}
+          NETWORK: ${{ inputs.network }}
         run: |
           echo "Running state comparison..."
           export PATH="${BASE_PATH}:$PATH"
-          just compare-state ./migration-run
+          just compare-state $BASE_PATH $NETWORK
