@@ -1,4 +1,4 @@
-name: OTY perm-test
+name: OTY permatest
 
 on:
   workflow_dispatch:
@@ -13,6 +13,14 @@ on:
         options:
           - paseo
           - polkadot
+      iterations:
+        description: 'Iterations for permatest (default 3)'
+        type: number
+        default: 3
+      timeout:
+        description: 'Timeout (in mins) for iterations, each one takes ~20mins (default 60)'
+        type: number
+        default: 60
 
 
 concurrency:
@@ -30,7 +38,7 @@ jobs:
     runs-on: parity-large
     container:
       image: docker.io/paritytech/ci-unified:bullseye-1.88.0-2025-06-27-v202507221446
-    timeout-minutes: 120
+    timeout-minutes: ${{ inputs.timeout }}
 
     steps:
       - uses: actions/checkout@v4
