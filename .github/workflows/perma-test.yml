@@ -18,9 +18,9 @@ on:
         type: number
         default: 3
       timeout:
-        description: 'Timeout (in mins) for iterations, each one takes ~20mins (default 60)'
+        description: 'Timeout (in mins) for iterations, each one takes ~20mins + bite time (default 120)'
         type: number
-        default: 60
+        default: 120
 
 
 concurrency:
@@ -102,7 +102,8 @@ jobs:
         env:
           NETWORK: ${{ inputs.network }}
           SUDO: ${{ inputs.sudo-key }}
+          ITERATIONS: ${{ inputs.iterations }}
         run: |
           export PATH=${AHM_BINS}:$PATH
-          just ahm permatest $NETWORK $ZOMBIE_BITE_BASE_PATH 3
+          just ahm permatest $NETWORK $ZOMBIE_BITE_BASE_PATH $ITERATIONS
 
