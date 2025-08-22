@@ -232,6 +232,17 @@ jobs:
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ready.json
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/migration_done.json
 
+      - name: run_migration_comparison_tests
+        shell: bash
+        env:
+          NETWORK: ${{ inputs.network }}
+        run: |
+          export PATH=${AHM_BINS}:$PATH
+
+          echo "::group::run-compare-state-tests"
+          just compare-state ${{ env.ZOMBIE_BITE_BASE_PATH }} ${{ inputs.network }}
+          echo "::endgroup::"
+        continue-on-error: true
 
       #
       # TODO: post migration setup
