@@ -232,6 +232,17 @@ jobs:
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ready.json
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/migration_done.json
 
+      - name: run_zombie_bite_post
+        shell: bash
+        run: |
+          export PATH=${AHM_BINS}:$PATH
+          # remove previous nohup.out
+          rm nohup.out || true
+          nohup just zb spawn $ZOMBIE_BITE_BASE_PATH post > nohup.out 2>&1 &
+
+      - name: wait_for_network
+        uses: ./.github/actions/wait-zb-network-ready
+
       - name: run_migration_comparison_tests
         shell: bash
         env:
@@ -242,7 +253,6 @@ jobs:
           echo "::group::run-compare-state-tests"
           just compare-state ${{ env.ZOMBIE_BITE_BASE_PATH }} ${{ inputs.network }}
           echo "::endgroup::"
-        continue-on-error: true
 
       #
       # TODO: post migration setup
