@@ -98,6 +98,10 @@ jobs:
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ports.json
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ready.json
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       - name: perm-test
         shell: bash
         env:
