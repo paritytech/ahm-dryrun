@@ -1,0 +1,109 @@
+name: OTY permatest
+
+on:
+  workflow_dispatch:
+    inputs:
+      sudo-key:
+        description: 'Sudo key to use as override (optional, default is //Alice)'
+        required: false
+      network:
+        description: 'Network to use (default paseo)'
+        default: 'paseo'
+        type: choice
+        options:
+          - paseo
+          - polkadot
+      iterations:
+        description: 'Iterations for permatest (default 3)'
+        type: number
+        default: 3
+      timeout:
+        description: 'Timeout (in mins) for iterations, each one takes ~20mins + bite time (default 120)'
+        type: number
+        default: 120
+
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+env:
+  ZOMBIE_BITE_BASE_PATH: "/tmp/ci"
+  AHM_BINS: "/tmp"
+
+jobs:
+  perm-test:
+    runs-on: parity-large
+    container:
+      image: docker.io/paritytech/ci-unified:bullseye-1.88.0-2025-06-27-v202507221446
+    timeout-minutes: ${{ inputs.timeout }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          ref:
+      - uses: extractions/setup-just@v2
+
+      - name: download_doppelganger_binaries
+        uses: ./.github/actions/download-doppelganger-binaries
+        with:
+          destination-path: ${{ env.AHM_BINS }}
+
+      - name: install_zombie_bite
+        shell: bash
+        run: |
+          just install-zombie-bite
+
+      - name: install_try_runtime_cli
+        shell: bash
+        run: |
+          just install-try-runtime
+
+
+      - name: create_base_dir
+        shell: bash
+        run: |
+          mkdir $ZOMBIE_BITE_BASE_PATH
+
+      - name: zombie_bite_step_bite
+        id: zombie_bite_step_bite
+        shell: bash
+        env:
+          NETWORK: ${{ inputs.network }}
+          SUDO: ${{ inputs.sudo-key }}
+        run: |
+          export PATH=${AHM_BINS}:$PATH
+
+          if [[ $SUDO != "" ]]; then
+            export ZOMBIE_SUDO=$SUDO
+          else
+            echo "no sudo key provided, using default '//Alice'"
+          fi
+
+          echo $(pwd)
+          just zb bite $ZOMBIE_BITE_BASE_PATH $NETWORK
+
+        continue-on-error: true
+
+      - name: zombie_bite_upload_step
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.network }}-pre-migration-db-${{ github.sha }}
+          path: |
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/ports.json
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/ready.json
+
+      - name: perm-test
+        shell: bash
+        env:
+          NETWORK: ${{ inputs.network }}
+          SUDO: ${{ inputs.sudo-key }}
+          ITERATIONS: ${{ inputs.iterations }}
+        run: |
+          export PATH=${AHM_BINS}:$PATH
+          just ahm permatest $NETWORK $ZOMBIE_BITE_BASE_PATH $ITERATIONS
+
