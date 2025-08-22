@@ -44,7 +44,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-          ref:
+          ref: oty-fixes
+
       - uses: extractions/setup-just@v2
 
       - name: download_doppelganger_binaries
