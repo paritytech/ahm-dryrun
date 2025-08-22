@@ -1,0 +1,39 @@
+name: "Get latest run id of AHM workflow"
+description: "Get the latest, completed, run-id of the AHM workflow to download the artifacts"
+
+inputs:
+  gh-token:
+    description: "GH token"
+    required: true
+outputs:
+  RUN_ID:
+    description: "RUN_ID available"
+    value: ${{ steps.get_id.outputs.RUN_ID }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Get ID
+      id: get_id
+      env:
+        GH_TOKEN: ${{ inputs.gh-token }}
+
+      shell: bash
+      run: |
+        echo "getting the latest completed run..."
+        gh run list --workflow zombie-bite.yml -b main -L 20 -s completed
+        RUN_ID=""
+        for id in $(gh run list --workflow zombie-bite.yml -b main -L 20 -s completed --json databaseId | jq -r '.[].databaseId');do
+          CONCLUSION=$(gh run view $id  --json jobs | jq -r '.jobs[] | select(.name == "zombie_bite_paseo / run_zombie_bite") | .conclusion');
+          if [[ $CONCLUSION == "success" ]]; then
+            RUN_ID=$id;
+            break
+          fi;
+        done;
+        if [[ $RUN_ID == "" ]]; then
+          echo "ERR: no run_id available in the last 20 runs";
+          exit 1
+        fi;
+        echo "RUN_ID: $RUN_ID"
+        echo "RUN_ID=$RUN_ID" >> "$GITHUB_OUTPUT"
+
