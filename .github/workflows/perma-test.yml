@@ -35,7 +35,7 @@ env:
 
 jobs:
   perm-test:
-    runs-on: parity-large
+    runs-on: parity-large-persistent
     container:
       image: docker.io/paritytech/ci-unified:bullseye-1.88.0-2025-06-27-v202507221446
     timeout-minutes: ${{ fromJSON(inputs.timeout) }}
