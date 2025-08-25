@@ -9,6 +9,10 @@ on:
       sudo-key:
         required: false
         type: string
+      runner:
+        required: false
+        type: string
+        default: parity-large-persistent
 
 env:
   ZOMBIE_BITE_BASE_PATH: "/tmp/ci"
@@ -16,7 +20,7 @@ env:
 
 jobs:
   run_zombie_bite:
-    runs-on: parity-large-persistent
+    runs-on: ${{ inputs.runner }}
     container:
       image: docker.io/paritytech/ci-unified:bullseye-1.88.0-2025-06-27-v202507221446
     timeout-minutes: 720
@@ -102,7 +106,6 @@ jobs:
           ls ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite
           ls ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite-debug
           echo "::endgroup::"
-
 
       - uses: actions/setup-node@v4
         with:
