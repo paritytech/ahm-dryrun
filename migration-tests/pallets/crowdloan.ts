@@ -58,8 +58,56 @@ export const crowdloanTests: MigrationTest = {
       };
     });
 
+
+    // Collect RC leases data
+    const rc_leases = await rc_api_before.query.slots.leases.entries();
+    const rc_leases_data: LeaseEntry[] = rc_leases.map(([key, value]) => {
+      const para_id = (key.args[0] as any).toNumber();
+      const leases = value as any;
+      return {
+        para_id,
+        leases: leases.map((lease: any) =>
+          lease.isSome
+            ? [lease.unwrap()[0].toString(), lease.unwrap()[1].toString()]
+            : null
+        ),
+      };
+    });
+
+    // Collect RC contributions data (this is more complex due to child trie)
+    // TODO : dhirajs0 get the contribution data from the child stograge
+    const rc_contributions: CrowdloanContribution[] = [];
+
+    // AH Pre-check assertions - verify AH is empty before migration
+    const ah_crowdloan_reserves =
+      await ah_api_before.query.ahOps.rcCrowdloanReserve.entries();
+    const ah_lease_reserves =
+      await ah_api_before.query.ahOps.rcLeaseReserve.entries();
+    const ah_crowdloan_contributions =
+      await ah_api_before.query.ahOps.rcCrowdloanContribution.entries();
+    
+    assert.equal(
+      ah_lease_reserves.length,
+      0,
+      "AH lease reserves should be empty before migration"
+    );
+    assert.equal(
+      ah_crowdloan_contributions.length,
+      0,
+      "AH crowdloan contributions should be empty before migration"
+    );
+    assert.equal(
+      ah_crowdloan_reserves.length,
+      0,
+      "AH crowdloan reserves should be empty before migration"
+    );
+
     return {
-      rc_pre_payload: {},
+      rc_pre_payload: {
+        funds: rc_funds_data,
+        leases: rc_leases_data,
+        contributions: rc_contributions,
+      },
       ah_pre_payload: undefined,
     };
   },
