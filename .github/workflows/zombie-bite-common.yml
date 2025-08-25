@@ -12,7 +12,7 @@ on:
       runner:
         required: false
         type: string
-        default: "parity-large-persistent"
+        default: parity-large-persistent
 
 env:
   ZOMBIE_BITE_BASE_PATH: "/tmp/ci"
