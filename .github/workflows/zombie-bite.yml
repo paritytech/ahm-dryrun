@@ -45,7 +45,7 @@ jobs:
   zombie_bite_polkadot_test_runner:
     # run by schedule only in Sundays or by demand
     if: ${{ inputs.network == 'ALL' || inputs.network == 'polkadot' || github.event.schedule == '0 0 * * 0' }}
-    uses: ./.github/workflows/zombie-bite-common-test-runner.yml
+    uses: ./.github/workflows/zombie-bite-common.yml
     with:
       network: polkadot
       sudo-key: ${{ inputs.sudo-key }}
@@ -54,7 +54,7 @@ jobs:
   zombie_bite_paseo_test_runner:
     # run by schedule everyday or by demand
     if: ${{ inputs.network == 'ALL' || inputs.network == 'paseo' || github.event.schedule == '0 0 * * *' }}
-    uses: ./.github/workflows/zombie-bite-common-test-runner.yml
+    uses: ./.github/workflows/zombie-bite-common.yml
     with:
       network: paseo
       sudo-key: ${{ inputs.sudo-key }}
