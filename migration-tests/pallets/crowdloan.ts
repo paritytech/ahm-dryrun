@@ -58,7 +58,6 @@ export const crowdloanTests: MigrationTest = {
       };
     });
 
-
     // Collect RC leases data
     const rc_leases = await rc_api_before.query.slots.leases.entries();
     const rc_leases_data: LeaseEntry[] = rc_leases.map(([key, value]) => {
@@ -85,7 +84,7 @@ export const crowdloanTests: MigrationTest = {
       await ah_api_before.query.ahOps.rcLeaseReserve.entries();
     const ah_crowdloan_contributions =
       await ah_api_before.query.ahOps.rcCrowdloanContribution.entries();
-    
+
     assert.equal(
       ah_lease_reserves.length,
       0,
@@ -117,5 +116,138 @@ export const crowdloanTests: MigrationTest = {
     pre_payload: PreCheckResult
   ): Promise<void> => {
     // TODO: Implement post-check logic
+
+    const { rc_api_after, ah_api_after } = context;
+    const {
+      funds: rc_funds_before,
+      leases: rc_leases_before,
+      contributions: rc_contributions_before,
+    } = pre_payload.rc_pre_payload;
+
+    await verifyRcStorageEmpty(rc_api_after);
+
+    await verifyAhStorageMatchesRcPreMigrationData(
+      ah_api_after,
+      rc_funds_before,
+      rc_leases_before,
+      rc_contributions_before
+    );
   },
 } as const;
+
+async function verifyRcStorageEmpty(rc_api_after: any): Promise<void> {
+  const rc_funds_after = await rc_api_after.query.crowdloan.funds.entries();
+  const rc_leases_after = await rc_api_after.query.slots.leases.entries();
+  // TODO : dhirajs0 get the contribution data from the child storage
+  // const rc_contributions_after = [];
+
+  assert.equal(
+    rc_funds_after.length,
+    0,
+    "RC crowdloan funds should be empty after migration"
+  );
+  assert.equal(
+    rc_leases_after.length,
+    0,
+    "RC leases should be empty after migration"
+  );
+  // assert.equal(rc_contributions_after.length, 0, 'RC contributions should be empty after migration');
+}
+
+async function verifyAhStorageMatchesRcPreMigrationData(
+  ah_api_after: any,
+  rc_funds_before: CrowdloanFund[],
+  rc_leases_before: LeaseEntry[],
+  rc_contributions_before: CrowdloanContribution[]
+): Promise<void> {
+  // Get AH storage after migration
+  const ah_lease_reserves_after =
+    await ah_api_after.query.ahOps.rcLeaseReserve.entries();
+  const ah_crowdloan_contributions_after =
+    await ah_api_after.query.ahOps.rcCrowdloanContribution.entries();
+  const ah_crowdloan_reserves_after =
+    await ah_api_after.query.ahOps.rcCrowdloanReserve.entries();
+
+  // Verify lease reserves migration
+  await verifyLeaseReservesMigration(ah_lease_reserves_after, rc_leases_before);
+
+  // Verify crowdloan contributions migration
+  await verifyCrowdloanContributionsMigration(
+    ah_crowdloan_contributions_after,
+    rc_contributions_before
+  );
+
+  // Verify crowdloan reserves migration
+  await verifyCrowdloanReservesMigration(
+    ah_crowdloan_reserves_after,
+    rc_funds_before
+  );
+}
+
+async function verifyLeaseReservesMigration(
+  ah_lease_reserves_after: any[],
+  rc_leases_before: LeaseEntry[]
+): Promise<void> {
+  // Handle Bifrost special case (para_id 2030 -> 3356)
+  const processed_rc_leases = rc_leases_before.map((lease) => {
+    if (lease.para_id === 2030) {
+      return { ...lease, para_id: 3356 };
+    }
+    return lease;
+  });
+
+  // Verify each lease reserve exists in AH
+  for (const rc_lease of processed_rc_leases) {
+    const matching_entry = ah_lease_reserves_after.find(([key]) => {
+      const [unreserve_block, para_id, account] = key.args;
+      return para_id.toNumber() === rc_lease.para_id;
+    });
+
+    assert(
+      matching_entry !== undefined,
+      `Lease reserve for para_id ${rc_lease.para_id} not found after migration`
+    );
+  }
+}
+
+async function verifyCrowdloanContributionsMigration(
+  ah_contributions_after: any[],
+  rc_contributions_before: CrowdloanContribution[]
+): Promise<void> {
+  // Verify each contribution exists in AH
+  for (const rc_contribution of rc_contributions_before) {
+    const matching_entry = ah_contributions_after.find(([key]) => {
+      const [withdraw_block, para_id, contributor] = key.args;
+      return (
+        para_id.toNumber() === rc_contribution.para_id &&
+        contributor.toString() === rc_contribution.contributor
+      );
+    });
+
+    assert(
+      matching_entry !== undefined,
+      `Contribution for para_id ${rc_contribution.para_id}, contributor ${rc_contribution.contributor} not found after migration`
+    );
+  }
+}
+
+async function verifyCrowdloanReservesMigration(
+  ah_reserves_after: any[],
+  rc_funds_before: CrowdloanFund[]
+): Promise<void> {
+  // Verify each fund reserve exists in AH
+  for (const rc_fund of rc_funds_before) {
+    const matching_entry = ah_reserves_after.find(([key]) => {
+      const [unreserve_block, para_id, depositor] = key.args;
+      return (
+        para_id.toNumber() === rc_fund.para_id &&
+        depositor.toString() === rc_fund.depositor
+      );
+    });
+
+    assert(
+      matching_entry !== undefined,
+      `Crowdloan reserve for para_id ${rc_fund.para_id}, depositor ${rc_fund.depositor} not found after migration`
+    );
+  }
+}
