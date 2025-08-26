@@ -8,30 +8,28 @@ import {
 } from "../types.js";
 import type { Codec } from "@polkadot/types/types";
 import type { ParaId } from "@polkadot/types/interfaces";
+import { ApiPromise } from "@polkadot/api";
 
-interface CrowdloanFund {
-  para_id: number;
-  fund_index: number;
+interface CrowdloanReserve {
+  unreserve_block: number;
   depositor: string;
-  deposit: string;
-  raised: string;
-  end: number;
-  cap: string;
-  first_period: number;
-  last_period: number;
-  trie_index: number;
+  para_id: number;
+  amount: string;
 }
 
-interface LeaseEntry {
+interface LeaseReserve {
+  unreserve_block: number;
+  account: string;
   para_id: number;
-  leases: Array<[string, string] | null>; // [account, amount] or null
+  amount: string;
 }
 
 interface CrowdloanContribution {
-  para_id: number;
+  withdraw_block: number;
   contributor: string;
+  para_id: number;
   amount: string;
-  memo: string;
+  crowdloan_account: string;
 }
 
 export const crowdloanTests: MigrationTest = {
@@ -41,37 +39,74 @@ export const crowdloanTests: MigrationTest = {
 
     // Collect RC crowdloan funds data
     const rc_funds = await rc_api_before.query.crowdloan.funds.entries();
-    const rc_funds_data: CrowdloanFund[] = rc_funds.map(([key, value]) => {
+    const rc_funds_data: CrowdloanReserve[] = [];
+
+    for (const [key, value] of rc_funds) {
       const para_id = (key.args[0] as any).toNumber();
       const fund = value as any;
-      return {
-        para_id,
-        fund_index: fund.fundIndex.toNumber(),
+
+      // Get leases for this parachain to calculate unreserve_block
+      const leases = await rc_api_before.query.slots.leases(para_id);
+
+      // Handle Codec properly - convert to array first
+      const leasesArray = (leases as any).toArray();
+      const num_active_leases = leasesArray.filter(
+        (lease: any) =>
+          lease &&
+          typeof lease === "object" &&
+          "isSome" in lease &&
+          lease.isSome
+      ).length;
+
+      // Calculate unreserve_block - add await here
+      const unreserve_block = await calculateUnreserveBlock(
+        rc_api_before,
+        num_active_leases
+      );
+
+      rc_funds_data.push({
+        unreserve_block,
         depositor: fund.depositor.toString(),
-        deposit: fund.deposit.toString(),
-        raised: fund.raised.toString(),
-        end: fund.end.toNumber(),
-        cap: fund.cap.toString(),
-        first_period: fund.firstPeriod.toNumber(),
-        last_period: fund.lastPeriod.toNumber(),
-        trie_index: fund.trieIndex.toNumber(),
-      };
-    });
+        para_id,
+        amount: fund.deposit.toString(),
+      });
+    }
 
     // Collect RC leases data
     const rc_leases = await rc_api_before.query.slots.leases.entries();
-    const rc_leases_data: LeaseEntry[] = rc_leases.map(([key, value]) => {
+    const rc_leases_data: LeaseReserve[] = [];
+
+    for (const [key, value] of rc_leases) {
       const para_id = (key.args[0] as any).toNumber();
       const leases = value as any;
-      return {
-        para_id,
-        leases: leases.map((lease: any) =>
+
+      // Process each lease to create LeaseReserve entries
+      for (let i = 0; i < leases.length; i++) {
+        const lease = leases[i];
+        if (
+          lease &&
+          typeof lease === "object" &&
+          "isSome" in lease &&
           lease.isSome
-            ? [lease.unwrap()[0].toString(), lease.unwrap()[1].toString()]
-            : null
-        ),
-      };
-    });
+        ) {
+          const [account, amount] = lease.unwrap();
+
+          // Calculate unreserve_block for this lease
+          const num_remaining_leases = leases.length - i;
+          const unreserve_block = await calculateUnreserveBlock(
+            rc_api_before,
+            num_remaining_leases
+          );
+
+          rc_leases_data.push({
+            unreserve_block,
+            account: account.toString(),
+            para_id,
+            amount: amount.toString(),
+          });
+        }
+      }
+    }
 
     // Collect RC contributions data (this is more complex due to child trie)
     // TODO : dhirajs0 get the contribution data from the child stograge
@@ -115,8 +150,6 @@ export const crowdloanTests: MigrationTest = {
     context: PostCheckContext,
     pre_payload: PreCheckResult
   ): Promise<void> => {
-    // TODO: Implement post-check logic
-
     const { rc_api_after, ah_api_after } = context;
     const {
       funds: rc_funds_before,
@@ -156,8 +189,8 @@ async function verifyRcStorageEmpty(rc_api_after: any): Promise<void> {
 
 async function verifyAhStorageMatchesRcPreMigrationData(
   ah_api_after: any,
-  rc_funds_before: CrowdloanFund[],
-  rc_leases_before: LeaseEntry[],
+  rc_funds_before: CrowdloanReserve[],
+  rc_leases_before: LeaseReserve[],
   rc_contributions_before: CrowdloanContribution[]
 ): Promise<void> {
   // Get AH storage after migration
@@ -168,16 +201,13 @@ async function verifyAhStorageMatchesRcPreMigrationData(
   const ah_crowdloan_reserves_after =
     await ah_api_after.query.ahOps.rcCrowdloanReserve.entries();
 
-  // Verify lease reserves migration
   await verifyLeaseReservesMigration(ah_lease_reserves_after, rc_leases_before);
 
-  // Verify crowdloan contributions migration
   await verifyCrowdloanContributionsMigration(
     ah_crowdloan_contributions_after,
     rc_contributions_before
   );
 
-  // Verify crowdloan reserves migration
   await verifyCrowdloanReservesMigration(
     ah_crowdloan_reserves_after,
     rc_funds_before
@@ -186,7 +216,7 @@ async function verifyAhStorageMatchesRcPreMigrationData(
 
 async function verifyLeaseReservesMigration(
   ah_lease_reserves_after: any[],
-  rc_leases_before: LeaseEntry[]
+  rc_leases_before: LeaseReserve[]
 ): Promise<void> {
   // Handle Bifrost special case (para_id 2030 -> 3356)
   const processed_rc_leases = rc_leases_before.map((lease) => {
@@ -199,8 +229,13 @@ async function verifyLeaseReservesMigration(
   // Verify each lease reserve exists in AH
   for (const rc_lease of processed_rc_leases) {
     const matching_entry = ah_lease_reserves_after.find(([key]) => {
-      const [unreserve_block, para_id, account] = key.args;
-      return para_id.toNumber() === rc_lease.para_id;
+      const [unreserve_block, para_id, account, amount] = key.args;
+      return (
+        para_id.toNumber() === rc_lease.para_id &&
+        unreserve_block.toNumber() === rc_lease.unreserve_block &&
+        account.toString() === rc_lease.account &&
+        amount.toString() === rc_lease.amount
+      );
     });
 
     assert(
@@ -217,9 +252,10 @@ async function verifyCrowdloanContributionsMigration(
   // Verify each contribution exists in AH
   for (const rc_contribution of rc_contributions_before) {
     const matching_entry = ah_contributions_after.find(([key]) => {
-      const [withdraw_block, para_id, contributor] = key.args;
+      const [withdraw_block, para_id, contributor, amount] = key.args;
       return (
         para_id.toNumber() === rc_contribution.para_id &&
+        withdraw_block.toNumber() === rc_contribution.withdraw_block &&
         contributor.toString() === rc_contribution.contributor
       );
     });
@@ -233,15 +269,17 @@ async function verifyCrowdloanContributionsMigration(
 
 async function verifyCrowdloanReservesMigration(
   ah_reserves_after: any[],
-  rc_funds_before: CrowdloanFund[]
+  rc_funds_before: CrowdloanReserve[]
 ): Promise<void> {
   // Verify each fund reserve exists in AH
   for (const rc_fund of rc_funds_before) {
     const matching_entry = ah_reserves_after.find(([key]) => {
-      const [unreserve_block, para_id, depositor] = key.args;
+      const [unreserve_block, para_id, depositor, amount] = key.args;
       return (
         para_id.toNumber() === rc_fund.para_id &&
-        depositor.toString() === rc_fund.depositor
+        unreserve_block.toNumber() === rc_fund.unreserve_block &&
+        depositor.toString() === rc_fund.depositor &&
+        amount.toString() === rc_fund.amount
       );
     });
 
@@ -249,5 +287,47 @@ async function verifyCrowdloanReservesMigration(
       matching_entry !== undefined,
       `Crowdloan reserve for para_id ${rc_fund.para_id}, depositor ${rc_fund.depositor} not found after migration`
     );
+  }
+}
+
+/**
+ * Calculate the lease ending block from the number of remaining leases
+ */
+async function calculateUnreserveBlock(
+  api: any,
+  num_leases: number
+): Promise<number> {
+  try {
+    // Get current block number
+    const current_block = await api.rpc.chain.getHeader();
+    const now = current_block.number.toNumber();
+
+    // Get lease period configuration - handle Codec properly
+    const lease_period = (await api.consts.slots.leasePeriod) as any;
+    const lease_offset = (await api.consts.slots.leaseOffset) as any;
+
+    const period = lease_period.toNumber();
+    const offset = lease_offset.toNumber();
+
+    // Sanity check: current block should be >= offset
+    if (now < offset) {
+      throw new Error(
+        `Current block ${now} is less than lease offset ${offset}`
+      );
+    }
+
+    // Calculate current period: (now - offset) / period
+    const current_period = Math.floor((now - offset) / period);
+
+    // Calculate last period end block: (current_period + num_leases) * period + offset
+    const last_period_end_block =
+      (current_period + num_leases) * period + offset;
+
+    return last_period_end_block;
+  } catch (error) {
+    console.error("Error calculating unreserve block:", error);
+    // Fallback: return current block + some reasonable offset
+    const current_block = await api.rpc.chain.getHeader();
+    return current_block.number.toNumber() + 1000; // Fallback offset
   }
 }
