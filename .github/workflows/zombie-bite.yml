@@ -16,7 +16,8 @@ on:
           - polkadot
 
   schedule:
-    - cron: "0 0 * * *"
+    # Paseo migration disabled (already done)
+    # - cron: "0 0 * * *"
     - cron: "0 0 * * 0" # Only on Sundays (Polkadot)
 
 concurrency:
@@ -34,13 +35,14 @@ jobs:
       network: polkadot
       sudo-key: ${{ inputs.sudo-key }}
 
-  zombie_bite_paseo:
-    # run by schedule everyday or by demand
-    if: ${{ inputs.network == 'ALL' || inputs.network == 'paseo' || github.event.schedule == '0 0 * * *' }}
-    uses: ./.github/workflows/zombie-bite-common.yml
-    with:
-      network: paseo
-      sudo-key: ${{ inputs.sudo-key }}
+  # Paseo migration disabled (already done)
+  # zombie_bite_paseo:
+  #   # run by schedule everyday or by demand
+  #   if: ${{ inputs.network == 'ALL' || inputs.network == 'paseo' || github.event.schedule == '0 0 * * *' }}
+  #   uses: ./.github/workflows/zombie-bite-common.yml
+  #   with:
+  #     network: paseo
+  #     sudo-key: ${{ inputs.sudo-key }}
 
   zombie_bite_polkadot_test_runner:
     # run by schedule only in Sundays or by demand
@@ -52,19 +54,15 @@ jobs:
       runner: parity-large-persistent-test
       args: "-test-runner"
 
-  zombie_bite_paseo_test_runner:
-    # run by schedule everyday or by demand
-    if: ${{ inputs.network == 'ALL' || inputs.network == 'paseo' || github.event.schedule == '0 0 * * *' }}
-    uses: ./.github/workflows/zombie-bite-common.yml
-    with:
-      network: paseo
-      sudo-key: ${{ inputs.sudo-key }}
-      runner: parity-large-persistent-test
-      args: "-test-runner"
-
-  # TODO (Javier): westend doesn't works with doppelganger, I will implement fork-off (in genesis) as alternative
-  # zombie_bite_westend:
+  # Paseo migration disabled (already done)
+  # zombie_bite_paseo_test_runner:
+  #   # run by schedule everyday or by demand
+  #   if: ${{ inputs.network == 'ALL' || inputs.network == 'paseo' || github.event.schedule == '0 0 * * *' }}
   #   uses: ./.github/workflows/zombie-bite-common.yml
   #   with:
-  #     network: westend
+  #     network: paseo
   #     sudo-key: ${{ inputs.sudo-key }}
+  #     runner: parity-large-persistent-test
+  #     args: "-test-runner"
+
+
