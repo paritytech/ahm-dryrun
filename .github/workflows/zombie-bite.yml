@@ -50,6 +50,7 @@ jobs:
       network: polkadot
       sudo-key: ${{ inputs.sudo-key }}
       runner: parity-large-persistent-test
+      args: "-test-runner"
 
   zombie_bite_paseo_test_runner:
     # run by schedule everyday or by demand
@@ -59,6 +60,7 @@ jobs:
       network: paseo
       sudo-key: ${{ inputs.sudo-key }}
       runner: parity-large-persistent-test
+      args: "-test-runner"
 
   # TODO (Javier): westend doesn't works with doppelganger, I will implement fork-off (in genesis) as alternative
   # zombie_bite_westend:
