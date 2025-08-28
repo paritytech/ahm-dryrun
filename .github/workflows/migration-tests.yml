@@ -11,10 +11,12 @@ on:
         type: choice
         options:
           #- paseo
+
           - polkadot
 
-  pull_request:
-    branches: [ main ]
+  # Disabled now, until we have kusama runtime for testing.
+  # pull_request:
+  #   branches: [ main ]
 env:
   ZOMBIE_BITE_BASE_PATH: ${{ github.workspace }}/migration-run
 
