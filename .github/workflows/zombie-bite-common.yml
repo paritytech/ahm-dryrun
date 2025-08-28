@@ -13,6 +13,10 @@ on:
         required: false
         type: string
         default: parity-large-persistent
+      args:
+        required: false
+        type: string
+        default: ""
 
 env:
   ZOMBIE_BITE_BASE_PATH: "/tmp/ci"
@@ -92,7 +96,7 @@ jobs:
       - name: zombie_bite_upload_step
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.network }}-pre-migration-db-${{ github.sha }}
+          name: ${{ inputs.network }}-pre-migration-db-${{ github.sha }}${{ inputs.args }}
           path: |
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ports.json
@@ -209,7 +213,7 @@ jobs:
       - name: zombie_bite_upload_step
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.network }}-try-runtime-snaps-${{ github.sha }}
+          name: ${{ inputs.network }}-try-runtime-snaps-${{ github.sha }}${{ inputs.args }}
           path: |
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/rc-pre.snap
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ah-pre.snap
@@ -219,7 +223,7 @@ jobs:
       - name: zombie_bite_upload_step_logs
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.network }}-post-migration-logs-${{ github.sha }}
+          name: ${{ inputs.network }}-post-migration-logs-${{ github.sha }}${{ inputs.args }}
           path: |
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn-debug/collator/collator.log
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn-debug/alice/alice.log
@@ -228,7 +232,7 @@ jobs:
       - name: try_runtime_upload_step
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.network }}-post-migration-db-${{ github.sha }}
+          name: ${{ inputs.network }}-post-migration-db-${{ github.sha }}${{ inputs.args }}
           path: |
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ports.json
