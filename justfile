@@ -71,3 +71,7 @@ e2e-tests *TEST:
 compare-state base_path runtime:
     just ahm _npm-build
     npm run compare-state {{ base_path }} {{ runtime }}
+
+find-rc-block-bite network="kusama":
+    just ahm _npm-build
+    npm run find-rc-block-bite {{ network }}
