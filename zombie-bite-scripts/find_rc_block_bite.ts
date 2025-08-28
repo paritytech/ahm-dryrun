@@ -1,6 +1,9 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { assert } from '@polkadot/util';
 
+// 500 blocks to be safe that all the tests will execute and we won't wait for the next era forever
+const OFFSET = 500;
+
 async function findFirstBlockInEra(api: ApiPromise): Promise<number> {
   // Get current active era
   const activeEra = await api.query.staking.activeEra();
@@ -62,8 +65,7 @@ async function main(network: string) {
     const block = await findFirstBlockInEra(api);
     await verifyPreviousBlockInPreviousEra(api, block);
 
-    const offset = 500; // 500 blocks to be safe that all the tests will execute and we won't wait for the next era forever
-    const rcBiteBlock = block - offset;
+    const rcBiteBlock = block - OFFSET;
 
     // output the block number to stdout so it can be captured by the workflow
     console.log(rcBiteBlock);
