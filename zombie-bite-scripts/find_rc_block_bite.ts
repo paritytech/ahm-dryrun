@@ -60,10 +60,17 @@ async function main(network: string) {
 
   try {
     const block = await findFirstBlockInEra(api);
-    
     await verifyPreviousBlockInPreviousEra(api, block);
+
+    const offset = 500; // 500 blocks to be safe that all the tests will execute and we won't wait for the next era forever
+    const rcBiteBlock = block - offset;
+
+    // output the block number to stdout so it can be captured by the workflow
+    console.log(rcBiteBlock);
+
   } catch (error) {
     console.error('Error:', error);
+    process.exit(1);
   } finally {
     await api.disconnect();
   }
