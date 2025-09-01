@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       sudo-key:
-        description: 'Sudo key to use as override (optional, default is //Alice)'
+        description: "Sudo key to use as override (optional, default is //Alice)"
         required: false
       network:
-        description: 'Network to use (ALL means polkadot and paseo)'
-        default: 'ALL'
+        description: "Network to use (ALL means polkadot and paseo)"
+        default: "ALL"
         type: choice
         options:
           - ALL
@@ -16,7 +16,9 @@ on:
           - polkadot
 
   schedule:
-    - cron:  '0 0 * * *'
+    # Paseo migration disabled (already done)
+    # - cron: "0 0 * * *"
+    - cron: "0 0 * * 0" # Only on Sundays (Polkadot)
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -26,22 +28,41 @@ permissions: {}
 
 jobs:
   zombie_bite_polkadot:
-    if: ${{ inputs.network == 'ALL' || inputs.network == 'polkadot' || github.event_name == 'schedule' }}
+    # run by schedule only in Sundays or by demand
+    if: ${{ inputs.network == 'ALL' || inputs.network == 'polkadot' || github.event.schedule == '0 0 * * 0' }}
     uses: ./.github/workflows/zombie-bite-common.yml
     with:
       network: polkadot
       sudo-key: ${{ inputs.sudo-key }}
 
-  zombie_bite_paseo:
-    if: ${{ inputs.network == 'ALL' || inputs.network == 'paseo' || github.event_name == 'schedule' }}
-    uses: ./.github/workflows/zombie-bite-common.yml
-    with:
-      network: paseo
-      sudo-key: ${{ inputs.sudo-key }}
-
-  # TODO (Javier): westend doesn't works with doppelganger, I will implement fork-off (in genesis) as alternative
-  # zombie_bite_westend:
+  # Paseo migration disabled (already done)
+  # zombie_bite_paseo:
+  #   # run by schedule everyday or by demand
+  #   if: ${{ inputs.network == 'ALL' || inputs.network == 'paseo' || github.event.schedule == '0 0 * * *' }}
   #   uses: ./.github/workflows/zombie-bite-common.yml
   #   with:
-  #     network: westend
+  #     network: paseo
   #     sudo-key: ${{ inputs.sudo-key }}
+
+  zombie_bite_polkadot_test_runner:
+    # run by schedule only in Sundays or by demand
+    if: ${{ inputs.network == 'ALL' || inputs.network == 'polkadot' || github.event.schedule == '0 0 * * 0' }}
+    uses: ./.github/workflows/zombie-bite-common.yml
+    with:
+      network: polkadot
+      sudo-key: ${{ inputs.sudo-key }}
+      runner: parity-large-persistent-test
+      args: "-test-runner"
+
+  # Paseo migration disabled (already done)
+  # zombie_bite_paseo_test_runner:
+  #   # run by schedule everyday or by demand
+  #   if: ${{ inputs.network == 'ALL' || inputs.network == 'paseo' || github.event.schedule == '0 0 * * *' }}
+  #   uses: ./.github/workflows/zombie-bite-common.yml
+  #   with:
+  #     network: paseo
+  #     sudo-key: ${{ inputs.sudo-key }}
+  #     runner: parity-large-persistent-test
+  #     args: "-test-runner"
+
+

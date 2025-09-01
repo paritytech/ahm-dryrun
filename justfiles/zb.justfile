@@ -9,7 +9,10 @@ help:
 # First part of the Zombie-Bite flow. This forks off the network.
 bite base_path runtime:
     #!/usr/bin/env bash
+    set -xe
+
     just build {{ runtime }}
+    mkdir -p {{ base_path }}
 
     PATH=$(pwd)/${DOPPELGANGER_PATH}/bin:$PATH \
     zombie-bite bite -d {{ base_path }} \
@@ -28,18 +31,40 @@ spawn base_path *step:
         zombie-bite spawn -d {{ base_path }} -s {{ step }}
     fi
 
-# Third part of the Zombie-Bite flow. This performs the migration on a forked and running network.
-perform-migration base_path:
+start-migration base_path:
     #!/usr/bin/env bash
+    set -ex
+
+    just ahm _npm-build
+    ALICE_PORT=$(jq -r .alice_port "{{ base_path }}/ports.json")
+
+    node dist/zombie-bite-scripts/migration_shedule_migration.js $ALICE_PORT
+
+wait-for-migration-done base_path:
+    #!/usr/bin/env bash
+    set -ex
+
     just ahm _npm-build
     ALICE_PORT=$(jq -r .alice_port "{{ base_path }}/ports.json")
     COL_PORT=$(jq -r .collator_port "{{ base_path }}/ports.json")
 
-    node dist/zombie-bite-scripts/migration_shedule_migration.js $ALICE_PORT
     # set a diff log level to run this
     TS_LOG_LEVEL=debug node dist/zombie-bite-scripts/migration_finished_monitor.js {{ base_path }} $ALICE_PORT $COL_PORT
 
-    STOP_FILE="{{base_path }}/stop.txt"
+# Kill everything ZB and Polkadot related. RIP if you are running a local node.
+force-kill:
+    #!/usr/bin/env bash
+    set -ex
+    
+    killall zombie-bite || true
+    killall doppelganger || true
+    killall polkadot-prepare-worker polkadot-execute-worker polkadot polkadot-collator || true
+
+soft-kill-migration base_path:
+    #!/usr/bin/env bash
+    set -ex
+    
+    STOP_FILE="{{ base_path }}/stop.txt"
     echo "signal teardown network by creating file ${STOP_FILE}"
 
     # signal stop network
@@ -57,3 +82,74 @@ perform-migration base_path:
     sleep 2
     done
     echo "'stop.txt' file not present anymore, teardown network completed..."
+
+# Third part of the Zombie-Bite flow. This performs the migration on a forked and running network.
+perform-migration base_path:
+    #!/usr/bin/env bash
+    set -ex
+
+    just zb start-migration {{ base_path }}
+    just zb wait-for-migration-done {{ base_path }}
+    just zb kill-migration {{ base_path }}
+
+# Take Rust snapshots of the network. Example: just zb snapshot paseo paseo-bite pre
+snapshot runtime base_path pre_or_post:
+    #!/usr/bin/env bash
+    set -xe
+
+    if [ ! -d "{{ base_path }}" ]; then
+        echo "Error: base_path '{{ base_path }}' does not exist"
+        exit 1
+    fi
+
+    if ! command -v try-runtime &> /dev/null; then
+        cargo install --git https://github.com/paritytech/try-runtime-cli --locked
+    fi
+
+    just ahm _npm-build
+    RC_PORT=$(jq -r .alice_port "{{ base_path }}/ports.json")
+    AH_PORT=$(jq -r .collator_port "{{ base_path }}/ports.json")
+
+    # Get block numbers for synchronized snapshots
+    BLOCK_INFO=$(node dist/zombie-bite-scripts/snapshot_block_numbers.js ${RC_PORT} ${AH_PORT})
+    RC_BLOCK=$(echo ${BLOCK_INFO} | jq -r .rc_block_hash)
+    AH_BLOCK=$(echo ${BLOCK_INFO} | jq -r .ah_block_hash)
+
+    try-runtime create-snapshot --uri ws://127.0.0.1:${RC_PORT} --at ${RC_BLOCK} "{{ base_path }}/{{ runtime }}-rc-{{ pre_or_post }}.snap"
+    try-runtime create-snapshot --uri ws://127.0.0.1:${AH_PORT} --at ${AH_BLOCK} "{{ base_path }}/{{ runtime }}-ah-{{ pre_or_post }}.snap"
+
+# Wait for nodes to be ready with retry logic
+wait-for-nodes base_path:
+    #!/usr/bin/env bash
+    just ahm _npm-build
+    RC_PORT=$(jq -r .alice_port "{{ base_path }}/ports.json")
+    AH_PORT=$(jq -r .collator_port "{{ base_path }}/ports.json")
+    
+    # Retry function for node readiness
+    wait_for_node() {
+        local port=$1
+        local name=$2
+        for i in {1..10}; do
+            if node dist/zombie-bite-scripts/wait_n_blocks.js ws://localhost:${port} 1 2>/dev/null; then
+                echo "${name} node ready"
+                return 0
+            fi
+            echo "Attempt $i/10: ${name} node not ready, waiting 5s..."
+            sleep 5
+        done
+        echo "ERROR: ${name} node failed to become ready after 10 attempts"
+        return 1
+    }
+    
+    # Check both nodes in parallel
+    wait_for_node $RC_PORT "RC" &
+    RC_PID=$!
+    
+    wait_for_node $AH_PORT "AH" &
+    AH_PID=$!
+    
+    # Wait for both to complete
+    wait $RC_PID
+    wait $AH_PID
+    
+    echo "Both nodes are ready"

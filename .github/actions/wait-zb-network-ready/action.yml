@@ -1,0 +1,27 @@
+name: "Wait network ready"
+description: "Wait until the spawned network is producing blocks"
+
+inputs:
+  log-file:
+    description: "Log file to read"
+    default: "nohup.out"
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: wait_network
+      env:
+        LOG_FILE: ${{ inputs.log-file }}
+
+      shell: bash
+      run: |
+          echo "Waiting for 'network is up and running' message..."
+          timeout 300 bash -c '
+            while ! grep -q "network is up and running" $LOG_FILE 2>/dev/null; do
+              echo "Still waiting for network... last log line:"
+              tail -1 $LOG_FILE
+              sleep 5
+            done
+            echo "Network is up and running!"
+          '

@@ -3,7 +3,7 @@ import { cryptoWaitReady } from "@polkadot/util-crypto";
 import { promises as fs_promises } from "fs";
 import { logger } from "../shared/logger.js";
 
-const rcPort = process.env.ZOMBIE_BITE_RC_PORT || 63168;
+const rcPort = process.env.ZOMBIE_BITE_ALICE_PORT || 63168;
 const ahPort = process.env.ZOMBIE_BITE_AH_PORT || 63170;
 const finalization = false;
 let mock_finish_flag = false;
@@ -22,6 +22,8 @@ interface scheduleMigrationArgs {
   rc_port?: number|string,
   rc_block_start?: DispatchTime
   cool_off_end?: DispatchTime
+  warm_up_end?: DispatchTime
+  ignore_staking_check?: boolean
 };
 
 async function connect(apiUrl: string, types = {}) {
@@ -164,12 +166,14 @@ export async function scheduleMigration(migration_args?: scheduleMigrationArgs) 
 
   // check start and cool_off_end
   const start = migration_args && migration_args.rc_block_start || { after: 1 };
+  const warm_up_end = migration_args && migration_args.warm_up_end || { after: 1 };
   const cool_off_end = migration_args && migration_args.cool_off_end || { after: 2 };
+  const ignore_staking_check = migration_args && migration_args.ignore_staking_check || true;
 
-  logger.info('Scheduling migration', { start, cool_off_end, nonce });
+  logger.info('Scheduling migration', { start, warm_up_end, cool_off_end, nonce, ignore_staking_check });
 
   return new Promise(async (resolve, reject) => {
-    const unsub: any = await api.tx.rcMigrator.scheduleMigration(start, cool_off_end)
+    const unsub: any = await api.tx.rcMigrator.scheduleMigration(start, warm_up_end, cool_off_end, ignore_staking_check)
       .signAndSend(alice, { nonce: nonce, era: 0 }, (result) => {
         logger.info('Migration transaction status', { status: result.status.toString() });
 

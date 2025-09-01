@@ -1,0 +1,78 @@
+name: Migration Tests Common
+on:
+  workflow_call:
+    inputs:
+      network:
+        type: string
+        required: false
+        default: 'paseo'
+      run-id:
+        type: string
+        description: "run-id of the artifacts to download"
+        required: true
+
+env:
+  ZOMBIE_BITE_BASE_PATH: ${{ github.workspace }}/migration-run
+
+jobs:
+  ts-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: extractions/setup-just@v2
+
+      - name: download_post_migration_db
+        uses: ./.github/actions/download-artifact
+        env:
+          RUN_ID: ${{ inputs.run-id }}
+          GH_TOKEN: ${{ github.token }}
+          NETWORK: ${{ inputs.network }}
+        with:
+          gh-token: ${{ env.GH_TOKEN }}
+          destination-path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
+          run-id: ${{ env.RUN_ID }}
+          name-pattern: "${{ env.NETWORK }}-post-migration-db-*"
+
+      - name: download_doppelganger_binaries
+        uses: ./.github/actions/download-doppelganger-binaries
+        with:
+          destination-path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
+
+      - name: install_zombie_bite
+        shell: bash
+        run: |
+          just install-zombie-bite
+
+      - name: verify
+        shell: bash
+        run: |
+          echo "::group::dest contents"
+          ls -la "$ZOMBIE_BITE_BASE_PATH" || true
+          echo "::endgroup::"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: run_zombie_bite
+        shell: bash
+        env:
+          BASE_PATH: ${{ env.ZOMBIE_BITE_BASE_PATH }}
+        run: |
+          export PATH="${BASE_PATH}:$PATH"
+          nohup just zb spawn ./migration-run post > nohup.out 2>&1 &
+
+      - name: wait_for_network
+        uses: ./.github/actions/wait-zb-network-ready
+
+      - name: compare_state
+        shell: bash
+        timeout-minutes: 10
+        env:
+          BASE_PATH: ${{ env.ZOMBIE_BITE_BASE_PATH }}
+          NETWORK: ${{ inputs.network }}
+        run: |
+          echo "Running state comparison..."
+          export PATH="${BASE_PATH}:$PATH"
+          just compare-state $BASE_PATH $NETWORK
