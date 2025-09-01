@@ -1,20 +1,20 @@
+// .papi/descriptors/src/common.ts
+var table = new Uint8Array(128);
+for (let i = 0; i < 64; i++) table[i < 26 ? i + 65 : i < 52 ? i + 71 : i < 62 ? i - 4 : i * 4 - 205] = i;
+var toBinary = (base64) => {
+  const n = base64.length, bytes = new Uint8Array((n - Number(base64[n - 1] === "=") - Number(base64[n - 2] === "=")) * 3 / 4 | 0);
+  for (let i2 = 0, j = 0; i2 < n; ) {
+    const c0 = table[base64.charCodeAt(i2++)], c1 = table[base64.charCodeAt(i2++)];
+    const c2 = table[base64.charCodeAt(i2++)], c3 = table[base64.charCodeAt(i2++)];
+    bytes[j++] = c0 << 2 | c1 >> 4;
+    bytes[j++] = c1 << 4 | c2 >> 2;
+    bytes[j++] = c2 << 6 | c3;
+  }
+  return bytes;
+};
+
 // .papi/descriptors/src/polkadot_rc.ts
-var toBinary = (() => {
-  const table = new Uint8Array(128);
-  for (let i = 0; i < 64; i++) table[i < 26 ? i + 65 : i < 52 ? i + 71 : i < 62 ? i - 4 : i * 4 - 205] = i;
-  return (base64) => {
-    const n = base64.length, bytes = new Uint8Array((n - Number(base64[n - 1] === "=") - Number(base64[n - 2] === "=")) * 3 / 4 | 0);
-    for (let i2 = 0, j = 0; i2 < n; ) {
-      const c0 = table[base64.charCodeAt(i2++)], c1 = table[base64.charCodeAt(i2++)];
-      const c2 = table[base64.charCodeAt(i2++)], c3 = table[base64.charCodeAt(i2++)];
-      bytes[j++] = c0 << 2 | c1 >> 4;
-      bytes[j++] = c1 << 4 | c2 >> 2;
-      bytes[j++] = c2 << 6 | c3;
-    }
-    return bytes;
-  };
-})();
-var descriptorValues = import("./descriptors-WXIEM666.mjs").then((module) => module["Polkadot_rc"]);
+var descriptorValues = import("./descriptors-VH6G47CJ.mjs").then((module) => module["Polkadot_rc"]);
 var metadataTypes = import("./metadataTypes-TEXSL4NL.mjs").then(
   (module) => toBinary("default" in module ? module.default : module)
 );
@@ -27,28 +27,13 @@ var _allDescriptors = { descriptors: descriptorValues, metadataTypes, asset, get
 var polkadot_rc_default = _allDescriptors;
 
 // .papi/descriptors/src/rc_migrator_network.ts
-var toBinary2 = (() => {
-  const table = new Uint8Array(128);
-  for (let i = 0; i < 64; i++) table[i < 26 ? i + 65 : i < 52 ? i + 71 : i < 62 ? i - 4 : i * 4 - 205] = i;
-  return (base64) => {
-    const n = base64.length, bytes = new Uint8Array((n - Number(base64[n - 1] === "=") - Number(base64[n - 2] === "=")) * 3 / 4 | 0);
-    for (let i2 = 0, j = 0; i2 < n; ) {
-      const c0 = table[base64.charCodeAt(i2++)], c1 = table[base64.charCodeAt(i2++)];
-      const c2 = table[base64.charCodeAt(i2++)], c3 = table[base64.charCodeAt(i2++)];
-      bytes[j++] = c0 << 2 | c1 >> 4;
-      bytes[j++] = c1 << 4 | c2 >> 2;
-      bytes[j++] = c2 << 6 | c3;
-    }
-    return bytes;
-  };
-})();
-var descriptorValues2 = import("./descriptors-WXIEM666.mjs").then((module) => module["Rc_migrator_network"]);
+var descriptorValues2 = import("./descriptors-VH6G47CJ.mjs").then((module) => module["Rc_migrator_network"]);
 var metadataTypes2 = import("./metadataTypes-TEXSL4NL.mjs").then(
-  (module) => toBinary2("default" in module ? module.default : module)
+  (module) => toBinary("default" in module ? module.default : module)
 );
 var asset2 = {};
 var getMetadata2 = () => import("./rc_migrator_network_metadata-OT6NSSWN.mjs").then(
-  (module) => toBinary2("default" in module ? module.default : module)
+  (module) => toBinary("default" in module ? module.default : module)
 );
 var genesis2 = "0x91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3";
 var _allDescriptors2 = { descriptors: descriptorValues2, metadataTypes: metadataTypes2, asset: asset2, getMetadata: getMetadata2, genesis: genesis2 };
@@ -199,6 +184,16 @@ var CoreState = _Enum;
 var OccupiedCoreAssumption = _Enum;
 var CandidateEvent = _Enum;
 var MmrPrimitivesError = _Enum;
+
+// .papi/descriptors/src/index.ts
+var metadatas = {};
+var getMetadata3 = async (codeHash) => {
+  try {
+    return await metadatas[codeHash].getMetadata();
+  } catch {
+  }
+  return null;
+};
 export {
   ArithmeticError,
   AssetRateEvent,
@@ -343,6 +338,7 @@ export {
   XcmVersionedLocation,
   XcmVersionedResponse,
   XcmVersionedXcm,
+  getMetadata3 as getMetadata,
   polkadot_rc_default as polkadot_rc,
   rc_migrator_network_default as rc_migrator_network
 };

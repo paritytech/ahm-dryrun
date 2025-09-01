@@ -47,15 +47,18 @@ install-try-runtime:
 # only run once, per the runtime that you want to test.
 build runtime:
     #!/usr/bin/env bash
+    set -xe
+    mkdir -p ./runtime_wasm
+
     if [ "{{ runtime }}" = "paseo" ]; then
-        cd ${PASEO_PATH} && ${CARGO_CMD} build --release -p asset-hub-paseo-runtime -p paseo-runtime && cd ..
-        cp ${PASEO_PATH}/target/release/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
+        cd ${PASEO_PATH} && ${CARGO_CMD} build --profile production --features on-chain-release-build -p asset-hub-paseo-runtime -p paseo-runtime && cd ..
+        cp ${PASEO_PATH}/target/production/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
     elif [ "{{ runtime }}" = "polkadot" ]; then
-        cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --release -p asset-hub-polkadot-runtime -p polkadot-runtime && cd ..
-        cp ${RUNTIMES_PATH}/target/release/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
+        cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --profile production --features on-chain-release-build -p asset-hub-polkadot-runtime -p polkadot-runtime && cd ..
+        cp ${RUNTIMES_PATH}/target/production/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
     elif [ "{{ runtime }}" = "kusama" ]; then
-        cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --release -p asset-hub-kusama-runtime -p staging-kusama-runtime && cd ..
-        cp ${RUNTIMES_PATH}/target/release/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
+        cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --profile production --features on-chain-release-build -p asset-hub-kusama-runtime -p staging-kusama-runtime && cd ..
+        cp ${RUNTIMES_PATH}/target/production/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
     else
         echo "Error: Unsupported runtime '{{ runtime }}'. Supported runtimes are: paseo, polkadot, kusama"
         exit 1
