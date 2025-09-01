@@ -78,3 +78,7 @@ compare-state base_path runtime:
 find-rc-block-bite network="kusama":
     just ahm _npm-build
     npm run find-rc-block-bite {{ network }}
+
+make-new-snapshot base_path:
+    just ahm _npm-build
+    npm run make-new-snapshot {{ base_path }}
