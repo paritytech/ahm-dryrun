@@ -9,6 +9,14 @@ on:
       sudo-key:
         required: false
         type: string
+      runner:
+        required: false
+        type: string
+        default: parity-large-persistent
+      args:
+        required: false
+        type: string
+        default: ""
 
 env:
   ZOMBIE_BITE_BASE_PATH: "/tmp/ci"
@@ -16,7 +24,7 @@ env:
 
 jobs:
   run_zombie_bite:
-    runs-on: parity-large-persistent
+    runs-on: ${{ inputs.runner }}
     container:
       image: docker.io/paritytech/ci-unified:bullseye-1.88.0-2025-06-27-v202507221446
     timeout-minutes: 720
@@ -81,14 +89,19 @@ jobs:
           source .env
           set +a
 
-          zombie-bite bite -r $NETWORK --rc-override $RC_OVERRIDE --ah-override $AH_OVERRIDE -d $ZOMBIE_BITE_BASE_PATH
+          echo "::group::find-rc-block-bite"
+          RC_BITE_BLOCK=$(just find-rc-block-bite $NETWORK)
+          echo "Found RC block to bite: $RC_BITE_BLOCK"
+          echo "::endgroup::"
+
+          zombie-bite bite -r $NETWORK --rc-override $RC_OVERRIDE --ah-override $AH_OVERRIDE -d $ZOMBIE_BITE_BASE_PATH # --rc-bite-block $RC_BITE_BLOCK
 
         continue-on-error: true
 
       - name: zombie_bite_upload_step
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.network }}-pre-migration-db-${{ github.sha }}
+          name: ${{ inputs.network }}-pre-migration-db-${{ github.sha }}${{ inputs.args }}
           path: |
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ports.json
@@ -102,7 +115,6 @@ jobs:
           ls ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite
           ls ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite-debug
           echo "::endgroup::"
-
 
       - uses: actions/setup-node@v4
         with:
@@ -206,7 +218,7 @@ jobs:
       - name: zombie_bite_upload_step
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.network }}-try-runtime-snaps-${{ github.sha }}
+          name: ${{ inputs.network }}-try-runtime-snaps-${{ github.sha }}${{ inputs.args }}
           path: |
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/rc-pre.snap
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ah-pre.snap
@@ -216,7 +228,7 @@ jobs:
       - name: zombie_bite_upload_step_logs
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.network }}-post-migration-logs-${{ github.sha }}
+          name: ${{ inputs.network }}-post-migration-logs-${{ github.sha }}${{ inputs.args }}
           path: |
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn-debug/collator/collator.log
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn-debug/alice/alice.log
@@ -225,7 +237,7 @@ jobs:
       - name: try_runtime_upload_step
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.network }}-post-migration-db-${{ github.sha }}
+          name: ${{ inputs.network }}-post-migration-db-${{ github.sha }}${{ inputs.args }}
           path: |
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ports.json
