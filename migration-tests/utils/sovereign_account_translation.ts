@@ -462,4 +462,7 @@ export const DERIVED_TRANSLATIONS: DerivedTranslationEntry[] = DERIVED_TRANSLATI
   return aHex.localeCompare(bHex);
 });
 
-
+// Helper function to convert Uint8Array to hex string for debugging
+export function u8aToHex(bytes: Uint8Array): string {
+    return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
