@@ -2,6 +2,7 @@ import '@polkadot/api-augment';
 import assert from 'assert';
 import { PreCheckContext, PostCheckContext, MigrationTest, PreCheckResult } from '../types.js';
 import { logger } from "../../shared/logger.js"; 
+import { translateAccountRcToAh } from '../utils/account_translation.js';
 
 
 // Constants for validation - SS58 address length
@@ -68,26 +69,27 @@ export const multisigTests: MigrationTest = {
                 continue;
             }
 
-            let ahAccountJson: any;
+            let translatedAhAccountJson: any;
+            let translatedAhAccount = translateAccountRcToAh(rcEntry.depositor);
             try {
-                const ahAccountRaw = await ah_api_after.query.system.account(rcEntry.depositor);
-                ahAccountJson = ahAccountRaw.toJSON() as any;
+                const translatedAhAccountRaw = await ah_api_after.query.system.account(translatedAhAccount);
+                translatedAhAccountJson = translatedAhAccountRaw.toJSON() as any;
             } catch(error) {
-                logger.error(`Error querying account ${rcEntry.depositor}:`, error);
+                logger.error(`Error querying translated account ${translatedAhAccount}:`, error);
                 throw error;
             }
                 
-            if (!ahAccountJson?.data) {
-                logger.warn(`Account ${rcEntry.depositor} not found or has no data on AH`);
+            if (!translatedAhAccountJson?.data) {
+                logger.warn(`Translated account ${translatedAhAccount} not found or has no data on AH`);
                 continue;
             }
                 
             // The depositor should have some balance (including the unreserved deposit)
-            const freeBalance = Number(ahAccountJson.data.free || 0);
-            const reservedBalance = Number(ahAccountJson.data.reserved || 0);
+            const freeBalance = Number(translatedAhAccountJson.data.free || 0);
+            const reservedBalance = Number(translatedAhAccountJson.data.reserved || 0);
             assert(
               freeBalance > 0 || reservedBalance > 0,
-              `Depositor ${rcEntry.depositor} should have balance on AH after migration`
+              `Translated depositor ${translatedAhAccount} should have balance on AH after migration`
             );
             accountsWithBalanceCount++;
         }
