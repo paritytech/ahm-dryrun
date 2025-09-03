@@ -5,6 +5,7 @@ import type { Codec } from '@polkadot/types/types';
 import type { StorageKey, u32 } from '@polkadot/types';
 import { ApiDecoration } from '@polkadot/api/types';
 import { ReferendumInfo } from '@polkadot/types/interfaces/democracy/types.js';
+import { translateAccountRcToAh } from '../utils/account_translation.js';
 
 const MIGRATED_PALLETS = ['System', 'Utility', 'Treasury', 'Referenda', 'Bounties', 'ChildBounties'];
 
@@ -238,15 +239,25 @@ async function verifyReferendumInfo(rc_api_after: ApiDecoration<'promise'>, ah_a
 
 async function convert_rc_to_ah_referendum(rc_api_after: ApiDecoration<'promise'>, ah_api_after: ApiDecoration<'promise'>, rcInfo: Codec, rc_indexToPalletName: Record<number, string>): Promise<Codec> {
     const rcInfoJson = rcInfo.toJSON() as any;    
+    
+    // Helper function to translate deposit accounts
+    const translateDeposit = (deposit: any) => {
+        if (!deposit) return deposit;
+        return {
+            ...deposit,
+            who: translateAccountRcToAh(deposit.who)
+        };
+    };
+    
     // Handle different referendum states
-    if (rcInfoJson.ongoing) {
-        const rcStatus = rcInfoJson.ongoing;
+    if (rcInfoJson.Ongoing) {
+        const rcStatus = rcInfoJson.Ongoing;
 
         const ah_proposal = await map_rc_ah_call(rc_api_after, ah_api_after, rcStatus, rc_indexToPalletName);
         if (!ah_proposal) {
             // Call conversion failed, return cancelled
             const now = get_current_block_number();
-            return create_cancelled_referendum(now, rcStatus.submission_deposit, rcStatus.decision_deposit);
+            return create_cancelled_referendum(now, translateDeposit(rcStatus.submission_deposit), translateDeposit(rcStatus.decision_deposit));
         }
 
         // Construct the AH status using converted parts
@@ -257,8 +268,8 @@ async function convert_rc_to_ah_referendum(rc_api_after: ApiDecoration<'promise'
             proposal: ah_proposal,
             enactment: rcStatus.enactment,
             submitted: rcStatus.submitted,
-            submission_deposit: rcStatus.submission_deposit,
-            decision_deposit: rcStatus.decision_deposit,
+            submission_deposit: translateDeposit(rcStatus.submission_deposit),
+            decision_deposit: translateDeposit(rcStatus.decision_deposit),
             deciding: rcStatus.deciding,
             tally: rcStatus.tally,
             in_queue: rcStatus.in_queue,
@@ -267,15 +278,35 @@ async function convert_rc_to_ah_referendum(rc_api_after: ApiDecoration<'promise'
 
         return create_ongoing_referendum(ah_status);
     } else if (rcInfoJson.Approved) {
-        return rcInfo; // No conversion needed
+        const [block, submission_deposit, decision_deposit] = rcInfoJson.Approved;
+        // Create a new referendum info with translated deposits
+        const translatedInfo = {
+            Approved: [block, translateDeposit(submission_deposit), translateDeposit(decision_deposit)]
+        };
+        return rcInfo.registry.createType('ReferendumInfo', translatedInfo);
     } else if (rcInfoJson.Rejected) {
-        return rcInfo; // No conversion needed
+        const [block, submission_deposit, decision_deposit] = rcInfoJson.Rejected;
+        // Create a new referendum info with translated deposits
+        const translatedInfo = {
+            Rejected: [block, translateDeposit(submission_deposit), translateDeposit(decision_deposit)]
+        };
+        return rcInfo.registry.createType('ReferendumInfo', translatedInfo);
     } else if (rcInfoJson.Cancelled) {
-        return rcInfo; // No conversion needed
+        const [block, submission_deposit, decision_deposit] = rcInfoJson.Cancelled;
+        // Create a new referendum info with translated deposits
+        const translatedInfo = {
+            Cancelled: [block, translateDeposit(submission_deposit), translateDeposit(decision_deposit)]
+        };
+        return rcInfo.registry.createType('ReferendumInfo', translatedInfo);
     } else if (rcInfoJson.TimedOut) {
-        return rcInfo; // No conversion needed
+        const [block, submission_deposit, decision_deposit] = rcInfoJson.TimedOut;
+        // Create a new referendum info with translated deposits
+        const translatedInfo = {
+            TimedOut: [block, translateDeposit(submission_deposit), translateDeposit(decision_deposit)]
+        };
+        return rcInfo.registry.createType('ReferendumInfo', translatedInfo);
     } else if (rcInfoJson.Killed) {
-        return rcInfo; // No conversion needed
+        return rcInfo; // No conversion needed for Killed
     }
 
     return rcInfo;
