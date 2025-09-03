@@ -157,14 +157,12 @@ jobs:
           echo "sleeping 1 min to bootstrap"
           sleep 60
 
-
           ALICE_PORT=$(jq -r .alice_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
           COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
 
           # try-runtime snap pre
           echo "::group::run-try-runtime"
-          try-runtime create-snapshot --uri "ws://localhost:$ALICE_PORT" "${ZOMBIE_BITE_BASE_PATH}/rc-pre.snap"
-          try-runtime create-snapshot --uri "ws://localhost:$COL_PORT" "${ZOMBIE_BITE_BASE_PATH}/ah-pre.snap"
+          just zb snapshot $NETWORK $ZOMBIE_BITE_BASE_PATH pre
           echo "::endgroup::"
 
           echo "::group::run-migration"
@@ -175,8 +173,7 @@ jobs:
 
           # try-runtime snap post
           echo "::group::run-try-runtime"
-          try-runtime create-snapshot --uri "ws://localhost:$ALICE_PORT" "${ZOMBIE_BITE_BASE_PATH}/rc-post.snap"
-          try-runtime create-snapshot --uri "ws://localhost:$COL_PORT" "${ZOMBIE_BITE_BASE_PATH}/ah-post.snap"
+          just zb snapshot $NETWORK $ZOMBIE_BITE_BASE_PATH post
           echo "::endgroup::"
 
           echo "::group::zombie-bite-stop"

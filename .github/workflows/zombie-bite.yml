@@ -16,7 +16,8 @@ on:
           - polkadot
 
   schedule:
-    - cron: "0 0 * * *" # Every Day for Kusama and Polkadot
+    - cron: "0 0 * * *" # Every Day for Kusama
+    - cron: "0 0 * * 0" # Only on Sundays for Polkadot
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -31,6 +32,14 @@ jobs:
     uses: ./.github/workflows/zombie-bite-common.yml
     with:
       network: polkadot
+      sudo-key: ${{ inputs.sudo-key }}
+
+  zombie_bite_kusama:
+    # run by schedule everyday or by demand
+    if: ${{ inputs.network == 'ALL' || inputs.network == 'kusama' || github.event.schedule == '0 0 * * *' }}
+    uses: ./.github/workflows/zombie-bite-common.yml
+    with:
+      network: kusama
       sudo-key: ${{ inputs.sudo-key }}
 
   # Paseo migration disabled (already done)
@@ -48,6 +57,16 @@ jobs:
     uses: ./.github/workflows/zombie-bite-common.yml
     with:
       network: polkadot
+      sudo-key: ${{ inputs.sudo-key }}
+      runner: parity-large-persistent-test
+      args: "-test-runner"
+
+  zombie_bite_paseo_test_runner:
+    # run by schedule everyday or by demand
+    if: ${{ inputs.network == 'ALL' || inputs.network == 'kusama' || github.event.schedule == '0 0 * * *' }}
+    uses: ./.github/workflows/zombie-bite-common.yml
+    with:
+      network: kusama
       sudo-key: ${{ inputs.sudo-key }}
       runner: parity-large-persistent-test
       args: "-test-runner"
