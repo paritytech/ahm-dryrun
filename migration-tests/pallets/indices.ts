@@ -4,6 +4,7 @@ import { PreCheckContext, PostCheckContext, MigrationTest, PreCheckResult } from
 import type { Codec } from '@polkadot/types/types';
 import type { AccountId32 } from '@polkadot/types/interfaces';
 import type { IOption, ITuple } from '@polkadot/types/types';
+import { translateAccountRcToAh } from '../utils/account_translation.js';
 
 interface IndicesEntry {
     index: number;
@@ -82,9 +83,12 @@ export const indicesTests: MigrationTest = {
             
             const [who, deposit, frozen] = entryValue.unwrap();
             
+            // Translate the RC account to AH account for comparison
+            const translatedRcWho = translateAccountRcToAh(rcEntry.who);
+            
             assert.strictEqual(
                 who.toString(),
-                rcEntry.who,
+                translatedRcWho,
                 `Account mismatch for index ${rcEntry.index}`
             );
             assert.strictEqual(
