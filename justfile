@@ -56,6 +56,8 @@ build runtime:
     elif [ "{{ runtime }}" = "kusama" ]; then
         cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --profile production --features on-chain-release-build,kusama-ahm -p asset-hub-kusama-runtime -p staging-kusama-runtime && cd ..
         cp ${RUNTIMES_PATH}/target/production/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
+        # rename staging_kusama_runtime.compact.compressed.wasm to kusama_runtime.compact.compressed.wasm for naming convention compatibility
+        mv ./runtime_wasm/staging_kusama_runtime.compact.compressed.wasm mv ./runtime_wasm/kusama_runtime.compact.compressed.wasm
     else
         echo "Error: Unsupported runtime '{{ runtime }}'. Supported runtimes are: polkadot, kusama"
         exit 1
