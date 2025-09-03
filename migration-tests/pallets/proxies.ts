@@ -5,6 +5,7 @@ import { ApiDecoration } from '@polkadot/api/types';
 import type { Vec, u128 } from '@polkadot/types';
 import type { AccountId32 } from '@polkadot/types/interfaces';
 import type { PalletProxyProxyDefinition } from '@polkadot/types/lookup';
+import { translateAccountRcToAh } from '../utils/account_translation.js';
 
 // Origin: https://github.com/polkadot-fellows/runtimes/blob/6048e1c18f36a9e00ea396d39b456f5e92ba1552/relay/polkadot/constants/src/lib.rs#L177
 enum RcProxyType {
@@ -166,15 +167,53 @@ export const proxyTests: MigrationTest = {
                     continue;
                 }
 
+                // Translate the delegate account for comparison
+                const translatedDelegate = translateAccountRcToAh(rc_d.delegate);
+
                 // Check if the converted proxy type exists in AH post-migration
                 const found = ah_post_delegations.some(post_d => {
                     const postProxyType = post_d.proxyType.toNumber();
-                    return post_d.delegate === rc_d.delegate && postProxyType === expectedAhProxyType;
+                    return post_d.delegate === translatedDelegate && postProxyType === expectedAhProxyType;
                 });
 
                 assert(
                     found,
                     `Missing translated RC delegation for ${delegator}: RC type ${rcProxyType} (${RcProxyType[rcProxyType]}) should be converted to AH type ${expectedAhProxyType} (${AhProxyType[expectedAhProxyType]})`
+                );
+            }
+        }
+
+        // Also check that translated RC delegators exist in AH
+        for (const rcDelegator of rc_pre.keys()) {
+            const translatedDelegator = translateAccountRcToAh(rcDelegator);
+            const rcDelegations = rc_pre.get(rcDelegator) || [];
+            
+            // Check if the translated delegator exists in AH post-migration
+            const ahPostDelegations = ah_post.get(translatedDelegator);
+            assert(
+                ahPostDelegations !== undefined,
+                `Translated RC delegator ${translatedDelegator} (from ${rcDelegator}) not found in AH after migration`
+            );
+
+            // Verify that all translatable RC delegations exist for this translated delegator
+            for (const rc_d of rcDelegations) {
+                const rcProxyType = rc_d.proxyType.toNumber();
+                const expectedAhProxyType = convertProxyType(rcProxyType);
+
+                // Skip unsupported proxy types
+                if (expectedAhProxyType === null) {
+                    continue;
+                }
+
+                const translatedDelegate = translateAccountRcToAh(rc_d.delegate);
+                const found = ahPostDelegations.some(post_d => {
+                    const postProxyType = post_d.proxyType.toNumber();
+                    return post_d.delegate === translatedDelegate && postProxyType === expectedAhProxyType;
+                });
+
+                assert(
+                    found,
+                    `Missing translated RC delegation for translated delegator ${translatedDelegator}: RC type ${rcProxyType} (${RcProxyType[rcProxyType]}) should be converted to AH type ${expectedAhProxyType} (${AhProxyType[expectedAhProxyType]})`
                 );
             }
         }
