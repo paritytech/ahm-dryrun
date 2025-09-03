@@ -7,18 +7,16 @@ on:
         description: "Sudo key to use as override (optional, default is //Alice)"
         required: false
       network:
-        description: "Network to use (ALL means polkadot and paseo)"
+        description: "Network to use (ALL means Polkadot and Kusama)"
         default: "ALL"
         type: choice
         options:
           - ALL
-          - paseo
+          - kusama
           - polkadot
 
   schedule:
-    # Paseo migration disabled (already done)
-    # - cron: "0 0 * * *"
-    - cron: "0 0 * * 0" # Only on Sundays (Polkadot)
+    - cron: "0 0 * * *" # Every Day for Kusama and Polkadot
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -64,5 +62,3 @@ jobs:
   #     sudo-key: ${{ inputs.sudo-key }}
   #     runner: parity-large-persistent-test
   #     args: "-test-runner"
-
-
