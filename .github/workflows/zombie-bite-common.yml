@@ -63,6 +63,16 @@ jobs:
         run: |
           mkdir $ZOMBIE_BITE_BASE_PATH
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: npm
+        shell: bash
+        run: |
+          npm install
+          npm run build
+
       - name: zombie_bite_step_bite
         id: zombie_bite_step_bite
         shell: bash
@@ -116,15 +126,6 @@ jobs:
           ls ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite-debug
           echo "::endgroup::"
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: npm
-        shell: bash
-        run: |
-          npm install
-          npm run build
 
       - name: zombie_bite_step_spawn_and_run_migration
         id: zombie_bite_step_spawn_and_run_migration

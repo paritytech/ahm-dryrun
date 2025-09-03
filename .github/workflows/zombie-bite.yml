@@ -61,8 +61,8 @@ jobs:
       runner: parity-large-persistent-test
       args: "-test-runner"
 
-  zombie_bite_paseo_test_runner:
-    # run by schedule everyday or by demand
+  zombie_bite_kusama_test_runner:
+    # run by demand
     if: ${{ inputs.network == 'ALL' || inputs.network == 'kusama' || github.event.schedule == '0 0 * * *' }}
     uses: ./.github/workflows/zombie-bite-common.yml
     with:
