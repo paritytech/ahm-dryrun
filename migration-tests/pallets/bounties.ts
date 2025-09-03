@@ -2,6 +2,7 @@ import '@polkadot/api-augment';
 import assert from 'assert';
 import { PreCheckContext, PostCheckContext, MigrationTest, PreCheckResult } from '../types.js';
 import { ApiDecoration } from '@polkadot/api/types/index.js';
+import { translateAccountRcToAh } from '../utils/account_translation.js';
 
 export const bountiesTests: MigrationTest = {
     name: 'bounties_pallet',
@@ -109,8 +110,13 @@ export const bountiesTests: MigrationTest = {
                     ahKey.args.toString(),
                     "Bounties map keys should match between RC and Asset Hub"
                 );
+                
+                // Translate RC bounty accounts for comparison
+                const rcValueJson = value.toJSON() as any;
+                const translatedRcValue = translateBountyAccounts(rcValueJson);
+                
                 assert.deepStrictEqual(
-                    value.toJSON(),
+                    translatedRcValue,
                     ahValue.toJSON(),
                     "Bounties map values should match between RC and Asset Hub"
                 );
@@ -156,3 +162,54 @@ export const bountiesTests: MigrationTest = {
         await verifyAhStorageMatchesRcPreMigrationData(ah_api_after);
     }
 };
+
+// Helper function to translate account IDs in bounty structures
+function translateBountyAccounts(bounty: any): any {
+    // Translate proposer account
+    const translatedBounty = {
+        ...bounty,
+        proposer: translateAccountRcToAh(bounty.proposer)
+    };
+    
+    // Translate accounts in status field based on status variant
+    if (bounty.status) {
+        translatedBounty.status = translateBountyStatus(bounty.status);
+    }
+    
+    return translatedBounty;
+}
+
+// Helper function to translate account IDs in bounty status
+function translateBountyStatus(status: any): any {
+    if (status.CuratorProposed) {
+        return {
+            CuratorProposed: {
+                curator: translateAccountRcToAh(status.CuratorProposed.curator)
+            }
+        };
+    } else if (status.Active) {
+        return {
+            Active: {
+                curator: translateAccountRcToAh(status.Active.curator),
+                update_due: status.Active.update_due
+            }
+        };
+    } else if (status.PendingPayout) {
+        return {
+            PendingPayout: {
+                curator: translateAccountRcToAh(status.PendingPayout.curator),
+                beneficiary: translateAccountRcToAh(status.PendingPayout.beneficiary),
+                unlock_at: status.PendingPayout.unlock_at
+            }
+        };
+    } else if (status.ApprovedWithCurator) {
+        return {
+            ApprovedWithCurator: {
+                curator: translateAccountRcToAh(status.ApprovedWithCurator.curator)
+            }
+        };
+    } else {
+        // For status variants without accounts (Proposed, Approved, Funded), return as-is
+        return status;
+    }
+}
