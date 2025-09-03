@@ -4,7 +4,7 @@ import {
   u8aToHex,
   TranslationEntry,
   DerivedTranslationEntry,
-} from "./sovereign_account_translation";
+} from "./sovereign_account_translation.js";
 
 export class AccountTranslator {
   constructor() {}
