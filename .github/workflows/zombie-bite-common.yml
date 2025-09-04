@@ -39,6 +39,7 @@ jobs:
         uses: Swatinem/rust-cache@a95ba195448af2da9b00fb742d14ffaaf3c21f43 # v2.7.0
         with:
           shared-key: "ahm-cache"
+          cache-on-failure: true # cache allways
 
       - name: download_doppelganger_binaries
         uses: ./.github/actions/download-doppelganger-binaries
@@ -135,6 +136,17 @@ jobs:
           echo "::endgroup::"
 
 
+      - name: run_zombie_bite_spawn
+        shell: bash
+        run: |
+          export PATH=${AHM_BINS}:$PATH
+          # remove previous nohup.out
+          rm nohup.out || true
+          nohup zombie-bite spawn -d $ZOMBIE_BITE_BASE_PATH > nohup.out 2>&1 &
+
+      - name: wait_for_network
+        uses: ./.github/actions/wait-zb-network-ready
+
       - name: zombie_bite_step_spawn_and_run_migration
         id: zombie_bite_step_spawn_and_run_migration
         shell: bash
@@ -143,25 +155,25 @@ jobs:
         run: |
           export PATH=${AHM_BINS}:$PATH
 
-          echo "::group::zombie-bite-spawn"
-          nohup zombie-bite spawn -d $ZOMBIE_BITE_BASE_PATH > nohup.out 2>&1 &
-          ZOMBIE_FILE="${ZOMBIE_BITE_BASE_PATH}/spawn/zombie.json"
-          COUNT=0
-          until [ -f "$ZOMBIE_FILE" ]; do
-            echo "ZOMBIE_FILE: $ZOMBIE_FILE not present yet"
-            COUNT=$((COUNT +1))
-             if [[ $COUNT -gt 150 ]];then
-              echo "SPAWN_FAIL=1" >> $GITHUB_OUTPUT
-              exit 1;
-             fi;
-            sleep 2
-          done
-          echo "'zombie.json' file present, network spawned... sleeping a few seconds"
-          echo "::endgroup::"
+          # echo "::group::zombie-bite-spawn"
+          # nohup zombie-bite spawn -d $ZOMBIE_BITE_BASE_PATH > nohup.out 2>&1 &
+          # ZOMBIE_FILE="${ZOMBIE_BITE_BASE_PATH}/spawn/zombie.json"
+          # COUNT=0
+          # until [ -f "$ZOMBIE_FILE" ]; do
+          #   echo "ZOMBIE_FILE: $ZOMBIE_FILE not present yet"
+          #   COUNT=$((COUNT +1))
+          #    if [[ $COUNT -gt 150 ]];then
+          #     echo "SPAWN_FAIL=1" >> $GITHUB_OUTPUT
+          #     exit 1;
+          #    fi;
+          #   sleep 2
+          # done
+          # echo "'zombie.json' file present, network spawned... sleeping a few seconds"
+          # echo "::endgroup::"
 
-          echo "::group::zombie-bite-output"
-          cat nohup.out
-          echo "::endgroup::"
+          # echo "::group::zombie-bite-output"
+          # cat nohup.out
+          # echo "::endgroup::"
 
           echo "sleeping 1 min to bootstrap"
           sleep 60
