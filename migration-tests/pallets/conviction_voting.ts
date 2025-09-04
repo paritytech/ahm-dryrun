@@ -5,6 +5,7 @@ import type { PalletConvictionVotingVoteVoting } from '@polkadot/types/lookup';
 import type { AccountId32 } from '@polkadot/types/interfaces/runtime';
 import type { u16, u128 } from '@polkadot/types';
 import { ApiDecoration } from '@polkadot/api/types';
+import { translateAccountRcToAh } from '../utils/account_translation.js';
 
 interface VotingFor {
     accountId: AccountId32;
@@ -128,18 +129,21 @@ function compareClassLocksForMessages(rcClassLocksForMessages: ClassLocksFor[], 
         const rcMsg = rcClassLocksForMessages[i];
         const ahMsg = ahClassLocksForMessages[i];
 
+        // Translate RC account ID for comparison
+        const translatedRcAccountId = translateAccountRcToAh(rcMsg.accountId.toString());
+        
         // Compare account IDs
         assert.equal(
-            rcMsg.accountId.toString(),
+            translatedRcAccountId,
             ahMsg.accountId.toString(),
-            `Account ID mismatch at index ${i}: rc=${rcMsg.accountId.toString()} ah=${ahMsg.accountId.toString()}`
+            `Account ID mismatch at index ${i}: rc=${rcMsg.accountId.toString()} translated=${translatedRcAccountId} ah=${ahMsg.accountId.toString()}`
         );
 
         // Compare balance arrays length
         assert.equal(
             rcMsg.balancePerClass.length,
             ahMsg.balancePerClass.length,
-            `Balance array length mismatch for account ${rcMsg.accountId.toString()}`
+            `Balance array length mismatch for account ${translatedRcAccountId}`
         );
 
         // Compare each balance pair
@@ -150,13 +154,13 @@ function compareClassLocksForMessages(rcClassLocksForMessages: ClassLocksFor[], 
             assert.equal(
                 rcClass.toString(),
                 ahClass.toString(),
-                `Class mismatch at index ${j} for account ${rcMsg.accountId.toString()}`
+                `Class mismatch at index ${j} for account ${translatedRcAccountId}`
             );
 
             assert.equal(
                 rcBalance.toString(),
                 ahBalance.toString(),
-                `Balance mismatch at index ${j} for account ${rcMsg.accountId.toString()}`
+                `Balance mismatch at index ${j} for account ${translatedRcAccountId}`
             );
         }
     }
@@ -173,26 +177,51 @@ function compareVotingForMessages(rcVotingForMessages: VotingFor[], ahVotingForM
         const rcMsg = rcVotingForMessages[i];
         const ahMsg = ahVotingForMessages[i];
 
+        // Translate RC account ID for comparison
+        const translatedRcAccountId = translateAccountRcToAh(rcMsg.accountId.toString());
+        
         // Compare account IDs
         assert.equal(
-            rcMsg.accountId.toString(),
+            translatedRcAccountId,
             ahMsg.accountId.toString(),
-            `Account ID mismatch at index ${i}}`
+            `Account ID mismatch at index ${i}: rc=${rcMsg.accountId.toString()} translated=${translatedRcAccountId} ah=${ahMsg.accountId.toString()}`
         );
 
         // Compare class
         assert.equal(
             rcMsg.class.toString(),
             ahMsg.class.toString(),
-            `Class mismatch at index ${i} for account ${rcMsg.accountId.toString()}`
+            `Class mismatch at index ${i} for account ${translatedRcAccountId}`
         );
 
-        // Compare voting
-        assert.equal(
-            rcMsg.voting.toString(),
-            ahMsg.voting.toString(),
-            `Voting mismatch at index ${i} for account ${rcMsg.accountId.toString()}`
-        );
+        // Compare voting - need to handle delegate account translation within voting structure
+        const rcVotingJson = rcMsg.voting.toJSON() as any;
+        const ahVotingJson = ahMsg.voting.toJSON() as any;
+        
+        // If it's a delegating vote, translate the delegate target account
+        if (rcVotingJson.Delegating && ahVotingJson.Delegating) {
+            const translatedDelegateTarget = translateAccountRcToAh(rcVotingJson.Delegating.target);
+            const translatedRcVoting = {
+                ...rcVotingJson,
+                Delegating: {
+                    ...rcVotingJson.Delegating,
+                    target: translatedDelegateTarget
+                }
+            };
+            
+            assert.deepStrictEqual(
+                translatedRcVoting,
+                ahVotingJson,
+                `Voting mismatch at index ${i} for account ${translatedRcAccountId}`
+            );
+        } else {
+            // For non-delegating votes, compare directly
+            assert.deepStrictEqual(
+                rcVotingJson,
+                ahVotingJson,
+                `Voting mismatch at index ${i} for account ${translatedRcAccountId}`
+            );
+        }
     }
 }
 
