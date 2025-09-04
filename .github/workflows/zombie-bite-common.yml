@@ -109,7 +109,10 @@ jobs:
           echo "Found RC block to bite: $RC_BITE_BLOCK"
           echo "::endgroup::"
 
-          zombie-bite bite -r $NETWORK --rc-override $RC_OVERRIDE --ah-override $AH_OVERRIDE -d $ZOMBIE_BITE_BASE_PATH # --rc-bite-block $RC_BITE_BLOCK
+          # TODO: add ones we support this in zombie-bite
+          # --rc-bite-block $RC_BITE_BLOCK
+          zombie-bite bite -r $NETWORK --rc-override $RC_OVERRIDE --ah-override $AH_OVERRIDE -d $ZOMBIE_BITE_BASE_PATH
+
 
         continue-on-error: true
 
@@ -165,6 +168,11 @@ jobs:
 
           ALICE_PORT=$(jq -r .alice_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
           COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
+
+          # Wait for nodes to come online
+          echo "::group::wait-for-nodes"
+          just zb wait-for-nodes $ZOMBIE_BITE_BASE_PATH
+          echo "::endgroup::"
 
           # try-runtime snap pre
           echo "::group::run-try-runtime"
