@@ -404,6 +404,75 @@ export const SOV_TRANSLATIONS: TranslationEntry[] = SOV_TRANSLATIONS_RAW.sort((a
 /// List of RC para to AH sibl derived account translation.
 /// Note: This data will be sorted by rcAccount hex values for binary search optimization.
 const DERIVED_TRANSLATIONS_RAW: DerivedTranslationEntry[] = [
+  // para 2000
+  // para 2000 (derivation index 0)
+  {
+    rcAccount: hexToU8a("d7b8926b326dd349355a9a7cca6606c1e0eb6fd2b506066b518c7155ff0d8297"),
+    rcAddress: "5GwYytfmBPBa7VYW1VCnFufZy2kWbQDGiN2CqMh8HvrrW5xs",
+    derivationIndex: 0,
+    ahAccount: hexToU8a("50ca9b6bf6c83ca2a918b9861788d6facd26e5fd78a07f9848070697683745b3"),
+    ahAddress: "5Dtdsh9v7GXYgeLMk6Ze1q2HWF4219ACng1MB6Bdifs5MCGg",
+  },
+
+  // para 2001
+  // para 2001 (derivation index 0)
+  {
+    rcAccount: hexToU8a("5a53736d8e96f1c007cf0d630acf5209b20611617af23ce924c8e25328eb5d28"),
+    rcAddress: "5E78xTBiaN3nAGYtcNnqTJQJqYAkSDGggKqaDfpNsKyPpbcb",
+    derivationIndex: 0,
+    ahAccount: hexToU8a("290bf94235666a351d9c8082c77e689813a905d0bbffdbd8b4a619ec5303ba27"),
+    ahAddress: "5CzXNqgBZT5yMpMETdfH55saYNKQoJBXsSfnu4d2s1ejYFir",
+  },
+  // para 2001 (derivation index 1)
+  {
+    rcAccount: hexToU8a("f1c5ca0368e7a567945a59aaea92b9be1e0794fe5e077d017462b7ce8fc1ed7c"),
+    rcAddress: "5HXi9pzWnTQzk7VKzY6VQn92KfWCcA5NbSm53uKHrYU1VsjP",
+    derivationIndex: 1,
+    ahAccount: hexToU8a("c94f02677ffb78dc23fbd3b95beb2650fe4fa5c466e5aedee74e89d96351800c"),
+    ahAddress: "5GcexD4YNqcKTbW1YWDRczQzpxic61byeNeLaHgqQHk8pxQJ",
+  },
+
+  // para 2012
+  // para 2012 (derivation index 0)
+  {
+    rcAccount: hexToU8a("f82777e46281c5f5000af5dbb01fa41cdf0ff53ac4167b7297e386d834ff7c0e"),
+    rcAddress: "5Hg5TTyFP8NKXXs7rvDNBvDsa23E7kh5Xxr55xoCFkQCmbB9",
+    derivationIndex: 0,
+    ahAccount: hexToU8a("2e007ed75739bb293788b83c94dee3247d1561337b69f593cc044cf11606f573"),
+    ahAddress: "5D72CxkFjKEC9QXDpoAZAxdBn9q8JhJzAdHXqwwTVTALxC7q",
+  },
+  // para 2012 (derivation index 1)
+  {
+    rcAccount: hexToU8a("aa006b3de1565c48ade1c1f3b646090be49389327f6b214076e5d2bd2ba0fb02"),
+    rcAddress: "5Fuc82fy32ccsRXWyovjsLms4AsPYToHnXuvGjCjYGcPvcEA",
+    derivationIndex: 1,
+    ahAccount: hexToU8a("26b0b1d07bded0e85c829f664ff9440b3ad0d8855fc7634d547e99ecd70d78cf"),
+    ahAddress: "5CwSAaoAnoN3t5Ui15g3xr5SmrEqQj8DJvFPBmXgcKpFYmN4",
+  },
+  // para 2012 (derivation index 2)
+  {
+    rcAccount: hexToU8a("06926c6bab20739b8d4710e56a9ce6db7b0f67986a4f29664919620653f3a435"),
+    rcAddress: "5CDKe9iak7oYywsYUF37ThPcvAVysueu3TuUAJawZospbwkF",
+    derivationIndex: 2,
+    ahAccount: hexToU8a("d06990044418b18883108cf323580cc769414ddbee42bcebaf72331c175a9d90"),
+    ahAddress: "5GmyB9gUJYn1pyUdRYF9LxWNrRFGc9wC38pb72MfSr2WFZ9e",
+  },
+  // para 2012 (derivation index 3)
+  {
+    rcAccount: hexToU8a("fe5326ff816ac945120d53cffdd00919268032f0e478d40c23dea72a69e53660"),
+    rcAddress: "5HpAindoSKd56yA1UsAmcv6PvoTbhCgZSy1ah5DY3r4rFYZ6",
+    derivationIndex: 3,
+    ahAccount: hexToU8a("ceca601fde11eed1f4c6fe4f0a2ba581b75c1011a94d0426226c79e9f23ca956"),
+    ahAddress: "5GjqqeHW7am6pbBoD6Afw6Pnytgsm4uP6JzdQHsRpL3FYRFE",
+  },
+  // para 2012 (derivation index 4)
+  {
+    rcAccount: hexToU8a("f60aa184555b35cfcd6dc246424240068da18dd1bfeefccf8d5a26713b9917f7"),
+    rcAddress: "5HdJo46v12tW24Nveanm1T4qkkVfd6XDD7cvemroTuritRrr",
+    derivationIndex: 4,
+    ahAccount: hexToU8a("0891c74febe45a39b18715a5c4a0f9592203f53efee5c75e648a0388974b2ca7"),
+    ahAddress: "5CFwYbNXv57T58auh8JHGxopJu91cBsDoCNE7tEymkcV1wb3",
+  },
   // para 2012 (derivation index 5)
   {
     rcAccount: hexToU8a("1bba940dce8f85a0088315d47c39f4318a107cff37333206e40f227c90a3f6a0"),
@@ -412,6 +481,8 @@ const DERIVED_TRANSLATIONS_RAW: DerivedTranslationEntry[] = [
     ahAccount: hexToU8a("0f8f1e28d43adea08631b882277dc53916d872d08ae2410d3721355618ababfe"),
     ahAddress: "5CR76C2UsxvQCo7Bh1HXppAj4vxPWNNMfF952UE8Zcz3KEF1",
   },
+
+  // para 2019
   // para 2019 (derivation index 0)
   {
     rcAccount: hexToU8a("5640ec97748f5b5da9a2298e830e8971df7908861e1710b957fe06f0703bca7d"),
@@ -419,6 +490,24 @@ const DERIVED_TRANSLATIONS_RAW: DerivedTranslationEntry[] = [
     derivationIndex: 0,
     ahAccount: hexToU8a("d9c2775f1255eaaf78a22fdebb5471ca6392c2441118caad3f15b58f52686800"),
     ahAddress: "5GzE1vRVr8nG4WAPmX76RtLWK1XxxBfMwCTcKWQTKkugD2iQ",
+  },
+
+  // para 2030
+  // para 2030 (derivation index 0)
+  {
+    rcAccount: hexToU8a("adcea185416af2d3e8df8c1c8ee8a634bf1c3275b3820cb6d935300d42c73b2a"),
+    rcAddress: "5FzbXK46dYRXsTaXuUb3uJ1QCNBRf3KV8Tpue2Ec6iAj8nxL",
+    derivationIndex: 0,
+    ahAccount: hexToU8a("69f880852768f2d00acfa7824533aa4378e48d1b9fbc6b44500e8b98debeaccd"),
+    ahAddress: "5ETehspFKFNpBbe5DsfuziN6BWq5Qwp1J8qcTQQoAxwa7BsS",
+  },
+  // para 2030 (derivation index 1)
+  {
+    rcAccount: hexToU8a("96d16ffaae52a6a195b6d9f0b365677aedb77675f423813112c5ef5434523622"),
+    rcAddress: "5FUTFngRdSAPG4BVXCEs7nV6dAsMk8MV4ZU3CDGvx66nXHnR",
+    derivationIndex: 1,
+    ahAccount: hexToU8a("39d0a3c793549eda79b5cd3f8ab1c5879326352eb6583696249e38684b9451c1"),
+    ahAddress: "5DNWZkkAxLhqF8tevcbRGyARAVM7abukftmqvoDFUN5dDDDz",
   },
   // para 2030 (derivation index 2)
   {
@@ -428,6 +517,8 @@ const DERIVED_TRANSLATIONS_RAW: DerivedTranslationEntry[] = [
     ahAccount: hexToU8a("77c1303f053dc000bcacd591d0267f79ef5124a5b1a9207e8e1b29da9270e3a8"),
     ahAddress: "5EmiwjDYiackJma1GW3aBbQ74rLfWh756UKDb7Cm83XDkUUZ",
   },
+
+  // para 3397
   // para 3397 (derivation index 0)
   {
     rcAccount: hexToU8a("950431ba0298ec4f6f5522dec45b9663f82057705a5c3d92b1bed454b64d8fa5"),
@@ -435,22 +526,6 @@ const DERIVED_TRANSLATIONS_RAW: DerivedTranslationEntry[] = [
     derivationIndex: 0,
     ahAccount: hexToU8a("14ef48f42beb705327d66e011249d4a1bc9318a894ccf2a840c831081de7de0c"),
     ahAddress: "5CY9tzuRaRxKpFZxdfobKdAUJqyz3GNaM6gYdbH7LrEwcJQw",
-  },
-  // para 2000 (derivation index 0)
-  {
-    rcAccount: hexToU8a("d7b8926b326dd349355a9a7cca6606c1e0eb6fd2b506066b518c7155ff0d8297"),
-    rcAddress: "5GwYytfmBPBa7VYW1VCnFufZy2kWbQDGiN2CqMh8HvrrW5xs",
-    derivationIndex: 0,
-    ahAccount: hexToU8a("50ca9b6bf6c83ca2a918b9861788d6facd26e5fd78a07f9848070697683745b3"),
-    ahAddress: "5Dtdsh9v7GXYgeLMk6Ze1q2HWF4219ACng1MB6Bdifs5MCGg",
-  },
-  // para 2001 (derivation index 1)
-  {
-    rcAccount: hexToU8a("f1c5ca0368e7a567945a59aaea92b9be1e0794fe5e077d017462b7ce8fc1ed7c"),
-    rcAddress: "5HXi9pzWnTQzk7VKzY6VQn92KfWCcA5NbSm53uKHrYU1VsjP",
-    derivationIndex: 1,
-    ahAccount: hexToU8a("c94f02677ffb78dc23fbd3b95beb2650fe4fa5c466e5aedee74e89d96351800c"),
-    ahAddress: "5GcexD4YNqcKTbW1YWDRczQzpxic61byeNeLaHgqQHk8pxQJ",
   },
 ];
 
