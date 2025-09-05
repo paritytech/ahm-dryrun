@@ -33,6 +33,7 @@ jobs:
     with:
       network: polkadot
       sudo-key: ${{ inputs.sudo-key }}
+      runner: parity-large-persistent-test
 
   zombie_bite_kusama:
     # run by schedule everyday or by demand
@@ -41,6 +42,7 @@ jobs:
     with:
       network: kusama
       sudo-key: ${{ inputs.sudo-key }}
+      runner: parity-large-persistent-test
 
   # Paseo migration disabled (already done)
   # zombie_bite_paseo:
@@ -51,25 +53,25 @@ jobs:
   #     network: paseo
   #     sudo-key: ${{ inputs.sudo-key }}
 
-  zombie_bite_polkadot_test_runner:
-    # run by schedule only in Sundays or by demand
-    if: ${{ inputs.network == 'ALL' || inputs.network == 'polkadot' || github.event.schedule == '0 0 * * 0' }}
-    uses: ./.github/workflows/zombie-bite-common.yml
-    with:
-      network: polkadot
-      sudo-key: ${{ inputs.sudo-key }}
-      runner: parity-large-persistent-test
-      args: "-test-runner"
+  # zombie_bite_polkadot_test_runner:
+  #   # run by schedule only in Sundays or by demand
+  #   if: ${{ inputs.network == 'ALL' || inputs.network == 'polkadot' || github.event.schedule == '0 0 * * 0' }}
+  #   uses: ./.github/workflows/zombie-bite-common.yml
+  #   with:
+  #     network: polkadot
+  #     sudo-key: ${{ inputs.sudo-key }}
+  #     runner: parity-large-persistent-test
+  #     args: "-test-runner"
 
-  zombie_bite_kusama_test_runner:
-    # run by demand
-    if: ${{ inputs.network == 'ALL' || inputs.network == 'kusama' || github.event.schedule == '0 0 * * *' }}
-    uses: ./.github/workflows/zombie-bite-common.yml
-    with:
-      network: kusama
-      sudo-key: ${{ inputs.sudo-key }}
-      runner: parity-large-persistent-test
-      args: "-test-runner"
+  # zombie_bite_kusama_test_runner:
+  #   # run by demand
+  #   if: ${{ inputs.network == 'ALL' || inputs.network == 'kusama' || github.event.schedule == '0 0 * * *' }}
+  #   uses: ./.github/workflows/zombie-bite-common.yml
+  #   with:
+  #     network: kusama
+  #     sudo-key: ${{ inputs.sudo-key }}
+  #     runner: parity-large-persistent-test
+  #     args: "-test-runner"
 
   # Paseo migration disabled (already done)
   # zombie_bite_paseo_test_runner:
