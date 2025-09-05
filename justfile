@@ -50,17 +50,16 @@ build runtime:
     set -xe
     mkdir -p ./runtime_wasm
 
-    if [ "{{ runtime }}" = "paseo" ]; then
-        cd ${PASEO_PATH} && ${CARGO_CMD} build --profile production --features on-chain-release-build -p asset-hub-paseo-runtime -p paseo-runtime && cd ..
-        cp ${PASEO_PATH}/target/production/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
-    elif [ "{{ runtime }}" = "polkadot" ]; then
-        cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --profile production --features on-chain-release-build -p asset-hub-polkadot-runtime -p polkadot-runtime && cd ..
+    if [ "{{ runtime }}" = "polkadot" ]; then
+        cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --profile production --features on-chain-release-build,polkadot-ahm -p asset-hub-polkadot-runtime -p polkadot-runtime && cd ..
         cp ${RUNTIMES_PATH}/target/production/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
     elif [ "{{ runtime }}" = "kusama" ]; then
-        cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --profile production --features on-chain-release-build -p asset-hub-kusama-runtime -p staging-kusama-runtime && cd ..
+        cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --profile production --features on-chain-release-build,kusama-ahm -p asset-hub-kusama-runtime -p staging-kusama-runtime && cd ..
         cp ${RUNTIMES_PATH}/target/production/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
+        # rename staging_kusama_runtime.compact.compressed.wasm to kusama_runtime.compact.compressed.wasm for naming convention compatibility
+        mv ./runtime_wasm/staging_kusama_runtime.compact.compressed.wasm ./runtime_wasm/kusama_runtime.compact.compressed.wasm
     else
-        echo "Error: Unsupported runtime '{{ runtime }}'. Supported runtimes are: paseo, polkadot, kusama"
+        echo "Error: Unsupported runtime '{{ runtime }}'. Supported runtimes are: polkadot, kusama"
         exit 1
     fi
 
