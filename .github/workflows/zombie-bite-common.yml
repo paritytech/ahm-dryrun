@@ -152,6 +152,8 @@ jobs:
         shell: bash
         env:
           NETWORK: ${{ inputs.network }}
+          TS_LOG_CONSOLE: true
+          TS_LOG_LEVEL: debug
         run: |
           export PATH=${AHM_BINS}:$PATH
 
