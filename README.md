@@ -1,12 +1,12 @@
 # TL;DR [![AHM flow (all steps)](https://github.com/paritytech/ahm-dryrun/actions/workflows/zombie-bite.yml/badge.svg)](https://github.com/paritytech/ahm-dryrun/actions/workflows/zombie-bite.yml)
 
-To run AHM for Paseo using Zombie-Bite:
+To run AHM for Kusama or Polkadot using Zombie-Bite:
 ```
 git clone --recursive git@github.com:paritytech/ahm-dryrun.git && \
 cd ahm-dryrun && \
 just init && \
 just setup && \
-just ahm paseo || echo "Setup failed"
+just ahm kusama || echo "Setup failed"
 ```
 
 # Just commands
@@ -14,7 +14,7 @@ just ahm paseo || echo "Setup failed"
 - `just` to see the list of commands
 - `just init` to initialize the repo
 - `just setup` to install dependencies
-- `just ahm [paseo|polkadot]` to run the Migration for a given runtime. No args prints the help menu.
+- `just ahm [polkadot|kusama]` to run the Migration for a given runtime. No args prints the help menu.
 - `just zb [bite|spawn|perform-migration]` to run the Zombie-Bite commands. No args prints the help menu.
 - `just e2e-tests` to run the E2E tests
 <!-- TODO @donal: Monitoring here -->
@@ -43,7 +43,7 @@ The _first_ step consists of _biting_ a live network, and once completed, creati
 In order to run _step 0_, you can run:
 
 ```bash
-just zb bite <base_path> <polkadot|kusama|paseo>
+just zb bite <base_path> <polkadot|kusama>
 
 e.g: just zb bite ./migration-run polkadot
 ```
@@ -55,7 +55,7 @@ This directory should contain these files:
 - `<runtime>-spec.json` : chain-spec of the relaychain.
 - `asset-hub-<runtime>-spec.json` : chain-spec of AH.
 - `<runtime>-snap.tgz` : Db snapshot of the relaychain.
-- `asset-hub-paseo-snap.tgz` : Db snapshot of AH.
+- `asset-hub-<runtime>-snap.tgz` : Db snapshot of AH.
 
 
 _NOTE_: this step performs a _warp_ sync of both rc/ah and can take some time (20/25 mins on avg. for polkadot).
@@ -92,7 +92,7 @@ Once the migration is completed, the network instance spawned as part of _step 1
 - `<runtime>-spec.json` : chain-spec of the relaychain.
 - `asset-hub-<runtime>-spec.json` : chain-spec of AH.
 - `<runtime>-snap.tgz` : Db snapshot of the relaychain.
-- `asset-hub-paseo-snap.tgz` : Db snapshot of AH.
+- `asset-hub-<runtime>-snap.tgz` : Db snapshot of AH.
 
 __Also__: after the migration is done a file called `migration_done.json` will be generated in the __base_path__ with the block height (of both rc/ah) where the migration was completed.
 
@@ -149,12 +149,12 @@ It accepts multiple arguments, which are then passed to `yarn` to further specif
 # incompatible with relaychain
 just e2e-tests
 
-# run every test that exists for Paseo chains: relay, AH
-just e2e-tests packages/paseo
+# run every test that exists for Kusama chains: relay, AH
+just e2e-tests packages/kusama
 # run every test suite that exists for WAH, E2E or otherwise
 just e2e-tests assetHubWestend
 # run the E2E test suite for the scheduler pallet
-just e2e-tests paseo.scheduler
+just e2e-tests kusama.scheduler
 just e2e-tests staking nominationPools
 ...
 ```

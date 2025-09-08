@@ -7,11 +7,11 @@ on:
         description: 'Sudo key to use as override (optional, default is //Alice)'
         required: false
       network:
-        description: 'Network to use (default paseo)'
-        default: 'paseo'
+        description: 'Network to use (default kusama)'
+        default: 'kusama'
         type: choice
         options:
-          - paseo
+          - kusama
           - polkadot
       iterations:
         description: 'Iterations for permatest (default 3)'

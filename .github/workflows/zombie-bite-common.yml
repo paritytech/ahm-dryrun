@@ -35,6 +35,12 @@ jobs:
           submodules: recursive
       - uses: extractions/setup-just@v2
 
+      - name: Fetch cache
+        uses: Swatinem/rust-cache@a95ba195448af2da9b00fb742d14ffaaf3c21f43 # v2.7.0
+        with:
+          shared-key: "ahm-cache"
+          cache-on-failure: true # cache allways
+
       - name: download_doppelganger_binaries
         uses: ./.github/actions/download-doppelganger-binaries
         with:
@@ -62,6 +68,16 @@ jobs:
         shell: bash
         run: |
           mkdir $ZOMBIE_BITE_BASE_PATH
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: npm
+        shell: bash
+        run: |
+          npm install
+          npm run build
 
       - name: zombie_bite_step_bite
         id: zombie_bite_step_bite
@@ -94,7 +110,10 @@ jobs:
           echo "Found RC block to bite: $RC_BITE_BLOCK"
           echo "::endgroup::"
 
-          zombie-bite bite -r $NETWORK --rc-override $RC_OVERRIDE --ah-override $AH_OVERRIDE -d $ZOMBIE_BITE_BASE_PATH # --rc-bite-block $RC_BITE_BLOCK
+          # TODO: add ones we support this in zombie-bite
+          # --rc-bite-block $RC_BITE_BLOCK
+          zombie-bite bite -r $NETWORK --rc-override $RC_OVERRIDE --ah-override $AH_OVERRIDE -d $ZOMBIE_BITE_BASE_PATH
+
 
         continue-on-error: true
 
@@ -116,55 +135,62 @@ jobs:
           ls ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite-debug
           echo "::endgroup::"
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
 
-      - name: npm
+      - name: run_zombie_bite_spawn
         shell: bash
         run: |
-          npm install
-          npm run build
+          export PATH=${AHM_BINS}:$PATH
+          # remove previous nohup.out
+          rm nohup.out || true
+          nohup zombie-bite spawn -d $ZOMBIE_BITE_BASE_PATH > nohup.out 2>&1 &
+
+      - name: wait_for_network
+        uses: ./.github/actions/wait-zb-network-ready
 
       - name: zombie_bite_step_spawn_and_run_migration
         id: zombie_bite_step_spawn_and_run_migration
         shell: bash
         env:
           NETWORK: ${{ inputs.network }}
+          TS_LOG_CONSOLE: true
+          TS_LOG_LEVEL: debug
         run: |
           export PATH=${AHM_BINS}:$PATH
 
-          echo "::group::zombie-bite-spawn"
-          nohup zombie-bite spawn -d $ZOMBIE_BITE_BASE_PATH > nohup.out 2>&1 &
-          ZOMBIE_FILE="${ZOMBIE_BITE_BASE_PATH}/spawn/zombie.json"
-          COUNT=0
-          until [ -f "$ZOMBIE_FILE" ]; do
-            echo "ZOMBIE_FILE: $ZOMBIE_FILE not present yet"
-            COUNT=$((COUNT +1))
-             if [[ $COUNT -gt 150 ]];then
-              echo "SPAWN_FAIL=1" >> $GITHUB_OUTPUT
-              exit 1;
-             fi;
-            sleep 2
-          done
-          echo "'zombie.json' file present, network spawned... sleeping a few seconds"
-          echo "::endgroup::"
+          # echo "::group::zombie-bite-spawn"
+          # nohup zombie-bite spawn -d $ZOMBIE_BITE_BASE_PATH > nohup.out 2>&1 &
+          # ZOMBIE_FILE="${ZOMBIE_BITE_BASE_PATH}/spawn/zombie.json"
+          # COUNT=0
+          # until [ -f "$ZOMBIE_FILE" ]; do
+          #   echo "ZOMBIE_FILE: $ZOMBIE_FILE not present yet"
+          #   COUNT=$((COUNT +1))
+          #    if [[ $COUNT -gt 150 ]];then
+          #     echo "SPAWN_FAIL=1" >> $GITHUB_OUTPUT
+          #     exit 1;
+          #    fi;
+          #   sleep 2
+          # done
+          # echo "'zombie.json' file present, network spawned... sleeping a few seconds"
+          # echo "::endgroup::"
 
-          echo "::group::zombie-bite-output"
-          cat nohup.out
-          echo "::endgroup::"
+          # echo "::group::zombie-bite-output"
+          # cat nohup.out
+          # echo "::endgroup::"
 
           echo "sleeping 1 min to bootstrap"
           sleep 60
 
-
           ALICE_PORT=$(jq -r .alice_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
           COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
 
+          # Wait for nodes to come online
+          echo "::group::wait-for-nodes"
+          just zb wait-for-nodes $ZOMBIE_BITE_BASE_PATH
+          echo "::endgroup::"
+
           # try-runtime snap pre
           echo "::group::run-try-runtime"
-          try-runtime create-snapshot --uri "ws://localhost:$ALICE_PORT" "${ZOMBIE_BITE_BASE_PATH}/rc-pre.snap"
-          try-runtime create-snapshot --uri "ws://localhost:$COL_PORT" "${ZOMBIE_BITE_BASE_PATH}/ah-pre.snap"
+          just zb snapshot $NETWORK $ZOMBIE_BITE_BASE_PATH pre
           echo "::endgroup::"
 
           echo "::group::run-migration"
@@ -175,8 +201,7 @@ jobs:
 
           # try-runtime snap post
           echo "::group::run-try-runtime"
-          try-runtime create-snapshot --uri "ws://localhost:$ALICE_PORT" "${ZOMBIE_BITE_BASE_PATH}/rc-post.snap"
-          try-runtime create-snapshot --uri "ws://localhost:$COL_PORT" "${ZOMBIE_BITE_BASE_PATH}/ah-post.snap"
+          just zb snapshot $NETWORK $ZOMBIE_BITE_BASE_PATH post
           echo "::endgroup::"
 
           echo "::group::zombie-bite-stop"
