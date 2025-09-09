@@ -62,6 +62,9 @@ jobs:
         run: |
           just install-try-runtime
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
       - name: create_base_dir
         shell: bash
