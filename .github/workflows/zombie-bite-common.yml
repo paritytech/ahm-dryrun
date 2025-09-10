@@ -147,8 +147,7 @@ jobs:
       - name: wait_for_network
         uses: ./.github/actions/wait-zb-network-ready
 
-      - name: zombie_bite_step_run_migration
-        id: zombie_bite_step_spawn_and_run_migration
+      - name: try_runtime_pre
         shell: bash
         env:
           NETWORK: ${{ inputs.network }}
@@ -168,6 +167,33 @@ jobs:
           # try-runtime snap pre
           echo "::group::run-try-runtime"
           just zb snapshot $NETWORK $ZOMBIE_BITE_BASE_PATH pre
+          echo "::endgroup::"
+        continue-on-error: true
+
+      - name: try_runtime_upload_step_pre
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.network }}-try-runtime-snaps-${{ github.sha }}${{ inputs.args }}
+          path: |
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-rc-pre.snap
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-ah-pre.snap
+
+      - name: zombie_bite_step_run_migration
+        id: zombie_bite_step_spawn_and_run_migration
+        shell: bash
+        env:
+          NETWORK: ${{ inputs.network }}
+          TS_LOG_CONSOLE: true
+          TS_LOG_LEVEL: debug
+        run: |
+          export PATH=${AHM_BINS}:$PATH
+
+          ALICE_PORT=$(jq -r .alice_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
+          COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
+
+          # Wait for nodes to come online
+          echo "::group::wait-for-nodes"
+          just zb wait-for-nodes $ZOMBIE_BITE_BASE_PATH
           echo "::endgroup::"
 
           echo "::group::run-migration"
@@ -217,15 +243,13 @@ jobs:
           ls ${{ env.ZOMBIE_BITE_BASE_PATH }}
           echo "::endgroup::"
 
-      - name: zombie_bite_upload_step
+      - name: try_runtime_upload_step_post
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.network }}-try-runtime-snaps-${{ github.sha }}${{ inputs.args }}
           path: |
-            ${{ env.ZOMBIE_BITE_BASE_PATH }}/rc-pre.snap
-            ${{ env.ZOMBIE_BITE_BASE_PATH }}/ah-pre.snap
-            ${{ env.ZOMBIE_BITE_BASE_PATH }}/rc-post.snap
-            ${{ env.ZOMBIE_BITE_BASE_PATH }}/ah-post.snap
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-rc-post.snap
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-ah-post.snap
 
       - name: zombie_bite_upload_step_logs
         uses: actions/upload-artifact@v4
@@ -236,7 +260,7 @@ jobs:
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn-debug/alice/alice.log
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn-debug/bob/bob.log
 
-      - name: try_runtime_upload_step
+      - name: zombie_bite_upload_step
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.network }}-post-migration-db-${{ github.sha }}${{ inputs.args }}
