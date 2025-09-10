@@ -55,7 +55,7 @@ wait-for-migration-done base_path:
 force-kill:
     #!/usr/bin/env bash
     set -ex
-    
+
     killall zombie-bite || true
     killall doppelganger || true
     killall polkadot-prepare-worker polkadot-execute-worker polkadot polkadot-collator || true
@@ -63,7 +63,7 @@ force-kill:
 soft-kill-migration base_path:
     #!/usr/bin/env bash
     set -ex
-    
+
     STOP_FILE="{{ base_path }}/stop.txt"
     echo "signal teardown network by creating file ${STOP_FILE}"
 
@@ -124,13 +124,13 @@ wait-for-nodes base_path:
     just ahm _npm-build
     RC_PORT=$(jq -r .alice_port "{{ base_path }}/ports.json")
     AH_PORT=$(jq -r .collator_port "{{ base_path }}/ports.json")
-    
+
     # Retry function for node readiness
     wait_for_node() {
         local port=$1
         local name=$2
         for i in {1..10}; do
-            if node dist/zombie-bite-scripts/wait_n_blocks.js ws://localhost:${port} 1 2>/dev/null; then
+            if node dist/zombie-bite-scripts/wait_n_blocks.js ws://localhost:${port} 2 2>/dev/null; then
                 echo "${name} node ready"
                 return 0
             fi
@@ -140,16 +140,16 @@ wait-for-nodes base_path:
         echo "ERROR: ${name} node failed to become ready after 10 attempts"
         return 1
     }
-    
+
     # Check both nodes in parallel
     wait_for_node $RC_PORT "RC" &
     RC_PID=$!
-    
+
     wait_for_node $AH_PORT "AH" &
     AH_PID=$!
-    
+
     # Wait for both to complete
     wait $RC_PID
     wait $AH_PID
-    
+
     echo "Both nodes are ready"
