@@ -173,7 +173,7 @@ jobs:
       - name: try_runtime_upload_step_pre
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.network }}-try-runtime-snaps-${{ github.sha }}${{ inputs.args }}
+          name: ${{ inputs.network }}-try-runtime-snaps-pre-${{ github.sha }}${{ inputs.args }}
           path: |
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-rc-pre.snap
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-ah-pre.snap
@@ -246,7 +246,7 @@ jobs:
       - name: try_runtime_upload_step_post
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.network }}-try-runtime-snaps-${{ github.sha }}${{ inputs.args }}
+          name: ${{ inputs.network }}-try-runtime-snaps-post-${{ github.sha }}${{ inputs.args }}
           path: |
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-rc-post.snap
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-ah-post.snap
