@@ -16,11 +16,11 @@ on:
       iterations:
         description: 'Iterations for permatest (default 3)'
         type: number
-        default: 3
+        default: 2
       timeout:
-        description: 'Timeout (in mins) for iterations, each one takes ~20mins + bite time (default 120)'
+        description: 'Timeout (in mins) for iterations'
         type: number
-        default: 120
+        default: 240
 
 
 concurrency:
@@ -38,7 +38,7 @@ jobs:
     runs-on: parity-large
     container:
       image: docker.io/paritytech/ci-unified:bullseye-1.88.0-2025-06-27-v202507221446
-    timeout-minutes: ${{ inputs.timeout }}
+    timeout-minutes: ${{ fromJSON(inputs.timeout) }}
 
     steps:
       - uses: actions/checkout@v4
@@ -62,6 +62,9 @@ jobs:
         run: |
           just install-try-runtime
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
       - name: create_base_dir
         shell: bash
@@ -106,4 +109,3 @@ jobs:
         run: |
           export PATH=${AHM_BINS}:$PATH
           just ahm permatest $NETWORK $ZOMBIE_BITE_BASE_PATH $ITERATIONS
-
