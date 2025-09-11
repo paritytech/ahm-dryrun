@@ -124,4 +124,4 @@ migration-test runtime base_path:
     set -ex
 
     cd runtimes
-    SKIP_WASM_BUILD=1 SNAP_RC_PRE="{{ base_path }}/{{ runtime }}-rc-pre.snap" SNAP_AH_PRE="{{ base_path }}/{{ runtime }}-ah-pre.snap" SNAP_RC_POST="{{ base_path }}/{{ runtime }}-rc-post.snap" SNAP_AH_POST="{{ base_path }}/{{ runtime }}-ah-post.snap" RUST_LOG="error" cargo test -p polkadot-integration-tests-ahm  -r post_migration_checks_only --features paseo --features try-runtime -- --nocapture --test-threads 1
+    SKIP_WASM_BUILD=1 SNAP_RC_PRE="{{ base_path }}/{{ runtime }}-rc-pre.snap" SNAP_AH_PRE="{{ base_path }}/{{ runtime }}-ah-pre.snap" SNAP_RC_POST="{{ base_path }}/{{ runtime }}-rc-post.snap" SNAP_AH_POST="{{ base_path }}/{{ runtime }}-ah-post.snap" RUST_LOG="error" cargo test -p polkadot-integration-tests-ahm  -r post_migration_checks_only --features {{ runtime }}-ahm --features try-runtime -- --nocapture --test-threads 1 --ignored
