@@ -134,4 +134,4 @@ migration-test runtime base_path:
       --release \
       --features {{ runtime }}-ahm \
       --features try-runtime \
-      -- post_migration_checks_only --nocapture --test-threads 1
+      post_migration_checks_only -- --ignored --nocapture --test-threads 1
