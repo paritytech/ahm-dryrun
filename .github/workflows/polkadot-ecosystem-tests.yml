@@ -1,0 +1,226 @@
+name: Polkadot Ecosystem Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      network:
+        description: "Network to test"
+        default: 'kusama'
+        type: choice
+        options:
+          - kusama
+      sudo-key:
+        description: "Sudo key for migration (optional)"
+        required: false
+        type: string
+      runner:
+        description: "Runner to use"
+        default: 'parity-large-persistent'
+        type: string
+      args:
+        description: "Additional args"
+        required: false
+        type: string
+        default: ""
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+env:
+  AHM_BINS: "/tmp"
+
+jobs:
+  zombie_bite_migration:
+    uses: ./.github/workflows/zombie-bite-common.yml
+    with:
+      network: ${{ inputs.network }}
+      sudo-key: ${{ inputs.sudo-key }}
+      runner: ${{ inputs.runner }}
+      args: ${{ inputs.args }}
+
+  run_ecosystem_tests:
+    needs: [zombie_bite_migration]
+    runs-on: ${{ inputs.runner }}
+    container:
+      image: docker.io/paritytech/ci-unified:bullseye-1.88.0-2025-06-27-v202507221446
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: extractions/setup-just@v2
+
+      - name: download_doppelganger_binaries
+        uses: ./.github/actions/download-doppelganger-binaries
+        with:
+          destination-path: ${{ env.AHM_BINS }}
+
+      - name: install_zombie_bite
+        shell: bash
+        run: |
+          just install-zombie-bite
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: download_post_migration_artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.network }}-post-migration-db-${{ github.sha }}${{ inputs.args }}
+          path: ./artifacts
+
+      - name: setup_migration_run_directory
+        shell: bash
+        run: |
+          echo "::group::setup-migration-run"
+          # Create migration-run directory and extract artifacts
+          mkdir -p ./migration-run
+          
+          # Copy all artifact contents to migration-run
+          cp -r ./artifacts/* ./migration-run/
+          
+          # Verify required files exist
+          ls -la ./migration-run/
+          if [ ! -f "./migration-run/ports.json" ]; then
+            echo "Error: ports.json not found in artifacts"
+            exit 1
+          fi
+          if [ ! -f "./migration-run/ready.json" ]; then
+            echo "Error: ready.json not found in artifacts"
+            exit 1
+          fi
+          echo "::endgroup::"
+
+      - name: spawn_zombie_bite_network
+        shell: bash
+        env:
+          NETWORK: ${{ inputs.network }}
+        run: |
+          export PATH=${AHM_BINS}:$PATH
+
+          # Only run ecosystem tests for kusama network
+          if [ "$NETWORK" != "kusama" ]; then
+            echo "Ecosystem tests only supported for kusama network, skipping..."
+            exit 0
+          fi
+
+          echo "::group::spawn-zombie-bite-network"
+          # Remove any previous nohup.out
+          rm -f nohup-pet.out
+
+          # Spawn the post-migration network
+          nohup just zb spawn ./migration-run post > nohup-pet.out 2>&1 &
+          SPAWN_PID=$!
+          echo "SPAWN_PID=$SPAWN_PID" >> $GITHUB_ENV
+          
+          # Wait for the network to be ready
+          echo "Waiting for zombie-bite network to spawn..."
+          sleep 30
+
+          # Wait for network ready signal
+          READY_FILE="./migration-run/ready.json"
+          COUNT=0
+          until [ -f "$READY_FILE" ]; do
+            echo "Waiting for ready signal... ($COUNT/60)"
+            COUNT=$((COUNT + 1))
+            if [[ $COUNT -gt 60 ]]; then
+              echo "Network spawn timeout"
+              echo "=== Log contents ==="
+              cat nohup-pet.out
+              echo "==================="
+              exit 1
+            fi
+            sleep 5
+          done
+          echo "Network is ready!"
+          echo "::endgroup::"
+
+      - name: extract_collator_endpoint
+        shell: bash
+        run: |
+          echo "::group::extract-collator-endpoint"
+          # Extract the collator endpoint from the logs
+          # Look for lines like: "💻 collator: direct link (papi) https://dev.papi.how/explorer#networkId=custom&endpoint=ws://127.0.0.1:63170"
+          sleep 5  # Give a bit more time for logs to be written
+          
+          ENDPOINT_LOG=$(grep -o "ws://127\.0\.0\.1:[0-9]*" nohup-pet.out | head -1)
+          if [ -z "$ENDPOINT_LOG" ]; then
+            echo "Failed to extract collator endpoint from logs"
+            echo "=== Log contents ==="
+            cat nohup-pet.out
+            echo "==================="
+            exit 1
+          fi
+          
+          echo "Found collator endpoint: $ENDPOINT_LOG"
+          echo "ASSETHUBKUSAMA_ENDPOINT=$ENDPOINT_LOG" >> $GITHUB_ENV
+          echo "::endgroup::"
+
+      - name: get_current_block_number
+        shell: bash
+        run: |
+          echo "::group::get-current-block-number"
+          # Get current block number using JSON-RPC
+          BLOCK_NUMBER=$(curl -s -H "Content-Type: application/json" -d '{"id":1,"jsonrpc":"2.0","method":"chain_getHeader","params":[]}' $ASSETHUBKUSAMA_ENDPOINT | jq -r '.result.number')
+          
+          if [ -z "$BLOCK_NUMBER" ] || [ "$BLOCK_NUMBER" = "null" ]; then
+            echo "Failed to get block number from endpoint"
+            exit 1
+          fi
+          
+          # Convert from hex to decimal
+          BLOCK_NUMBER_DECIMAL=$((BLOCK_NUMBER))
+          echo "Current block number: $BLOCK_NUMBER_DECIMAL"
+          echo "ASSETHUB_KUSAMA_BLOCK_NUMBER=$BLOCK_NUMBER_DECIMAL" >> $GITHUB_ENV
+          echo "::endgroup::"
+
+      - name: run_polkadot_ecosystem_tests
+        shell: bash
+        env:
+          ASSETHUBKUSAMA_ENDPOINT: ${{ env.ASSETHUBKUSAMA_ENDPOINT }}
+          ASSETHUB_KUSAMA_BLOCK_NUMBER: ${{ env.ASSETHUB_KUSAMA_BLOCK_NUMBER }}
+        run: |
+          echo "::group::run-polkadot-ecosystem-tests"
+          cd polkadot-ecosystem-tests
+          
+          # Install dependencies
+          yarn install
+          
+          # Run the assetHubKusama tests
+          echo "Running tests with:"
+          echo "  ASSETHUBKUSAMA_ENDPOINT=$ASSETHUBKUSAMA_ENDPOINT"
+          echo "  ASSETHUB_KUSAMA_BLOCK_NUMBER=$ASSETHUB_KUSAMA_BLOCK_NUMBER"
+          
+          yarn test assetHubKusama
+          echo "::endgroup::"
+
+      - name: cleanup_zombie_bite_network
+        if: always()
+        shell: bash
+        run: |
+          echo "::group::cleanup-zombie-bite-network"
+          # Stop the zombie-bite network
+          if [ -n "$SPAWN_PID" ] && kill -0 $SPAWN_PID 2>/dev/null; then
+            echo "Stopping zombie-bite network (PID: $SPAWN_PID)"
+            kill $SPAWN_PID
+            wait $SPAWN_PID 2>/dev/null || true
+          fi
+          
+          # Also kill any remaining zombie-bite processes
+          killall zombie-bite || true
+          killall doppelganger || true
+          killall polkadot-prepare-worker polkadot-execute-worker polkadot polkadot-collator || true
+          echo "::endgroup::"
+
+      - name: upload_logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.network }}-ecosystem-test-logs-${{ github.sha }}${{ inputs.args }}
+          path: |
+            nohup-pet.out
