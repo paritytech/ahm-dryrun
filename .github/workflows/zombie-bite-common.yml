@@ -147,8 +147,7 @@ jobs:
       - name: wait_for_network
         uses: ./.github/actions/wait-zb-network-ready
 
-      - name: zombie_bite_step_spawn_and_run_migration
-        id: zombie_bite_step_spawn_and_run_migration
+      - name: try_runtime_pre
         shell: bash
         env:
           NETWORK: ${{ inputs.network }}
@@ -156,29 +155,6 @@ jobs:
           TS_LOG_LEVEL: debug
         run: |
           export PATH=${AHM_BINS}:$PATH
-
-          # echo "::group::zombie-bite-spawn"
-          # nohup zombie-bite spawn -d $ZOMBIE_BITE_BASE_PATH > nohup.out 2>&1 &
-          # ZOMBIE_FILE="${ZOMBIE_BITE_BASE_PATH}/spawn/zombie.json"
-          # COUNT=0
-          # until [ -f "$ZOMBIE_FILE" ]; do
-          #   echo "ZOMBIE_FILE: $ZOMBIE_FILE not present yet"
-          #   COUNT=$((COUNT +1))
-          #    if [[ $COUNT -gt 150 ]];then
-          #     echo "SPAWN_FAIL=1" >> $GITHUB_OUTPUT
-          #     exit 1;
-          #    fi;
-          #   sleep 2
-          # done
-          # echo "'zombie.json' file present, network spawned... sleeping a few seconds"
-          # echo "::endgroup::"
-
-          # echo "::group::zombie-bite-output"
-          # cat nohup.out
-          # echo "::endgroup::"
-
-          echo "sleeping 1 min to bootstrap"
-          sleep 60
 
           ALICE_PORT=$(jq -r .alice_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
           COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
@@ -191,6 +167,33 @@ jobs:
           # try-runtime snap pre
           echo "::group::run-try-runtime"
           just zb snapshot $NETWORK $ZOMBIE_BITE_BASE_PATH pre
+          echo "::endgroup::"
+        continue-on-error: true
+
+      - name: try_runtime_upload_step_pre
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.network }}-try-runtime-snaps-pre-${{ github.sha }}${{ inputs.args }}
+          path: |
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-rc-pre.snap
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-ah-pre.snap
+
+      - name: zombie_bite_step_run_migration
+        id: zombie_bite_step_spawn_and_run_migration
+        shell: bash
+        env:
+          NETWORK: ${{ inputs.network }}
+          TS_LOG_CONSOLE: true
+          TS_LOG_LEVEL: debug
+        run: |
+          export PATH=${AHM_BINS}:$PATH
+
+          ALICE_PORT=$(jq -r .alice_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
+          COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
+
+          # Wait for nodes to come online
+          echo "::group::wait-for-nodes"
+          just zb wait-for-nodes $ZOMBIE_BITE_BASE_PATH
           echo "::endgroup::"
 
           echo "::group::run-migration"
@@ -240,15 +243,13 @@ jobs:
           ls ${{ env.ZOMBIE_BITE_BASE_PATH }}
           echo "::endgroup::"
 
-      - name: zombie_bite_upload_step
+      - name: try_runtime_upload_step_post
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.network }}-try-runtime-snaps-${{ github.sha }}${{ inputs.args }}
+          name: ${{ inputs.network }}-try-runtime-snaps-post-${{ github.sha }}${{ inputs.args }}
           path: |
-            ${{ env.ZOMBIE_BITE_BASE_PATH }}/rc-pre.snap
-            ${{ env.ZOMBIE_BITE_BASE_PATH }}/ah-pre.snap
-            ${{ env.ZOMBIE_BITE_BASE_PATH }}/rc-post.snap
-            ${{ env.ZOMBIE_BITE_BASE_PATH }}/ah-post.snap
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-rc-post.snap
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-ah-post.snap
 
       - name: zombie_bite_upload_step_logs
         uses: actions/upload-artifact@v4
@@ -259,7 +260,7 @@ jobs:
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn-debug/alice/alice.log
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn-debug/bob/bob.log
 
-      - name: try_runtime_upload_step
+      - name: zombie_bite_upload_step
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.network }}-post-migration-db-${{ github.sha }}${{ inputs.args }}
@@ -268,6 +269,14 @@ jobs:
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ports.json
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ready.json
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/migration_done.json
+
+      - name: run_zombie_bite_rust_test
+        shell: bash
+        env:
+          NETWORK: ${{ inputs.network }}
+        run: |
+          export PATH=${AHM_BINS}:$PATH
+          just ahm migration-test $NETWORK $ZOMBIE_BITE_BASE_PATH
 
       - name: run_zombie_bite_post
         shell: bash
@@ -290,42 +299,3 @@ jobs:
           echo "::group::run-compare-state-tests"
           just compare-state ${{ env.ZOMBIE_BITE_BASE_PATH }} ${{ inputs.network }}
           echo "::endgroup::"
-
-      #
-      # TODO: post migration setup
-      #
-
-      # - name: run_post_test
-      #   shell: bash
-      #   env:
-      #     RUSTFLAGS: "-A warnings"
-      #   run: |
-      #     # export path
-      #     export PATH=${AHM_BINS}:$PATH
-
-      #     echo "::group::zombie-bite-spawn"
-      #     nohup zombie-bite spawn -d $ZOMBIE_BITE_BASE_PATH -s post > nohup-post.out 2>&1 &
-      #     ZOMBIE_FILE="$ZOMBIE_BITE_BASE_PATH/spawn/zombie.json"
-      #     until [ -f "$ZOMBIE_FILE" ]; do
-      #       echo "ZOMBIE_FILE: $ZOMBIE_FILE not present yet"
-      #       sleep 2
-      #     done
-      #     echo "'zombie.json' file present, network spawned... sleeping a few seconds"
-      #     echo "::endgroup::"
-
-      #     echo "::group::zombie-bite-output"
-      #     cat nohup-post.out
-      #     echo "::endgroup::"
-
-      #     echo "sleeping 1 min to bootstrap"
-      #     sleep 60
-
-      #     echo "::group::run-post-migration-test"
-      #     echo "::endgroup::"
-
-      # - name: zombie_bite_upload_step
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: ${{ inputs.network }}-zb-step-spawn-${{ github.sha }}
-      #     path: |
-      #       $ZOMBIE_BITE_BASE_PATH/post
