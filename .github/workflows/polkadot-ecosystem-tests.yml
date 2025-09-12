@@ -176,14 +176,14 @@ jobs:
           # Convert from hex to decimal
           BLOCK_NUMBER_DECIMAL=$((BLOCK_NUMBER))
           echo "Current block number: $BLOCK_NUMBER_DECIMAL"
-          echo "ASSETHUB_KUSAMA_BLOCK_NUMBER=$BLOCK_NUMBER_DECIMAL" >> $GITHUB_ENV
+          echo "ASSETHUBKUSAMA_BLOCK_NUMBER=$BLOCK_NUMBER_DECIMAL" >> $GITHUB_ENV
           echo "::endgroup::"
 
       - name: run_polkadot_ecosystem_tests
         shell: bash
         env:
           ASSETHUBKUSAMA_ENDPOINT: ${{ env.ASSETHUBKUSAMA_ENDPOINT }}
-          ASSETHUB_KUSAMA_BLOCK_NUMBER: ${{ env.ASSETHUB_KUSAMA_BLOCK_NUMBER }}
+          ASSETHUBKUSAMA_BLOCK_NUMBER: ${{ env.ASSETHUBKUSAMA_BLOCK_NUMBER }}
         run: |
           echo "::group::run-polkadot-ecosystem-tests"
           cd polkadot-ecosystem-tests
@@ -194,7 +194,7 @@ jobs:
           # Run the assetHubKusama tests
           echo "Running tests with:"
           echo "  ASSETHUBKUSAMA_ENDPOINT=$ASSETHUBKUSAMA_ENDPOINT"
-          echo "  ASSETHUB_KUSAMA_BLOCK_NUMBER=$ASSETHUB_KUSAMA_BLOCK_NUMBER"
+          echo "  ASSETHUBKUSAMA_BLOCK_NUMBER=$ASSETHUBKUSAMA_BLOCK_NUMBER"
           
           yarn test assetHubKusama
           echo "::endgroup::"
