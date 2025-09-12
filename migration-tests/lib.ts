@@ -128,7 +128,9 @@ export async function main(
   // though knowing that between 1st and 2nd migration in WAH, few users might have added few things
   // so a small mismatch might be expected.
   await runTests(context, network);
-  await treasury_spend();
+
+  // TODO (@x3c41a): `treasury_spend` is using hardcoded polkadot endpoints
+  // await treasury_spend();
 
   // Disconnect all APIs
   await Promise.all(apis.map((api) => api.disconnect()));
