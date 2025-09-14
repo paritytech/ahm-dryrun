@@ -178,7 +178,7 @@ jobs:
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-rc-pre.snap
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-ah-pre.snap
 
-      - name: zombie_bite_step_run_migration
+      - name: run_migration
         id: zombie_bite_step_spawn_and_run_migration
         shell: bash
         env:
@@ -270,7 +270,7 @@ jobs:
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ready.json
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/migration_done.json
 
-      - name: run_zombie_bite_rust_test
+      - name: try_runtime_rust_test
         shell: bash
         env:
           NETWORK: ${{ inputs.network }}
@@ -289,7 +289,7 @@ jobs:
       - name: wait_for_network
         uses: ./.github/actions/wait-zb-network-ready
 
-      - name: run_migration_comparison_tests
+      - name: ts_comparison_tests
         shell: bash
         env:
           NETWORK: ${{ inputs.network }}
@@ -299,3 +299,55 @@ jobs:
           echo "::group::run-compare-state-tests"
           just compare-state ${{ env.ZOMBIE_BITE_BASE_PATH }} ${{ inputs.network }}
           echo "::endgroup::"
+
+      # PET
+      - name: install_pet_deps
+        shell: bash
+        run: |
+          npm install -g yarn
+          yarn install
+
+      - name: get_current_block_number
+        shell: bash
+        run: |
+          COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
+          echo "::group::get-current-block-number"
+          # Get current block number using JSON-RPC
+          BLOCK_NUMBER=$(curl -s -H "Content-Type: application/json" -d '{"id":1,"jsonrpc":"2.0","method":"chain_getHeader","params":[]}' ws://127.0.0.1:${COL_PORT} | jq -r '.result.number')
+
+          if [ -z "$BLOCK_NUMBER" ] || [ "$BLOCK_NUMBER" = "null" ]; then
+            echo "Failed to get block number from endpoint"
+            exit 1
+          fi
+
+          # Convert from hex to decimal
+          BLOCK_NUMBER_DECIMAL=$((BLOCK_NUMBER))
+          echo "Current block number: $BLOCK_NUMBER_DECIMAL"
+          echo "ASSETHUB_BLOCK_NUMBER=$BLOCK_NUMBER_DECIMAL" >> $GITHUB_ENV
+          echo "::endgroup::"
+
+      - name: run_polkadot_ecosystem_tests
+        shell: bash
+        env:
+          ASSETHUB_BLOCK_NUMBER: ${{ env.ASSETHUB_BLOCK_NUMBER }}
+          NETWORK: ${{ inputs.network }}
+        run: |
+          COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
+          echo "::group::run-polkadot-ecosystem-tests"
+          cd polkadot-ecosystem-tests
+
+          # Install dependencies
+          yarn install
+
+          # export endpoint
+          export ASSETHUB${NETWORK}_ENDPOINT="ws://127.0.0.1:${COL_PORT}"
+          export ASSETHUB${NETWORK}_BLOCK_NUMBER=ASSETHUB_BLOCK_NUMBER
+
+          # Run the assetHubKusama tests
+          echo "Running tests with:"
+          echo "  ASSETHUB${NETWORK}_ENDPOINT=$ASSETHUB${NETWORK}_ENDPOINT"
+          echo "  ASSETHUB${NETWORK}_BLOCK_NUMBER=$ASSETHUB${NETWORK}_BLOCK_NUMBER"
+
+          yarn test assetHubKusama
+          echo "::endgroup::"
+
