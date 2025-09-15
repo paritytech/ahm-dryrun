@@ -312,8 +312,9 @@ jobs:
         run: |
           COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
           echo "::group::get-current-block-number"
+          echo "Getting current block from http://127.0.0.1:${COL_PORT}"
           # Get current block number using JSON-RPC
-          BLOCK_NUMBER=$(curl -s -H "Content-Type: application/json" -d '{"id":1,"jsonrpc":"2.0","method":"chain_getHeader","params":[]}' ws://127.0.0.1:${COL_PORT} | jq -r '.result.number')
+          BLOCK_NUMBER=$(curl -s -H "Content-Type: application/json" -d '{"id":1,"jsonrpc":"2.0","method":"chain_getHeader","params":[]}' http://127.0.0.1:${COL_PORT} | jq -r '.result.number')
 
           if [ -z "$BLOCK_NUMBER" ] || [ "$BLOCK_NUMBER" = "null" ]; then
             echo "Failed to get block number from endpoint"
