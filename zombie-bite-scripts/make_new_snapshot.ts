@@ -38,7 +38,8 @@ async function main() {
     const era = await api.query.staking.currentEra();
     const currentEraNum = era.unwrap().toNumber();
     const currentBlock = await api.rpc.chain.getBlock();
-    console.log(`Current block: ${currentBlock.block.header.number}, Era: ${currentEraNum}`);
+    const session = await api.query.session.currentIndex();
+    console.log(`Current block: ${currentBlock.block.header.number}, Era: ${currentEraNum}, Session: ${session.toNumber()}`);
     
 
     if (currentEraNum > startingEra) {
