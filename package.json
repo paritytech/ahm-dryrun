@@ -21,7 +21,7 @@
     "postinstall": "papi"
   },
   "dependencies": {
-    "@acala-network/chopsticks-testing": "^1.0.3",
+    "@acala-network/chopsticks-testing": "^1.2.2",
     "@polkadot-api/descriptors": "file:.papi/descriptors",
     "@polkadot-labs/hdkd": "^0.0.13",
     "@polkadot/api": "^16.4.1",
