@@ -72,8 +72,12 @@ export async function runTests(context: TestContext, network: Network) {
       await test.post_check(context.post, pre_payload);
 
       logger.info(`✅ Test ${test.name} test completed successfully`);
-    } catch (error: unknown) {
-      logger.error(`❌ Test '${test.name}' failed during ${stage}:`, { error });
+    } catch (error: any) {
+      if (error instanceof Error) {
+        logger.error(`❌ Test '${test.name}' failed during ${stage}: ${String(error)}`);
+      } else {
+        logger.error(`❌ Test '${test.name}' failed during ${stage}:`, { error });
+      }
     }
   }
 }
