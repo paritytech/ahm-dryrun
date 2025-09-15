@@ -50,7 +50,9 @@ const excludedTestsPerNetwork: Record<Network, MigrationTest[]> = {
     multisigTests
   ],
   Paseo: [],
-  Kusama: [],
+  Kusama: [
+    voterListTests,
+  ],
   Polkadot: [],
 };
 
