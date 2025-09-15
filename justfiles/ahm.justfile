@@ -116,22 +116,22 @@ test-once runtime base_path:
 
     # Run post migration tests
     abs_base_path=$(realpath {{ base_path }})
-    just ahm migration-test {{ runtime }} ${abs_base_path}
+    just ahm rust-test {{ runtime }} ${abs_base_path}
 
-# Run post migration tests
-migration-test runtime base_path:
+# Run post rust migration tests
+rust-test runtime base_path:
     #!/usr/bin/env bash
     set -ex
 
     cd runtimes
     SKIP_WASM_BUILD=1 \
-    SNAP_RC_PRE="{{ base_path }}/{{ runtime }}-rc-pre.snap" \
-    SNAP_AH_PRE="{{ base_path }}/{{ runtime }}-ah-pre.snap" \
-    SNAP_RC_POST="{{ base_path }}/{{ runtime }}-rc-post.snap" \
-    SNAP_AH_POST="{{ base_path }}/{{ runtime }}-ah-post.snap" \
+    SNAP_RC_PRE="../../../{{ base_path }}/rc-pre.snap" \
+    SNAP_AH_PRE="../../../{{ base_path }}/ah-pre.snap" \
+    SNAP_RC_POST="../../../{{ base_path }}/rc-post.snap" \
+    SNAP_AH_POST="../../../{{ base_path }}/ah-post.snap" \
     RUST_LOG="error" \
     cargo test -p polkadot-integration-tests-ahm  \
       --release \
       --features {{ runtime }}-ahm \
       --features try-runtime \
-      post_migration_checks_only -- --ignored --nocapture --test-threads 1
+      post_migration_checks_only -- --include-ignored --nocapture --test-threads 1

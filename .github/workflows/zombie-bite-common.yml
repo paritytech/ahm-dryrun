@@ -276,7 +276,7 @@ jobs:
           NETWORK: ${{ inputs.network }}
         run: |
           export PATH=${AHM_BINS}:$PATH
-          just ahm migration-test $NETWORK $ZOMBIE_BITE_BASE_PATH
+          just ahm rust-test $NETWORK $ZOMBIE_BITE_BASE_PATH
 
       - name: run_zombie_bite_post
         shell: bash
