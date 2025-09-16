@@ -16,7 +16,7 @@ env:
   RUSTFLAGS: "-A warnings"
 
 jobs:
-  run_zombie_bite:
+  rust_tests:
     runs-on: parity-default
     container:
       image: docker.io/paritytech/ci-unified:bullseye-1.88.0-2025-06-27-v202507221446

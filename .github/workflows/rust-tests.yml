@@ -21,7 +21,7 @@ concurrency:
 permissions: {}
 
 jobs:
-  try_runtime_rust_tests:
+  rust_tests:
     # run by demand
     uses: ./.github/workflows/rust-tests-common.yml
     with:
