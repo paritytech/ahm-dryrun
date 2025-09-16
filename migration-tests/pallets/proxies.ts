@@ -80,6 +80,7 @@ async function collectProxyEntries(api: ApiDecoration<"promise">): Promise<Proxy
     return proxies;
 }
 
+let free_proxies: string[] = [];
 export const proxyTests: MigrationTest = {
     name: 'proxy_pallet',
 
@@ -90,18 +91,13 @@ export const proxyTests: MigrationTest = {
         const ah_proxies_map = await collectProxyEntries(ah_api_before);
 
         const entries = await rc_api_before.query.proxy.proxies.entries();
-
-        let free_proxies = 0;
-        for (const [key, value] of entries) {
+        for (const [key, _] of entries) {
             const delegator = key.args[0] as unknown as AccountId32;
             const nonce = await rc_api_before.query.system.account(delegator).then(acc => acc.nonce.toNumber());
-            console.log(`Nonce: ${nonce}`);
             if (nonce === 0) {
-                free_proxies++;
-                console.log(`Free proxy: ${delegator.toString()}`);
+                free_proxies.push(delegator.toString());
             }
         }
-        console.log(`Free proxies: ${free_proxies}`);
 
         return {
             rc_pre_payload: rc_proxies_map,
@@ -118,7 +114,7 @@ export const proxyTests: MigrationTest = {
 
         // Verify RC is empty after migration
         const rc_proxies_after = await rc_api_after.query.proxy.proxies.entries();
-        assert(rc_proxies_after.length === 0, `RC proxies should be empty after migration, but found ${rc_proxies_after.length} entries`);
+        assert(rc_proxies_after.length === free_proxies.length, `RC proxies got: ${rc_proxies_after.length}, want: ${free_proxies.length}`);
 
         // Get current AH state
         const ah_post = await collectProxyEntries(ah_api_after);
