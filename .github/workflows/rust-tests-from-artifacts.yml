@@ -1,8 +1,6 @@
 name: Rust Tests from Artifacts
 
 on:
-  push:
-    branches: [kiz-rust-test]
   workflow_dispatch:
     inputs:
       run-id:
