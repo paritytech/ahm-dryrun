@@ -74,7 +74,7 @@ jobs:
         run: |
           ls -ltr $ZOMBIE_BITE_BASE_PATH
           ARTIFACTS_DIR=$(ls -t $ZOMBIE_BITE_BASE_PATH|head -1)
-          mv $ZOMBIE_BITE_BASE_PATH "${ZOMBIE_BITE_BASE_PATH}/post"
+          mv $ARTIFACTS_DIR "${ZOMBIE_BITE_BASE_PATH}/post"
           ls -ltr $ZOMBIE_BITE_BASE_PATH
           ls -ltr "${ZOMBIE_BITE_BASE_PATH}/post"
 
