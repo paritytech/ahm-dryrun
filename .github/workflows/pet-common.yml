@@ -18,7 +18,7 @@ env:
 
 jobs:
   run_zombie_bite:
-    runs-on: ubintu-latest
+    runs-on: ubuntu-latest
     timeout-minutes: 30
 
     steps:
