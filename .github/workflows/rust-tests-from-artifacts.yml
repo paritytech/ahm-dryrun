@@ -98,39 +98,31 @@ jobs:
           echo "Current directory structure:"
           find ${{ env.ARTIFACT_DIR }} -name "*.snap" -type f
 
-          # Move and rename files to expected locations
           # The files should be directly in the artifact directory after download
           cd ${{ env.ARTIFACT_DIR }}
 
-          if [ -f "$NETWORK-rc-pre.snap" ]; then
-            mv "$NETWORK-rc-pre.snap" rc-pre.snap
-          else
+          # Check that all required files exist
+          if [ ! -f "$NETWORK-rc-pre.snap" ]; then
             echo "ERROR: Could not find $NETWORK-rc-pre.snap"
             exit 1
           fi
 
-          if [ -f "$NETWORK-ah-pre.snap" ]; then
-            mv "$NETWORK-ah-pre.snap" ah-pre.snap
-          else
+          if [ ! -f "$NETWORK-ah-pre.snap" ]; then
             echo "ERROR: Could not find $NETWORK-ah-pre.snap"
             exit 1
           fi
 
-          if [ -f "$NETWORK-rc-post.snap" ]; then
-            mv "$NETWORK-rc-post.snap" rc-post.snap
-          else
+          if [ ! -f "$NETWORK-rc-post.snap" ]; then
             echo "ERROR: Could not find $NETWORK-rc-post.snap"
             exit 1
           fi
 
-          if [ -f "$NETWORK-ah-post.snap" ]; then
-            mv "$NETWORK-ah-post.snap" ah-post.snap
-          else
+          if [ ! -f "$NETWORK-ah-post.snap" ]; then
             echo "ERROR: Could not find $NETWORK-ah-post.snap"
             exit 1
           fi
 
-          echo "Renamed files:"
+          echo "Found all required snapshot files:"
           ls -la *.snap
           echo "::endgroup::"
 

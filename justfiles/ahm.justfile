@@ -136,10 +136,10 @@ rust-test runtime base_path:
     fi
 
     SKIP_WASM_BUILD=1 \
-    SNAP_RC_PRE="${SNAP_BASE}/rc-pre.snap" \
-    SNAP_AH_PRE="${SNAP_BASE}/ah-pre.snap" \
-    SNAP_RC_POST="${SNAP_BASE}/rc-post.snap" \
-    SNAP_AH_POST="${SNAP_BASE}/ah-post.snap" \
+    SNAP_RC_PRE="${SNAP_BASE}/{{ runtime }}-rc-pre.snap" \
+    SNAP_AH_PRE="${SNAP_BASE}/{{ runtime }}-ah-pre.snap" \
+    SNAP_RC_POST="${SNAP_BASE}/{{ runtime }}-rc-post.snap" \
+    SNAP_AH_POST="${SNAP_BASE}/{{ runtime }}-ah-post.snap" \
     RUST_LOG="runtime::ah-migrator=debug,runtime::rc-migrator=debug,remote-ext=info,runtime=warn,runtime=info" \
     cargo test -p polkadot-integration-tests-ahm  \
       --release \
