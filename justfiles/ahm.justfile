@@ -124,11 +124,22 @@ rust-test runtime base_path:
     set -ex
 
     cd runtimes
+
+    # Check if base_path is absolute or relative
+    if [[ "{{ base_path }}" = /* ]]; then
+        # Absolute path - use as is. Used in CI
+        SNAP_BASE="{{ base_path }}"
+    else
+        # Relative path - prepend ../../../
+        # Used when locally running `just ahm rust-test ...`
+        SNAP_BASE="../../../{{ base_path }}"
+    fi
+
     SKIP_WASM_BUILD=1 \
-    SNAP_RC_PRE="../../../{{ base_path }}/rc-pre.snap" \
-    SNAP_AH_PRE="../../../{{ base_path }}/ah-pre.snap" \
-    SNAP_RC_POST="../../../{{ base_path }}/rc-post.snap" \
-    SNAP_AH_POST="../../../{{ base_path }}/ah-post.snap" \
+    SNAP_RC_PRE="${SNAP_BASE}/rc-pre.snap" \
+    SNAP_AH_PRE="${SNAP_BASE}/ah-pre.snap" \
+    SNAP_RC_POST="${SNAP_BASE}/rc-post.snap" \
+    SNAP_AH_POST="${SNAP_BASE}/ah-post.snap" \
     RUST_LOG="error" \
     cargo test -p polkadot-integration-tests-ahm  \
       --release \

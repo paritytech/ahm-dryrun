@@ -16,7 +16,7 @@ on:
           - kusama
 
 env:
-  ARTIFACT_DIR: ${{ github.workspace }}/migration-test-artifacts
+  ARTIFACT_DIR: "/tmp/ci/rust-test-artifacts"
   RUSTFLAGS: "-A warnings"
 
 jobs:
