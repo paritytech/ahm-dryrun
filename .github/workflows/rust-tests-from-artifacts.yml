@@ -33,6 +33,11 @@ jobs:
       - name: Setup Just
         uses: extractions/setup-just@v2
 
+      - name: Configure git
+        run: |
+          git config --global --add safe.directory ${{ github.workspace }}
+          git config --global --add safe.directory /home/runner/work/ahm-dryrun/ahm-dryrun
+
       - name: Create artifact directory
         run: mkdir -p ${{ env.ARTIFACT_DIR }}
 
@@ -74,7 +79,7 @@ jobs:
 
           # Download artifacts
           echo "::group::Downloading artifacts"
-          
+
           # Download to the artifact directory but run from workspace
           gh run download $RUN_ID -n "$pre_artifact" -D ${{ env.ARTIFACT_DIR }}
           gh run download $RUN_ID -n "$post_artifact" -D ${{ env.ARTIFACT_DIR }}
