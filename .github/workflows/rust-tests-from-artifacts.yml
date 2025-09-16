@@ -22,6 +22,8 @@ env:
 jobs:
   rust-tests-from-artifacts:
     runs-on: ubuntu-latest
+    container:
+      image: docker.io/paritytech/ci-unified:bullseye-1.88.0-2025-06-27-v202507221446
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -34,14 +36,8 @@ jobs:
       - name: Create artifact directory
         run: mkdir -p ${{ env.ARTIFACT_DIR }}
 
-      - name: Setup Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-
       - name: Fetch Rust cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@a95ba195448af2da9b00fb742d14ffaaf3c21f43 # v2.7.0
         with:
           shared-key: "ahm-cache"
           cache-on-failure: true
