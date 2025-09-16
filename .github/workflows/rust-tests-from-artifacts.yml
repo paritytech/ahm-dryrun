@@ -36,7 +36,7 @@ jobs:
       - name: Configure git
         run: |
           git config --global --add safe.directory ${{ github.workspace }}
-          git config --global --add safe.directory /home/runner/work/ahm-dryrun/ahm-dryrun
+          git config --global --add safe.directory /__w/ahm-dryrun/ahm-dryrun
 
       - name: Create artifact directory
         run: mkdir -p ${{ env.ARTIFACT_DIR }}
