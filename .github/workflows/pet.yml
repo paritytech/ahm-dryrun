@@ -1,8 +1,6 @@
 name: PET tests
 
 on:
-  push:
-    branches: [add-pet-workflow]
   workflow_dispatch:
     inputs:
       run-id:
@@ -23,7 +21,7 @@ concurrency:
 permissions: {}
 
 jobs:
-  try_runtime_rust_tests:
+  pet_tests:
     # run by demand
     uses: ./.github/workflows/pet-common.yml
     with:

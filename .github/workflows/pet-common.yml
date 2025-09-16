@@ -18,10 +18,8 @@ env:
 
 jobs:
   run_zombie_bite:
-    runs-on: parity-default
-    container:
-      image: docker.io/paritytech/ci-unified:bullseye-1.88.0-2025-06-27-v202507221446
-    timeout-minutes: 60
+    runs-on: ubintu-latest
+    timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v4
@@ -66,6 +64,16 @@ jobs:
           echo "downloading artifacts from https://github.com/paritytech/ahm-dryrun/actions/runs/${RUN_ID}"
           gh run download $RUN_ID -p "${NETWORK}-post-migration-db*" -D $ZOMBIE_BITE_BASE_PATH
           ls -ltr $ZOMBIE_BITE_BASE_PATH
+
+      - name: check_artifacts
+        shell: bash
+        env:
+          NETWORK: ${{ inputs.network }}
+          RUN_ID: ${{ inputs.run-id }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -ltr $ZOMBIE_BITE_BASE_PATH
+          ls /tmp/ci
 
       - name: install_pet_deps
         shell: bash
