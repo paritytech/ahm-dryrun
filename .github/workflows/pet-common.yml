@@ -65,7 +65,7 @@ jobs:
           gh run download $RUN_ID -p "${NETWORK}-post-migration-db*" -D $ZOMBIE_BITE_BASE_PATH
           ls -ltr $ZOMBIE_BITE_BASE_PATH
 
-      - name: check_artifacts
+      - name: mv_artifacts
         shell: bash
         env:
           NETWORK: ${{ inputs.network }}
@@ -73,7 +73,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           ls -ltr $ZOMBIE_BITE_BASE_PATH
-          ls /tmp/ci
+          ARTIFACTS_DIR=$(ls -t $ZOMBIE_BITE_BASE_PATH|head -1)
+          mv $ZOMBIE_BITE_BASE_PATH "${ZOMBIE_BITE_BASE_PATH}/post"
+          ls -ltr $ZOMBIE_BITE_BASE_PATH
+          ls -ltr "${ZOMBIE_BITE_BASE_PATH}/post"
+
 
       - name: install_pet_deps
         shell: bash
