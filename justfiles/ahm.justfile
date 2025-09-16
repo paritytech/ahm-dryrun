@@ -118,7 +118,7 @@ test-once runtime base_path:
     abs_base_path=$(realpath {{ base_path }})
     just ahm rust-test {{ runtime }} ${abs_base_path}
 
-# Run post rust migration tests
+# Run post-migration Rust tests
 rust-test runtime base_path:
     #!/usr/bin/env bash
     set -ex
