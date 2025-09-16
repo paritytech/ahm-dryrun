@@ -118,7 +118,7 @@ export const proxyTests: MigrationTest = {
 
         // Verify RC is empty after migration
         const rc_proxies_after = await rc_api_after.query.proxy.proxies.entries();
-        assert(rc_proxies_after.length === 0, 'RC proxies should be empty after migration');
+        assert(rc_proxies_after.length === 0, `RC proxies should be empty after migration, but found ${rc_proxies_after.length} entries`);
 
         // Get current AH state
         const ah_post = await collectProxyEntries(ah_api_after);
