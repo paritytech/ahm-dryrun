@@ -1,0 +1,124 @@
+name: PET Common
+
+on:
+  workflow_call:
+    inputs:
+      network:
+        required: true
+        type: string
+      run-id:
+        description: "optional run-id to download the artifacts"
+        required: false
+        type: string
+
+env:
+  ZOMBIE_BITE_BASE_PATH: "/tmp/ci"
+  AHM_BINS: "/tmp"
+  RUSTFLAGS: "-A warnings"
+
+jobs:
+  run_zombie_bite:
+    runs-on: parity-default
+    container:
+      image: docker.io/paritytech/ci-unified:bullseye-1.88.0-2025-06-27-v202507221446
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: extractions/setup-just@v2
+
+      - name: Fetch cache
+        uses: Swatinem/rust-cache@a95ba195448af2da9b00fb742d14ffaaf3c21f43 # v2.7.0
+        with:
+          shared-key: "ahm-cache"
+          cache-on-failure: true # cache allways
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: download_doppelganger_binaries
+        uses: ./.github/actions/download-doppelganger-binaries
+        with:
+          destination-path: ${{ env.AHM_BINS }}
+
+      - name: create_base_dir
+        shell: bash
+        run: |
+          mkdir $ZOMBIE_BITE_BASE_PATH
+
+      - name: download_artifacts
+        id: download_artifacts
+        shell: bash
+        env:
+          NETWORK: ${{ inputs.network }}
+          RUN_ID: ${{ inputs.run-id }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ $RUN_ID == "" ]]; then
+            echo "getting the latest completed run"
+            RUN_ID=$(gh run list --workflow zombie-bite.yml -b main -e schedule -L 1 -s completed  --json databaseId | jq -r '.[].databaseId')
+          fi;
+
+          echo "downloading artifacts from https://github.com/paritytech/ahm-dryrun/actions/runs/${RUN_ID}"
+          gh run download $RUN_ID -p "${NETWORK}-post-migration-db*" -D $ZOMBIE_BITE_BASE_PATH
+          ls -ltr $ZOMBIE_BITE_BASE_PATH
+
+      - name: install_pet_deps
+        shell: bash
+        run: |
+          npm install -g yarn
+          yarn install
+
+      - name: run_zombie_bite_post
+        shell: bash
+        run: |
+          export PATH=${AHM_BINS}:$PATH
+          # remove previous nohup.out
+          rm nohup.out || true
+          nohup just zb spawn $ZOMBIE_BITE_BASE_PATH post > nohup.out 2>&1 &
+
+      - name: wait_for_network
+        uses: ./.github/actions/wait-zb-network-ready
+
+      - name: get_current_block_number
+        shell: bash
+        run: |
+          COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
+          echo "::group::get-current-block-number"
+          echo "Getting current block from http://127.0.0.1:${COL_PORT}"
+          # Get current block number using JSON-RPC
+          BLOCK_NUMBER=$(curl -s -H "Content-Type: application/json" -d '{"id":1,"jsonrpc":"2.0","method":"chain_getHeader","params":[]}' http://127.0.0.1:${COL_PORT} | jq -r '.result.number')
+          if [ -z "$BLOCK_NUMBER" ] || [ "$BLOCK_NUMBER" = "null" ]; then
+            echo "Failed to get block number from endpoint"
+            exit 1
+          fi
+          # Convert from hex to decimal
+          BLOCK_NUMBER_DECIMAL=$((BLOCK_NUMBER))
+          echo "Current block number: $BLOCK_NUMBER_DECIMAL"
+          echo "ASSETHUB_BLOCK_NUMBER=$BLOCK_NUMBER_DECIMAL" >> $GITHUB_ENV
+          echo "::endgroup::"
+
+      - name: run_polkadot_ecosystem_tests
+        shell: bash
+        env:
+          ASSETHUB_BLOCK_NUMBER: ${{ env.ASSETHUB_BLOCK_NUMBER }}
+          NETWORK: ${{ inputs.network }}
+        run: |
+          COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
+          echo "::group::run-polkadot-ecosystem-tests"
+          cd polkadot-ecosystem-tests
+          # Install dependencies
+          yarn install
+          # export endpoint
+          export ASSETHUB${NETWORK}_ENDPOINT="ws://127.0.0.1:${COL_PORT}"
+          export ASSETHUB${NETWORK}_BLOCK_NUMBER=ASSETHUB_BLOCK_NUMBER
+          # Run the assetHubKusama tests
+          echo "Running tests with:"
+          echo "  ASSETHUB${NETWORK}_ENDPOINT=$ASSETHUB${NETWORK}_ENDPOINT"
+          echo "  ASSETHUB${NETWORK}_BLOCK_NUMBER=$ASSETHUB${NETWORK}_BLOCK_NUMBER"
+          yarn test assetHubKusama
+          echo "::endgroup::"

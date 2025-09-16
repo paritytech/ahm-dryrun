@@ -1,0 +1,31 @@
+name: PET tests
+
+on:
+  push:
+    branches: [add-pet-workflow]
+  workflow_dispatch:
+    inputs:
+      run-id:
+        description: 'run-id to download the snaps, if not provided we will use the latest ones.'
+        required: false
+      network:
+        description: 'Network to use, default kusama'
+        default: 'kusama'
+        type: choice
+        options:
+          - kusama
+          - polkadot
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  try_runtime_rust_tests:
+    # run by demand
+    uses: ./.github/workflows/pet-common.yml
+    with:
+      network: ${{ inputs.network }}
+      run-id: ${{ inputs.run-id }}
