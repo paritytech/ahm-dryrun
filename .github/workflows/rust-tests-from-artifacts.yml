@@ -88,11 +88,11 @@ jobs:
           ls -la ${{ env.ARTIFACT_DIR }}
           echo "::endgroup::"
 
-      - name: Organize snapshot files
+      - name: Verify snapshot files
         env:
           NETWORK: ${{ inputs.network }}
         run: |
-          echo "::group::Organizing snapshot files"
+          echo "::group::Verifying snapshot files"
 
           # Check what we have
           echo "Current directory structure:"
