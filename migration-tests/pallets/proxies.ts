@@ -89,6 +89,20 @@ export const proxyTests: MigrationTest = {
         const rc_proxies_map = await collectProxyEntries(rc_api_before);
         const ah_proxies_map = await collectProxyEntries(ah_api_before);
 
+        const entries = await rc_api_before.query.proxy.proxies.entries();
+
+        let free_proxies = 0;
+        for (const [key, value] of entries) {
+            const delegator = key.args[0] as unknown as AccountId32;
+            const nonce = await rc_api_before.query.system.account(delegator).then(acc => acc.nonce.toNumber());
+            console.log(`Nonce: ${nonce}`);
+            if (nonce === 0) {
+                free_proxies++;
+                console.log(`Free proxy: ${delegator.toString()}`);
+            }
+        }
+        console.log(`Free proxies: ${free_proxies}`);
+
         return {
             rc_pre_payload: rc_proxies_map,
             ah_pre_payload: ah_proxies_map,
