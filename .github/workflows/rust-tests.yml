@@ -1,8 +1,6 @@
 name: Rust tests
 
 on:
-  push:
-    branches: [kiz-rust-test]
   workflow_dispatch:
     inputs:
       run-id:
