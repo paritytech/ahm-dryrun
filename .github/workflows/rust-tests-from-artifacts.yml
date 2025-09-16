@@ -74,13 +74,13 @@ jobs:
 
           # Download artifacts
           echo "::group::Downloading artifacts"
-          cd ${{ env.ARTIFACT_DIR }}
-
-          gh run download $RUN_ID -n "$pre_artifact"
-          gh run download $RUN_ID -n "$post_artifact"
+          
+          # Download to the artifact directory but run from workspace
+          gh run download $RUN_ID -n "$pre_artifact" -D ${{ env.ARTIFACT_DIR }}
+          gh run download $RUN_ID -n "$post_artifact" -D ${{ env.ARTIFACT_DIR }}
 
           echo "Downloaded files:"
-          ls -la
+          ls -la ${{ env.ARTIFACT_DIR }}
           echo "::endgroup::"
 
       - name: Organize snapshot files
