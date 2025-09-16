@@ -22,7 +22,7 @@ permissions: {}
 
 jobs:
   try_runtime_rust_tests:
-    # run by  by demand
+    # run by demand
     uses: ./.github/workflows/try-runtime-tests-common.yml
     with:
       network: ${{ inputs.network }}
