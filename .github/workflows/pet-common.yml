@@ -38,6 +38,11 @@ jobs:
         with:
           node-version: 22
 
+      - name: install_zombie_bite
+        shell: bash
+        run: |
+          just install-zombie-bite
+
       - name: download_doppelganger_binaries
         uses: ./.github/actions/download-doppelganger-binaries
         with:
@@ -76,6 +81,8 @@ jobs:
           mv "${ZOMBIE_BITE_BASE_PATH}/${ARTIFACTS_DIR_NAME}/spawn" $ZOMBIE_BITE_BASE_PATH
           mv "${ZOMBIE_BITE_BASE_PATH}/${ARTIFACTS_DIR_NAME}/ports.json" $ZOMBIE_BITE_BASE_PATH
 
+          echo "after moving artifacts"
+          ls -ltr $ZOMBIE_BITE_BASE_PATH
 
       - name: install_pet_deps
         shell: bash
