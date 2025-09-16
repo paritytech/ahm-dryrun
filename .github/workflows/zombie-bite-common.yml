@@ -36,7 +36,7 @@ jobs:
       - uses: extractions/setup-just@v2
 
       - name: Fetch cache
-        uses: Swatinem/rust-cache@a95ba195448af2da9b00fb742d14ffaaf3c21f43 # v2.7.0
+        uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2.8.0
         with:
           shared-key: "ahm-cache"
           cache-on-failure: true # cache allways
@@ -276,7 +276,7 @@ jobs:
           NETWORK: ${{ inputs.network }}
         run: |
           export PATH=${AHM_BINS}:$PATH
-          just ahm migration-test $NETWORK $ZOMBIE_BITE_BASE_PATH
+          just ahm rust-test $NETWORK $ZOMBIE_BITE_BASE_PATH
 
       - name: run_zombie_bite_post
         shell: bash
