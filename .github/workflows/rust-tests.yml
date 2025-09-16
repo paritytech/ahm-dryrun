@@ -1,4 +1,4 @@
-name: AHM try-runtime tests
+name: Rust tests
 
 on:
   workflow_dispatch:
@@ -23,7 +23,7 @@ permissions: {}
 jobs:
   try_runtime_rust_tests:
     # run by demand
-    uses: ./.github/workflows/try-runtime-tests-common.yml
+    uses: ./.github/workflows/rust-tests-common.yml
     with:
       network: ${{ inputs.network }}
       run-id: ${{ inputs.run-id }}

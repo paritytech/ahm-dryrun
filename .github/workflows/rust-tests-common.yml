@@ -1,4 +1,4 @@
-name: Try-runtime test Common
+name: Rust test Common
 
 on:
   workflow_call:
