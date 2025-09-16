@@ -30,15 +30,10 @@ jobs:
       - uses: extractions/setup-just@v2
 
       - name: Fetch cache
-        uses: Swatinem/rust-cache@a95ba195448af2da9b00fb742d14ffaaf3c21f43 # v2.7.0
+        uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2.8.0
         with:
           shared-key: "ahm-cache"
           cache-on-failure: true # cache allways
-
-      - name: install_try_runtime_cli
-        shell: bash
-        run: |
-          just install-try-runtime
 
       - name: create_base_dir
         shell: bash
@@ -61,27 +56,43 @@ jobs:
           echo "downloading artifacts from https://github.com/paritytech/ahm-dryrun/actions/runs/${RUN_ID}"
           gh run download $RUN_ID -p "${NETWORK}-try-runtime*" -D $SNAPS_PATH
           ls -ltr $SNAPS_PATH
-          ARTIFACTS_DIR=$(ls -t $SNAPS_PATH|head -1)
-          echo "SNAPS_FULL_PATH=$SNAPS_PATH/$ARTIFACTS_DIR" >> $GITHUB_OUTPUT
+          ARTIFACTS_DIR_PRE=$(ls -t $SNAPS_PATH|grep try-runtime-pre)
+          ARTIFACTS_DIR_POST=$(ls -t $SNAPS_PATH|grep try-runtime-post)
+          echo "ARTIFACTS_DIR_PRE=$SNAPS_PATH/$ARTIFACTS_DIR_PRE" >> $GITHUB_OUTPUT
+          echo "ARTIFACTS_DIR_POST=$SNAPS_PATH/$ARTIFACTS_DIR_POST" >> $GITHUB_OUTPUT
 
-      - name: verify_snaps
+      - name: verify_and_move_snaps
         shell: bash
         env:
           NETWORK: ${{ inputs.network }}
         run: |
-          for i in rc-pre.snap ah-pre.snap rc-post.snap ah-post.snap;do
-            if [ ! -f "$NETWORK-$i" ]; then
-              echo "ERROR: Could not find $NETWORK-$i"
+          for i in rc-pre.snap ah-pre.snap;do
+            if [ ! -f "${SNAPS_PATH}/${NETWORK}-${i}" ]; then
+              echo "ERROR: Could not find ${NETWORK}-${i}"
               exit 1
+            else
+              mv "${SNAPS_PATH}/${NETWORK}-${i}" $SNAPS_PATH
             fi
           done;
+
+          for i in rc-post.snap ah-post.snap;do
+            if [ ! -f "${SNAPS_PATH}/${NETWORK}-${i}" ]; then
+              echo "ERROR: Could not find ${NETWORK}-${i}"
+              exit 1
+            else
+              mv "${SNAPS_PATH}/${NETWORK}-${i}" $SNAPS_PATH
+            fi
+          done;
+
+          echo "final files in ${SNAPS_PATH}"
+          ls -ltr $SNAPS_PATH
+
 
       - name: run_rust_tests
         shell: bash
         env:
           NETWORK: ${{ inputs.network }}
         run: |
-          export SNAPS_FULL_PATH="${{ steps.download_artifacts.outputs.SNAPS_FULL_PATH }}"
 
           # Run the rust tests
-          just ahm rust-test $NETWORK $SNAPS_FULL_PATH
+          just ahm rust-test $NETWORK $SNAPS_PATH
