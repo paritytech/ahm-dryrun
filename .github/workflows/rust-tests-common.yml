@@ -67,20 +67,20 @@ jobs:
           NETWORK: ${{ inputs.network }}
         run: |
           for i in rc-pre.snap ah-pre.snap;do
-            if [ ! -f "${SNAPS_PATH}/${NETWORK}-${i}" ]; then
+            if [ ! -f "${{ steps.download_artifacts.outputs.ARTIFACTS_DIR_PRE }}/${NETWORK}-${i}" ]; then
               echo "ERROR: Could not find ${NETWORK}-${i}"
               exit 1
             else
-              mv "${SNAPS_PATH}/${NETWORK}-${i}" $SNAPS_PATH
+              mv "${{ steps.download_artifacts.outputs.ARTIFACTS_DIR_PRE }}/${NETWORK}-${i}" $SNAPS_PATH
             fi
           done;
 
           for i in rc-post.snap ah-post.snap;do
-            if [ ! -f "${SNAPS_PATH}/${NETWORK}-${i}" ]; then
+            if [ ! -f "${{ steps.download_artifacts.outputs.ARTIFACTS_DIR_POST }}/${NETWORK}-${i}" ]; then
               echo "ERROR: Could not find ${NETWORK}-${i}"
               exit 1
             else
-              mv "${SNAPS_PATH}/${NETWORK}-${i}" $SNAPS_PATH
+              mv "${{ steps.download_artifacts.outputs.ARTIFACTS_DIR_POST }}/${NETWORK}-${i}" $SNAPS_PATH
             fi
           done;
 
