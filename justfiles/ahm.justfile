@@ -140,7 +140,7 @@ rust-test runtime base_path:
     SNAP_AH_PRE="${SNAP_BASE}/ah-pre.snap" \
     SNAP_RC_POST="${SNAP_BASE}/rc-post.snap" \
     SNAP_AH_POST="${SNAP_BASE}/ah-post.snap" \
-    RUST_LOG="error" \
+    RUST_LOG="runtime::ah-migrator=debug,runtime::rc-migrator=debug,remote-ext=info,runtime=warn,runtime=info" \
     cargo test -p polkadot-integration-tests-ahm  \
       --release \
       --features {{ runtime }}-ahm \
