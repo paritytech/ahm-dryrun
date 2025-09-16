@@ -56,8 +56,8 @@ jobs:
           echo "downloading artifacts from https://github.com/paritytech/ahm-dryrun/actions/runs/${RUN_ID}"
           gh run download $RUN_ID -p "${NETWORK}-try-runtime*" -D $SNAPS_PATH
           ls -ltr $SNAPS_PATH
-          ARTIFACTS_DIR_PRE=$(ls -t $SNAPS_PATH|grep try-runtime-pre)
-          ARTIFACTS_DIR_POST=$(ls -t $SNAPS_PATH|grep try-runtime-post)
+          ARTIFACTS_DIR_PRE=$(ls -t $SNAPS_PATH|grep try-runtime-snaps-pre)
+          ARTIFACTS_DIR_POST=$(ls -t $SNAPS_PATH|grep try-runtime-snaps-post)
           echo "ARTIFACTS_DIR_PRE=$SNAPS_PATH/$ARTIFACTS_DIR_PRE" >> $GITHUB_OUTPUT
           echo "ARTIFACTS_DIR_POST=$SNAPS_PATH/$ARTIFACTS_DIR_POST" >> $GITHUB_OUTPUT
 
