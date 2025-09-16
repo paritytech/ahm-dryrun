@@ -73,8 +73,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           ls -ltr $ZOMBIE_BITE_BASE_PATH
-          ARTIFACTS_DIR=$(ls -t $ZOMBIE_BITE_BASE_PATH|head -1)
-          mv $ARTIFACTS_DIR "${ZOMBIE_BITE_BASE_PATH}/post"
+          ARTIFACTS_DIR_NAME=$(ls -t $ZOMBIE_BITE_BASE_PATH|head -1)
+          mv "${ZOMBIE_BITE_BASE_PATH}/${ARTIFACTS_DIR_NAME} "${ZOMBIE_BITE_BASE_PATH}/post"
           ls -ltr $ZOMBIE_BITE_BASE_PATH
           ls -ltr "${ZOMBIE_BITE_BASE_PATH}/post"
 
