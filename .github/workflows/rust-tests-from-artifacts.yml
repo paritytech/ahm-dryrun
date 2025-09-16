@@ -89,7 +89,6 @@ jobs:
           echo "::endgroup::"
 
       - name: Organize snapshot files
-        working-directory: ${{ env.ARTIFACT_DIR }}
         env:
           NETWORK: ${{ inputs.network }}
         run: |
@@ -97,10 +96,12 @@ jobs:
 
           # Check what we have
           echo "Current directory structure:"
-          find . -name "*.snap" -type f
+          find ${{ env.ARTIFACT_DIR }} -name "*.snap" -type f
 
           # Move and rename files to expected locations
           # The files should be directly in the artifact directory after download
+          cd ${{ env.ARTIFACT_DIR }}
+
           if [ -f "$NETWORK-rc-pre.snap" ]; then
             mv "$NETWORK-rc-pre.snap" rc-pre.snap
           else
