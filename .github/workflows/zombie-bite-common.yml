@@ -333,6 +333,7 @@ jobs:
 
       - name: run_polkadot_ecosystem_tests
         id: run_polkadot_ecosystem_tests
+        timeout-minutes: 15
         shell: bash
         env:
           ASSETHUB_BLOCK_NUMBER: ${{ env.ASSETHUB_BLOCK_NUMBER }}
