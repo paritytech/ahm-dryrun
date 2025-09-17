@@ -2,6 +2,8 @@
 
 ## 🧟 Test Results
 
+[![AHM flow (all steps)](https://github.com/paritytech/ahm-dryrun/actions/workflows/zombie-bite.yml/badge.svg)](https://github.com/paritytech/ahm-dryrun/actions/workflows/zombie-bite.yml)
+
 The AHM flow runs automatically:
 - **Kusama**: Daily
 - **Polkadot**: Sundays only
@@ -12,7 +14,7 @@ Each workflow run tests:
 - 📊 **TS Comparison**: State comparison tests
 - 🧪 **PET Tests**: Polkadot Ecosystem Tests
 
-**[View Latest Test Results →](https://github.com/paritytech/ahm-dryrun/actions/workflows/zombie-bite.yml)**
+**[View Latest Test Results →](https://github.com/paritytech/ahm-dryrun/actions/workflows/zombie-bite.yml). See `workflow_summary` step for results of each step.**
 
 > 💡 Click on any workflow run to see the detailed test summary table showing which tests passed or failed.
 
