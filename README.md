@@ -1,5 +1,14 @@
 # TL;DR [![AHM flow (all steps)](https://github.com/paritytech/ahm-dryrun/actions/workflows/zombie-bite.yml/badge.svg)](https://github.com/paritytech/ahm-dryrun/actions/workflows/zombie-bite.yml)
 
+## 🧟 Zombie Bite Test Status
+
+| Network | Workflow Status | Last Run |
+|---------|----------------|----------|
+| **Kusama** | [![Kusama AHM](https://github.com/paritytech/ahm-dryrun/actions/workflows/zombie-bite.yml/badge.svg?event=schedule)](https://github.com/paritytech/ahm-dryrun/actions/workflows/zombie-bite.yml) | Daily |
+| **Polkadot** | [![Polkadot AHM](https://github.com/paritytech/ahm-dryrun/actions/workflows/zombie-bite.yml/badge.svg?event=schedule)](https://github.com/paritytech/ahm-dryrun/actions/workflows/zombie-bite.yml) | Sundays |
+
+> 💡 **Note**: Click on the badges above to see detailed test results including Migration, Rust Tests, TS Comparison, and PET Tests status in the workflow summary.
+
 To run AHM for Kusama or Polkadot using Zombie-Bite:
 ```
 git clone --recursive git@github.com:paritytech/ahm-dryrun.git && \
