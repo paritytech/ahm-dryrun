@@ -1,13 +1,20 @@
-# TL;DR [![AHM flow (all steps)](https://github.com/paritytech/ahm-dryrun/actions/workflows/zombie-bite.yml/badge.svg)](https://github.com/paritytech/ahm-dryrun/actions/workflows/zombie-bite.yml)
+# TL;DR
 
-## 🧟 Zombie Bite Test Status
+## 🧟 Test Results
 
-| Network | Workflow Status | Last Run |
-|---------|----------------|----------|
-| **Kusama** | [![Kusama AHM](https://github.com/paritytech/ahm-dryrun/actions/workflows/zombie-bite.yml/badge.svg?event=schedule)](https://github.com/paritytech/ahm-dryrun/actions/workflows/zombie-bite.yml) | Daily |
-| **Polkadot** | [![Polkadot AHM](https://github.com/paritytech/ahm-dryrun/actions/workflows/zombie-bite.yml/badge.svg?event=schedule)](https://github.com/paritytech/ahm-dryrun/actions/workflows/zombie-bite.yml) | Sundays |
+The AHM flow runs automatically:
+- **Kusama**: Daily
+- **Polkadot**: Sundays only
 
-> 💡 **Note**: Click on the badges above to see detailed test results including Migration, Rust Tests, TS Comparison, and PET Tests status in the workflow summary.
+Each workflow run tests:
+- 🔄 **Migration**: Asset Hub migration execution
+- 🦀 **Rust Tests**: Runtime verification tests
+- 📊 **TS Comparison**: State comparison tests
+- 🧪 **PET Tests**: Polkadot Ecosystem Tests
+
+**[View Latest Test Results →](https://github.com/paritytech/ahm-dryrun/actions/workflows/zombie-bite.yml)**
+
+> 💡 Click on any workflow run to see the detailed test summary table showing which tests passed or failed.
 
 To run AHM for Kusama or Polkadot using Zombie-Bite:
 ```

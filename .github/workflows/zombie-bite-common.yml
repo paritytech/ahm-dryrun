@@ -401,25 +401,4 @@ jobs:
           echo "**Network:** ${{ inputs.network }}" >> $GITHUB_STEP_SUMMARY
           echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "**Run:** ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
-          
-          # Create JSON for badges
-          cat > test-results-${{ inputs.network }}.json <<EOF
-          {
-            "network": "${{ inputs.network }}",
-            "migration": "${{ steps.zombie_bite_step_spawn_and_run_migration.outcome }}",
-            "rust_tests": "${{ steps.try_runtime_rust_test.outcome }}",
-            "ts_tests": "${{ steps.ts_comparison_tests.outcome }}",
-            "pet_tests": "${{ steps.run_polkadot_ecosystem_tests.outcome }}",
-            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-            "commit": "${{ github.sha }}",
-            "run_id": "${{ github.run_id }}"
-          }
-          EOF
-          
-      - name: upload_test_results_json
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-${{ inputs.network }}-${{ github.sha }}
-          path: test-results-${{ inputs.network }}.json
 
