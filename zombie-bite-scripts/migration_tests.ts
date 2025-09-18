@@ -58,9 +58,12 @@ const DEFAULT_NETWORK = "westend";
 
 const main = async () => {
   let maybe_network_or_path = process.argv[2];
+  let network = process.argv[3] || DEFAULT_NETWORK;
+  
   if(!maybe_network_or_path) {
     logger.warn(`⚠️ No path or network was provided, using default (${DEFAULT_NETWORK}) ⚠️`);
     maybe_network_or_path = DEFAULT_NETWORK
+    network = DEFAULT_NETWORK;
   }
 
   const getInfoFn = NETWORKS[maybe_network_or_path] ? NETWORKS[maybe_network_or_path] : () => extractFromPath(maybe_network_or_path);
@@ -82,10 +85,24 @@ const main = async () => {
     ah_endpoint,
     ah_before,
     ah_after,
+    network as "Westend" | "Paseo" | "Kusama" | "Polkadot"
   );
   process.exit(0);
 };
 
 main().catch((error) => {
-  logger.error('Migration tests error', { error });
+  const errorInfo = error instanceof Error 
+    ? {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      }
+    : { 
+        error: String(error) 
+      };
+      
+  logger.error('Migration tests error', { 
+    service: "ahm",
+    error: errorInfo 
+  });
 });
