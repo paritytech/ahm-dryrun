@@ -67,9 +67,7 @@ function getTestsForNetwork(network: Network): MigrationTest[] {
 }
 
 export async function runTests(context: TestContext, network: Network) {
-  console.log("Running tests for network:", network);
   const tests = getTestsForNetwork(network);
-  console.log("Tests:", tests);
 
   for (const test of tests) {
     let stage = "pre-check";
