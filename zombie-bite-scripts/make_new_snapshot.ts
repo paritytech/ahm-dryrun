@@ -16,14 +16,15 @@ async function getAHPort(basePath: string): Promise<number> {
       const ports = JSON.parse(readFileSync(portsFile, 'utf8'));
       return ports.collator_port;
     } catch (error) {
-      console.error("Could not read ports.json, using default port 63168");
-      return 63168; // Default relay chain port
+      console.error("Could not read ports.json, using default port 63170");
+      return 63170; // Default AH port
     }
   }
 
 async function main() {
   // Connect to asset hub node!
-  const wsProvider = new WsProvider(`ws://127.0.0.1:63170`);
+  const ahPort = await getAHPort(basePath);
+  const wsProvider = new WsProvider(`ws://127.0.0.1:${ahPort}`);
   const api = await ApiPromise.create({ provider: wsProvider });
 
   // Get initial era
