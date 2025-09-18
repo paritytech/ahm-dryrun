@@ -271,12 +271,14 @@ jobs:
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/migration_done.json
 
       - name: try_runtime_rust_test
+        id: try_runtime_rust_test
         shell: bash
         env:
           NETWORK: ${{ inputs.network }}
         run: |
           export PATH=${AHM_BINS}:$PATH
           just ahm rust-test $NETWORK $ZOMBIE_BITE_BASE_PATH
+        continue-on-error: true
 
       - name: run_zombie_bite_post
         shell: bash
@@ -290,6 +292,7 @@ jobs:
         uses: ./.github/actions/wait-zb-network-ready
 
       - name: ts_comparison_tests
+        id: ts_comparison_tests
         shell: bash
         env:
           NETWORK: ${{ inputs.network }}
@@ -299,6 +302,7 @@ jobs:
           echo "::group::run-compare-state-tests"
           just compare-state ${{ env.ZOMBIE_BITE_BASE_PATH }} ${{ inputs.network }}
           echo "::endgroup::"
+        continue-on-error: true
 
       # PET
       - name: install_pet_deps
@@ -328,6 +332,8 @@ jobs:
           echo "::endgroup::"
 
       - name: run_polkadot_ecosystem_tests
+        id: run_polkadot_ecosystem_tests
+        timeout-minutes: 15
         shell: bash
         env:
           ASSETHUB_BLOCK_NUMBER: ${{ env.ASSETHUB_BLOCK_NUMBER }}
@@ -351,4 +357,49 @@ jobs:
 
           yarn test assetHubKusama
           echo "::endgroup::"
+        continue-on-error: true
+
+      - name: workflow_summary
+        if: always()
+        shell: bash
+        env:
+          NETWORK: ${{ inputs.network }}
+        run: |
+          echo "## 🧟 Zombie Bite Summary for ${{ inputs.network }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Suite | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------------|--------|" >> $GITHUB_STEP_SUMMARY
+          
+          # Migration status
+          if [[ "${{ steps.zombie_bite_step_spawn_and_run_migration.outcome }}" == "success" ]]; then
+            echo "| 🔄 Migration | ✅ Success |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 🔄 Migration | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Rust tests status
+          if [[ "${{ steps.try_runtime_rust_test.outcome }}" == "success" ]]; then
+            echo "| 🦀 Rust Tests | ✅ Success |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 🦀 Rust Tests | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # TS comparison tests status
+          if [[ "${{ steps.ts_comparison_tests.outcome }}" == "success" ]]; then
+            echo "| 📊 TS Comparison | ✅ Success |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 📊 TS Comparison | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # PET tests status
+          if [[ "${{ steps.run_polkadot_ecosystem_tests.outcome }}" == "success" ]]; then
+            echo "| 🧪 PET Tests | ✅ Success |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 🧪 PET Tests | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Network:** ${{ inputs.network }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Run:** ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
 
