@@ -1,0 +1,30 @@
+name: Rust tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      run-id:
+        description: 'run-id to download the snaps, if not provided we will use the latest ones.'
+        required: false
+      network:
+        description: 'Network to use (ALL means polkadot)'
+        default: 'kusama'
+        type: choice
+        options:
+          - kusama
+          - polkadot
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  rust_tests:
+    # run by demand
+    uses: ./.github/workflows/rust-tests-common.yml
+    with:
+      network: ${{ inputs.network }}
+      run-id: ${{ inputs.run-id }}
+

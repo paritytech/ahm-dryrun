@@ -7,3 +7,7 @@ package-lock.json
 logs/
 .claude
 zombie-bite/doppelganger/bin/
+.vscode
+
+# for local testing, it is conventional in this repo to use `migration-run-{id}` as the name of the folder; ignore it
+migration-run-*

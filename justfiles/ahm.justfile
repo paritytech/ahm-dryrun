@@ -116,22 +116,33 @@ test-once runtime base_path:
 
     # Run post migration tests
     abs_base_path=$(realpath {{ base_path }})
-    just ahm migration-test {{ runtime }} ${abs_base_path}
+    just ahm rust-test {{ runtime }} ${abs_base_path}
 
-# Run post migration tests
-migration-test runtime base_path:
+# Run post-migration Rust tests
+rust-test runtime base_path:
     #!/usr/bin/env bash
     set -ex
 
     cd runtimes
+
+    # Check if base_path is absolute or relative
+    if [[ "{{ base_path }}" = /* ]]; then
+        # Absolute path - use as is. Used in CI
+        SNAP_BASE="{{ base_path }}"
+    else
+        # Relative path - prepend ../../../
+        # Used when locally running `just ahm rust-test ...`
+        SNAP_BASE="../../../{{ base_path }}"
+    fi
+
     SKIP_WASM_BUILD=1 \
-    SNAP_RC_PRE="{{ base_path }}/{{ runtime }}-rc-pre.snap" \
-    SNAP_AH_PRE="{{ base_path }}/{{ runtime }}-ah-pre.snap" \
-    SNAP_RC_POST="{{ base_path }}/{{ runtime }}-rc-post.snap" \
-    SNAP_AH_POST="{{ base_path }}/{{ runtime }}-ah-post.snap" \
-    RUST_LOG="error" \
+    SNAP_RC_PRE="${SNAP_BASE}/{{ runtime }}-rc-pre.snap" \
+    SNAP_AH_PRE="${SNAP_BASE}/{{ runtime }}-ah-pre.snap" \
+    SNAP_RC_POST="${SNAP_BASE}/{{ runtime }}-rc-post.snap" \
+    SNAP_AH_POST="${SNAP_BASE}/{{ runtime }}-ah-post.snap" \
+    RUST_LOG="runtime::ah-migrator=debug,runtime::rc-migrator=debug,remote-ext=info,runtime=warn,runtime=info" \
     cargo test -p polkadot-integration-tests-ahm  \
       --release \
       --features {{ runtime }}-ahm \
       --features try-runtime \
-      post_migration_checks_only -- --ignored --nocapture --test-threads 1
+      post_migration_checks_only -- --include-ignored --nocapture --test-threads 1
