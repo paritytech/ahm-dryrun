@@ -39,6 +39,7 @@ jobs:
         uses: ./.github/actions/get-latest-ahm-run-id
         with:
           gh-token: ${{ github.token }}
+          network: ${{ inputs.network || 'kusama' }}
 
       - name: verify
         shell: bash
@@ -50,12 +51,12 @@ jobs:
     uses: ./.github/workflows/migration-test-common.yml
     with:
       run-id: ${{ needs.get-run-id.outputs.RUN_ID }}
-      network: ${{ inputs.network || 'polkadot' }}
+      network: ${{ inputs.network || 'kusama' }}
 
   run-tests-with-id:
     if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.run-id != '' }}
     uses: ./.github/workflows/migration-test-common.yml
     with:
       run-id: ${{ inputs.run-id }}
-      network: ${{ inputs.network || 'polkadot' }}
+      network: ${{ inputs.network || 'kusama' }}
 
