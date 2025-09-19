@@ -3,6 +3,7 @@ import assert from 'assert';
 import { PreCheckContext, PostCheckContext, MigrationTest, PreCheckResult } from '../types.js';
 import type { Codec } from '@polkadot/types/types';
 import type { StorageKey } from '@polkadot/types';
+import { translateAccountRcToAh } from '../utils/account_translation.js';
 
 export const vestingTests: MigrationTest = {
     name: 'vesting_pallet',
@@ -55,34 +56,42 @@ export const vestingTests: MigrationTest = {
 
         // Check if each entry from RC exists in AH after migration with same values
         for (const [key, value] of rc_vestingEntries_before) {
-            const accountId = key.args[0].toString();
+            const rcAccountId = key.args[0].toString();
+            const translatedAccountId = translateAccountRcToAh(rcAccountId);
+            
             const matchingEntry = ah_vestingEntries_after.find(
-                ([k, _]) => k.args[0].toString() === accountId
+                ([k, _]) => k.args[0].toString() === translatedAccountId
             );
 
             assert(
                 matchingEntry !== undefined,
-                `Account ${accountId} vesting entry not found after migration`
+                `Account ${translatedAccountId} (from RC account ${rcAccountId}) vesting entry not found after migration`
             );
 
             const [_, afterValue] = matchingEntry;
             assert.deepStrictEqual(
                 value.toJSON(),
                 afterValue.toJSON(),
-                `Vesting details mismatch for account ${accountId}`
+                `Vesting details mismatch for account ${translatedAccountId}`
             );
         }
 
         // Check no extra entries in AH after migration
         for (const [key, _] of ah_vestingEntries_after) {
-            const accountId = key.args[0].toString();
+            const ahAccountId = key.args[0].toString();
+            
+            // Check if this AH account corresponds to any translated RC account
             const matchingEntry = rc_vestingEntries_before.find(
-                ([k, _]: [StorageKey, Codec]) => k.args[0].toString() === accountId
+                ([k, _]: [StorageKey, Codec]) => {
+                    const rcAccountId = k.args[0].toString();
+                    const translatedRcAccountId = translateAccountRcToAh(rcAccountId);
+                    return translatedRcAccountId === ahAccountId;
+                }
             );
 
             assert(
                 matchingEntry !== undefined,
-                `Unexpected vesting entry found after migration for account ${accountId}`
+                `Unexpected vesting entry found after migration for account ${ahAccountId}`
             );
         }
 
