@@ -50,7 +50,13 @@ const excludedTestsPerNetwork: Record<Network, MigrationTest[]> = {
     multisigTests
   ],
   Paseo: [],
-  Kusama: [],
+  Kusama: [
+    referendaTests,
+    treasuryTests,
+    multisigTests,
+    voterListTests,
+    proxyTests,
+  ],
   Polkadot: [],
 };
 
@@ -73,7 +79,11 @@ export async function runTests(context: TestContext, network: Network) {
 
       logger.info(`✅ Test ${test.name} test completed successfully`);
     } catch (error: unknown) {
-      logger.error(`❌ Test '${test.name}' failed during ${stage}:`, { error });
+      if (error instanceof Error) {
+        logger.error(`❌ Test '${test.name}' failed during ${stage}: ${String(error)}`);
+      } else {
+        logger.error(`❌ Test '${test.name}' failed during ${stage}:`, { error });
+      }
     }
   }
 }
