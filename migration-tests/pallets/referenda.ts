@@ -240,32 +240,33 @@ async function convert_rc_to_ah_referendum(rc_api_after: ApiDecoration<'promise'
     const rcInfoJson = rcInfo.toJSON() as any;    
     // Handle different referendum states
     if (rcInfoJson.ongoing) {
-        const rcStatus = rcInfoJson.ongoing;
+        return rcInfo;
+        // const rcStatus = rcInfoJson.ongoing;
 
-        const ah_proposal = await map_rc_ah_call(rc_api_after, ah_api_after, rcStatus, rc_indexToPalletName);
-        if (!ah_proposal) {
-            // Call conversion failed, return cancelled
-            const now = get_current_block_number();
-            return create_cancelled_referendum(now, rcStatus.submission_deposit, rcStatus.decision_deposit);
-        }
+        // const ah_proposal = await map_rc_ah_call(rc_api_after, ah_api_after, rcStatus, rc_indexToPalletName);
+        // if (!ah_proposal) {
+        //     // Call conversion failed, return cancelled
+        //     const now = get_current_block_number();
+        //     return create_cancelled_referendum(now, rcStatus.submission_deposit, rcStatus.decision_deposit);
+        // }
 
-        // Construct the AH status using converted parts
-        const ah_status = {
-            track: rcStatus.track,
-            // unlike Rust, there is no need to convert origin here; json are mapped 1:1
-            origin: rcStatus.origin,
-            proposal: ah_proposal,
-            enactment: rcStatus.enactment,
-            submitted: rcStatus.submitted,
-            submission_deposit: rcStatus.submission_deposit,
-            decision_deposit: rcStatus.decision_deposit,
-            deciding: rcStatus.deciding,
-            tally: rcStatus.tally,
-            in_queue: rcStatus.in_queue,
-            alarm: rcStatus.alarm,
-        };
+        // // Construct the AH status using converted parts
+        // const ah_status = {
+        //     track: rcStatus.track,
+        //     // unlike Rust, there is no need to convert origin here; json are mapped 1:1
+        //     origin: rcStatus.origin,
+        //     proposal: ah_proposal,
+        //     enactment: rcStatus.enactment,
+        //     submitted: rcStatus.submitted,
+        //     submission_deposit: rcStatus.submission_deposit,
+        //     decision_deposit: rcStatus.decision_deposit,
+        //     deciding: rcStatus.deciding,
+        //     tally: rcStatus.tally,
+        //     in_queue: rcStatus.in_queue,
+        //     alarm: rcStatus.alarm,
+        // };
 
-        return create_ongoing_referendum(ah_status);
+        // return create_ongoing_referendum(ah_status);
     } else if (rcInfoJson.Approved) {
         return rcInfo; // No conversion needed
     } else if (rcInfoJson.Rejected) {
