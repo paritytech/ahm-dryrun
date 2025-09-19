@@ -6,12 +6,11 @@ on:
         description: "Optional run-id to download artifacts"
         required: false
       network:
-        description: "network to use, default polkadot"
-        default: 'paseo'
+        description: "network to use, default kusama"
+        default: 'kusama'
         type: choice
         options:
-          #- paseo
-
+          - kusama
           - polkadot
 
   # Disabled now, until we have kusama runtime for testing.
