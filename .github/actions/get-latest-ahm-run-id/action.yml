@@ -5,6 +5,9 @@ inputs:
   gh-token:
     description: "GH token"
     required: true
+  network:
+    description: "network to use. e.g kusama"
+    require: true
 outputs:
   RUN_ID:
     description: "RUN_ID available"
@@ -17,14 +20,16 @@ runs:
       id: get_id
       env:
         GH_TOKEN: ${{ inputs.gh-token }}
-
+        NETWORK: ${{ inputs.network }}
       shell: bash
       run: |
         echo "getting the latest completed run..."
         gh run list --workflow zombie-bite.yml -b main -L 20 -s completed
         RUN_ID=""
+        JOB_NAME="zombie_bite_${NETWORK}"
+        echo "search for ${JOB_NAME}"
         for id in $(gh run list --workflow zombie-bite.yml -b main -L 20 -s completed --json databaseId | jq -r '.[].databaseId');do
-          CONCLUSION=$(gh run view $id  --json jobs | jq -r '.jobs[] | select(.name == "zombie_bite_paseo / run_zombie_bite") | .conclusion');
+          CONCLUSION=$(gh run view $id  --json jobs | jq --arg job_name $JOB_NAME -r '.jobs[] | select(.name | contains($job_name)) | .conclusion');
           if [[ $CONCLUSION == "success" ]]; then
             RUN_ID=$id;
             break

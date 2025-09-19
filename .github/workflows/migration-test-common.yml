@@ -5,7 +5,7 @@ on:
       network:
         type: string
         required: false
-        default: 'paseo'
+        default: 'kusama'
       run-id:
         type: string
         description: "run-id of the artifacts to download"
