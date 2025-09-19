@@ -107,9 +107,9 @@ jobs:
         run: |
           COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
           echo "::group::get-current-block-number"
-          echo "Getting current block from http://127.0.0.1:${COL_PORT}"
+          echo "Getting current block from http://localhost:${COL_PORT}"
           # Get current block number using JSON-RPC
-          BLOCK_NUMBER=$(curl -s -H "Content-Type: application/json" -d '{"id":1,"jsonrpc":"2.0","method":"chain_getHeader","params":[]}' http://127.0.0.1:${COL_PORT} | jq -r '.result.number')
+          BLOCK_NUMBER=$(curl -s -H "Content-Type: application/json" -d '{"id":1,"jsonrpc":"2.0","method":"chain_getHeader","params":[]}' http://localhost:${COL_PORT} | jq -r '.result.number')
           if [ -z "$BLOCK_NUMBER" ] || [ "$BLOCK_NUMBER" = "null" ]; then
             echo "Failed to get block number from endpoint"
             exit 1
@@ -132,11 +132,11 @@ jobs:
           # Install dependencies
           yarn install
           # export endpoint
-          export ASSETHUB${NETWORK}_ENDPOINT="ws://127.0.0.1:${COL_PORT}"
-          export ASSETHUB${NETWORK}_BLOCK_NUMBER=ASSETHUB_BLOCK_NUMBER
+          export ASSETHUB${NETWORK^^}_ENDPOINT="ws://localhost:${COL_PORT}"
+          export ASSETHUB${NETWORK^^}_BLOCK_NUMBER=ASSETHUB_BLOCK_NUMBER
           # Run the assetHubKusama tests
           echo "Running tests with:"
-          echo "  ASSETHUB${NETWORK}_ENDPOINT=$ASSETHUB${NETWORK}_ENDPOINT"
-          echo "  ASSETHUB${NETWORK}_BLOCK_NUMBER=$ASSETHUB${NETWORK}_BLOCK_NUMBER"
+          echo "  ASSETHUB${NETWORK^^}_ENDPOINT=$ASSETHUB${NETWORK^^}_ENDPOINT"
+          echo "  ASSETHUB${NETWORK^^}_BLOCK_NUMBER=$ASSETHUB${NETWORK^^}_BLOCK_NUMBER"
           yarn test assetHubKusama
           echo "::endgroup::"
