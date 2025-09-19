@@ -29,7 +29,7 @@ runs:
         JOB_NAME="zombie_bite_${NETWORK} / run_zombie_bite"
         echo "search for ${JOB_NAME}"
         for id in $(gh run list --workflow zombie-bite.yml -b main -L 20 -s completed --json databaseId | jq -r '.[].databaseId');do
-          CONCLUSION=$(gh run view $id  --json jobs | jq --arg job_name ${JOB_NAME} -r '.jobs[] | select(.name == $job_name) | .conclusion');
+          CONCLUSION=$(gh run view $id  --json jobs | jq --arg job_name $JOB_NAME -r '.jobs[] | select(.name == "$job_name") | .conclusion');
           if [[ $CONCLUSION == "success" ]]; then
             RUN_ID=$id;
             break
