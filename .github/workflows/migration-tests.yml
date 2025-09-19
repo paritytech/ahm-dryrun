@@ -39,6 +39,7 @@ jobs:
         uses: ./.github/actions/get-latest-ahm-run-id
         with:
           gh-token: ${{ github.token }}
+          network: ${{ inputs.network || 'kusama' }}
 
       - name: verify
         shell: bash

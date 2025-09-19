@@ -80,7 +80,7 @@ const main = async () => {
   } = getInfoFn();
 
   // TODO: add network (default is Westend) parameter to the main function
-  await migrationTestMain(
+  let errs = await migrationTestMain(
     rc_endpoint,
     rc_before,
     rc_after,
@@ -89,7 +89,8 @@ const main = async () => {
     ah_after,
     network as "Westend" | "Paseo" | "Kusama" | "Polkadot"
   );
-  process.exit(0);
+
+  process.exit(errs.length);
 };
 
 main().catch((error) => {
