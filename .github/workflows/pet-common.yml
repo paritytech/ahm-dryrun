@@ -17,28 +17,9 @@ env:
   RUSTFLAGS: "-A warnings"
 
 jobs:
-  define-matrix:
-    runs-on: ubuntu-latest
-    outputs:
-      tests: ${{ steps.tests.outputs.tests }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - name: Define Tests
-        id: tests
-        run: |
-          cd polkadot-ecosystem-tests
-          echo tests=$(cd packages && ls */src/*.test.ts | grep assetHubKusama | grep e2e | jq -R -s -c 'split("\n")[:-1]') >> "$GITHUB_OUTPUT"
-
   run_pet_tests:
-    needs: define-matrix
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        tests: ${{ fromJSON(needs.define-matrix.outputs.tests) }}
 
     steps:
       - uses: actions/checkout@v4
@@ -157,6 +138,11 @@ jobs:
           echo "Running tests with:"
           echo "  ASSETHUB${NETWORK^^}_ENDPOINT=$ASSETHUB${NETWORK^^}_ENDPOINT"
           echo "  ASSETHUB${NETWORK^^}_BLOCK_NUMBER=$ASSETHUB${NETWORK^^}_BLOCK_NUMBER"
-          echo "Running test: ${{ matrix.tests }}"
-          yarn test "packages/${{ matrix.tests }}"
+          # Run only KAH E2E tests
+          cd packages && ls */src/*.test.ts | grep assetHubKusama | grep e2e | while read test; do
+            echo "Running E2E test: $test"
+            cd ..
+            yarn test "packages/$test"
+            cd packages
+          done
           echo "::endgroup::"
