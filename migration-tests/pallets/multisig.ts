@@ -102,7 +102,7 @@ export const multisigTests: MigrationTest = {
         
         assert(
             accountsWithBalanceCount + improper_accounts === rc_multisigs_before.length,
-            `Expected ${rc_multisigs_before.length} depositor accounts to have balance on AH, but found ${accountsWithBalanceCount - improper_accounts}.`
+            `Expected ${rc_multisigs_before.length} depositor accounts to have balance on AH, but found ${accountsWithBalanceCount + improper_accounts}.`
         );
 
     }
