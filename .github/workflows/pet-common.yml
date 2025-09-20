@@ -140,17 +140,34 @@ jobs:
           echo "  ASSETHUB${NETWORK^^}_BLOCK_NUMBER=$ASSETHUB${NETWORK^^}_BLOCK_NUMBER"
           # Run only KAH E2E tests
           failed_count=0
+          test_results=""
           ls packages/*/src/*.test.ts | grep assetHubKusama | grep e2e > /tmp/test_list.txt
 
           while read test; do
             echo "Running E2E test: $test"
             if ! yarn test "$test"; then
               failed_count=$((failed_count + 1))
-              echo "❌ Test failed: $test"
+              test_results="${test_results}❌ Test failed: $test\n"
             else
-              echo "✅ Test passed: $test"
+              test_results="${test_results}✅ Test passed: $test\n"
             fi
           done < /tmp/test_list.txt
+          
+          # Save results for next step
+          echo "$failed_count" > /tmp/failed_count.txt
+          echo -e "$test_results" > /tmp/test_results.txt
+          echo "::endgroup::"
+
+      - name: report_test_results
+        if: always()
+        shell: bash
+        run: |
+          echo "::group::report-test-results"
+          failed_count=$(cat /tmp/failed_count.txt)
+          test_results=$(cat /tmp/test_results.txt)
+          
+          echo "=== Test Results ==="
+          echo -e "$test_results"
           
           if [ $failed_count -gt 0 ]; then
             echo "Total failed tests: $failed_count"
