@@ -139,10 +139,23 @@ jobs:
           echo "  ASSETHUB${NETWORK^^}_ENDPOINT=$ASSETHUB${NETWORK^^}_ENDPOINT"
           echo "  ASSETHUB${NETWORK^^}_BLOCK_NUMBER=$ASSETHUB${NETWORK^^}_BLOCK_NUMBER"
           # Run only KAH E2E tests
-          cd packages && ls */src/*.test.ts | grep assetHubKusama | grep e2e | while read test; do
+          failed_count=0
+          ls packages/*/src/*.test.ts | grep assetHubKusama | grep e2e > /tmp/test_list.txt
+
+          while read test; do
             echo "Running E2E test: $test"
-            cd ..
-            yarn test "packages/$test"
-            cd packages
-          done
+            if ! yarn test "$test"; then
+              failed_count=$((failed_count + 1))
+              echo "❌ Test failed: $test"
+            else
+              echo "✅ Test passed: $test"
+            fi
+          done < /tmp/test_list.txt
+          
+          if [ $failed_count -gt 0 ]; then
+            echo "Total failed tests: $failed_count"
+            exit $failed_count
+          else
+            echo "All tests passed!"
+          fi
           echo "::endgroup::"
