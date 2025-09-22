@@ -600,26 +600,26 @@ const BIFROST_DERIVED_TRANSLATIONS_RAW: DerivedTranslationEntry[] = [
   },
   // Kusama/Westend/Paseo - para2001 Utility index 2 (Bifrost derived account)
   {
-    rcAccount: hexToU8a("f1c5ca0368e7a567945a59aaea92b9be1e0794fe5e077d017462b7ce8fc1ed7c"),
+    rcAccount: hexToU8a("1e365411cfd0b0f78466be433a2ec5f7d545c5e28cb2e9a31ce97d4a28447dfc"),
     rcAddress: "5CkKS3YMx64TguUYrMERc5Bn6Mn2aKMUkcozUFREQDgHS3Tv",
     derivationIndex: 2,
-    ahAccount: hexToU8a("c94f02677ffb78dc23fbd3b95beb2650fe4fa5c466e5aedee74e89d96351800c"),
+    ahAccount: hexToU8a("a5604357a36f5cbfa6926f05f5c6397a901c373ed1c7249d348c5d13d059b1c6"),
     ahAddress: "5FoYMVucmT552GDMWfYNxcF2XnuuvLbJHt7mU6DfDCpUAS2Y",
   },
   // Kusama/Westend/Paseo - para2001 Utility index 3 (Bifrost derived account)
   {
-    rcAccount: hexToU8a("f1c5ca0368e7a567945a59aaea92b9be1e0794fe5e077d017462b7ce8fc1ed7c"),
+    rcAccount: hexToU8a("234744488721d7ff43126a4784abe296de003c08fec5acece4af661eb97b78ed"),
     rcAddress: "5Crxhmiw5CQq3Mnfcu3dR3yJ3YpjbxjqaeDFtNNtqgmcnN4S",
     derivationIndex: 3,
-    ahAccount: hexToU8a("c94f02677ffb78dc23fbd3b95beb2650fe4fa5c466e5aedee74e89d96351800c"),
+    ahAccount: hexToU8a("92b0105f2681981d7691b31b3569125b9ae0cd0adebb6b37d804788fbbebf5c6"),
     ahAddress: "5FP39fgPYhJw3vcLwSMqMnwBuEVGexUMG6JQLPR9yPVhq6Wy",
   },
   // Kusama/Westend/Paseo - para2001 Utility index 4 (Bifrost derived account)
   {
-    rcAccount: hexToU8a("f1c5ca0368e7a567945a59aaea92b9be1e0794fe5e077d017462b7ce8fc1ed7c"),
+    rcAccount: hexToU8a("30b32c5f11bc7c29f1e5b24680eab529f7a7b44c6be698f11bc009f4001035b1"),
     rcAddress: "5DAZP4gZKZafGv42uoWNTMau4tYuDd2XteJLGL4upermhQpn",
     derivationIndex: 4,
-    ahAccount: hexToU8a("c94f02677ffb78dc23fbd3b95beb2650fe4fa5c466e5aedee74e89d96351800c"),
+    ahAccount: hexToU8a("8044838bb093ef30cdae6923760b9f9f92a0817f3812acfb27b26a831acd3848"),
     ahAddress: "5ExtLdYnjHLJbngU1QpumjPieCGaCXwwkH1JrFBQ9GATuNGv",
   },
 ];
