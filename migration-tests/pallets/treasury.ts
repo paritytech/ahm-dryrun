@@ -209,7 +209,7 @@ async function verifyAhStorageMatchesRcPreMigrationData(
     for (const [rcKey, rcValue] of rc_spends_before) {
         const spendId = rcKey.args[0].toHuman();
         const matchingEntry = ah_spends_after.find(
-            ([ahKey, _]) => ahKey.args[0].toHuman() === spendId
+            ([ahKey, _]) => ahKey.args[0].eq(rcKey.args[0])
         );
 
         assert(
