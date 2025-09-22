@@ -61,7 +61,6 @@ const main = async () => {
   let network = process.argv[3]  || DEFAULT_NETWORK;
   // ensure capitalized
   network = network.charAt(0).toUpperCase() + network.slice(1);
-
   
   if(!maybe_network_or_path) {
     logger.warn(`⚠️ No path or network was provided, using default (${DEFAULT_NETWORK}) ⚠️`);
