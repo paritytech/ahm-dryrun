@@ -137,7 +137,7 @@ This will spawn a new instance of the network (with the state of the previous st
 
 Then you can run tests in a _different terminal_.
 
-### E2E Tests on Westend Asset Hub
+### E2E Tests on Asset Hub
 
 Polkadot Ecosystem Tests offers, among other things, a suite of E2E tests that run against live networks.
 The PET submodule in this repository is set to a branch which extends the existing E2E suites, originally designed to
@@ -152,8 +152,9 @@ In order to run PET tests on the post-migration Asset Hub chain of a network `<n
     ASSETHUB<network-name>_ENDPOINT=ws://[::1]:<collator-port>
     ASSETHUB<network-name>_BLOCK_NUMBER=<block-number>
     ```
-    - The `<network-name>` must be fully capitalized: `ASSETHUBKUSAMA_ENDPOINT` will work; `ASSETHUBkusama_ENDPOINT` will not
-    - use `ws://[::1]:<collator-port>` and `ws://localhost:<collator-port>` over `ws://127.0.0.1:<collator-port>` 
+    - Some warnings below ⚠️:
+    - ⚠️🚨 The `<network-name>` must be fully capitalized: `ASSETHUBKUSAMA_ENDPOINT` will work; `ASSETHUBkusama_ENDPOINT` will not
+    - ⚠️🚨 use `ws://[::1]:<collator-port>` and `ws://localhost:<collator-port>` over `ws://127.0.0.1:<collator-port>` 
 4. Run `just e2e-tests packages/<network-name>`
 
 All steps but the last can be ignored on chains that have already migrated.
