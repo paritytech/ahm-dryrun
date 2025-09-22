@@ -66,7 +66,8 @@ function getTestsForNetwork(network: Network): MigrationTest[] {
   return allTests.filter(test => !excludedTests.includes(test));
 }
 
-export async function runTests(context: TestContext, network: Network) {
+export async function runTests(context: TestContext, network: Network): Promise<string[]> {
+  let errs: string[] = [];
   const tests = getTestsForNetwork(network);
 
   for (const test of tests) {
@@ -79,13 +80,12 @@ export async function runTests(context: TestContext, network: Network) {
 
       logger.info(`✅ Test ${test.name} test completed successfully`);
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        logger.error(`❌ Test '${test.name}' failed during ${stage}: ${String(error)}`);
-      } else {
-        logger.error(`❌ Test '${test.name}' failed during ${stage}:`, { error });
-      }
+      logger.error(`❌ Test '${test.name}' failed during ${stage}:`, { error });
+      errs.push(test.name);
     }
   }
+
+  return errs;
 }
 
 export async function main(
@@ -96,7 +96,7 @@ export async function main(
   ah_before: number,
   ah_after: number,
   network: Network = "Westend",
-) {
+): Promise<string[]> {
   const relayChainConfig: ChainConfig = {
     endpoint: rc_endpoint,
     before_block: rc_before,
@@ -137,13 +137,15 @@ export async function main(
   // to correctly state assert, the best is to take Westend before 1st and WAH after 2nd,
   // though knowing that between 1st and 2nd migration in WAH, few users might have added few things
   // so a small mismatch might be expected.
-  await runTests(context, network);
+  const errs = await runTests(context, network);
 
   // TODO (@x3c41a): `treasury_spend` is using hardcoded polkadot endpoints
   // await treasury_spend();
 
   // Disconnect all APIs
   await Promise.all(apis.map((api) => api.disconnect()));
+
+  return errs;
 }
 
 export interface ChainConfig {
