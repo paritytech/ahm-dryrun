@@ -369,35 +369,35 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Test Suite | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|------------|--------|" >> $GITHUB_STEP_SUMMARY
-          
+
           # Migration status
           if [[ "${{ steps.zombie_bite_step_spawn_and_run_migration.outcome }}" == "success" ]]; then
             echo "| 🔄 Migration | ✅ Success |" >> $GITHUB_STEP_SUMMARY
           else
             echo "| 🔄 Migration | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           # Rust tests status
           if [[ "${{ steps.try_runtime_rust_test.outcome }}" == "success" ]]; then
             echo "| 🦀 Rust Tests | ✅ Success |" >> $GITHUB_STEP_SUMMARY
           else
             echo "| 🦀 Rust Tests | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           # TS comparison tests status
           if [[ "${{ steps.ts_comparison_tests.outcome }}" == "success" ]]; then
             echo "| 📊 TS Comparison | ✅ Success |" >> $GITHUB_STEP_SUMMARY
           else
             echo "| 📊 TS Comparison | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           # PET tests status
           if [[ "${{ steps.run_polkadot_ecosystem_tests.outcome }}" == "success" ]]; then
             echo "| 🧪 PET Tests | ✅ Success |" >> $GITHUB_STEP_SUMMARY
           else
             echo "| 🧪 PET Tests | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Network:** ${{ inputs.network }}" >> $GITHUB_STEP_SUMMARY
           echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
