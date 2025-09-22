@@ -21,7 +21,6 @@ export const multisigTests: MigrationTest = {
         const rc_multisigEntries = await rc_api_before.query.multisig.multisigs.entries();
         // Get existential deposit value
         const existentialDeposit = await rc_api_before.consts.balances.existentialDeposit;
-        logger.info('Existential deposit:', { value: existentialDeposit.toString() });
 
         const rc_multisigs: MultisigEntry[] = rc_multisigEntries.map(([key, value]) => {
             const multisigData = value.toJSON() as any;
