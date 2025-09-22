@@ -8,8 +8,11 @@ on:
       network:
         description: "network to use, default kusama"
         default: 'kusama'
+        description: "network to use, default kusama"
+        default: 'kusama'
         type: choice
         options:
+          - kusama
           - kusama
           - polkadot
 
@@ -39,6 +42,7 @@ jobs:
         uses: ./.github/actions/get-latest-ahm-run-id
         with:
           gh-token: ${{ github.token }}
+          network: ${{ inputs.network || 'kusama' }}
 
       - name: verify
         shell: bash
