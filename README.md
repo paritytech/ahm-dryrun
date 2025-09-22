@@ -172,7 +172,7 @@ just e2e-tests
 # Run every test that exists for Kusama chains: relay, AH, bridge hub, coretime, etc.
 just e2e-tests packages/kusama
 # Run every test suite that exists for PAH, E2E or otherwise
-just e2e-tests assetHubPaseo
+`just e2e-tests assetHubPaseo`
 # Run the E2E test suite for the scheduler pallet.
 # Note that this will do so for both the relay chain, and KAH: post-AHM, the AH's runtime will contain that pallet, and
 # recall that the branch this repository's PET submodule uses implements that test suite.
