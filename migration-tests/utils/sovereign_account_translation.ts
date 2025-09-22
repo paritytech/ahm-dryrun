@@ -537,6 +537,109 @@ export const DERIVED_TRANSLATIONS: DerivedTranslationEntry[] = DERIVED_TRANSLATI
   return aHex.localeCompare(bHex);
 });
 
+// Secondary list containg the Bifrost soverign accounts on different chains for explicit verification
+// GDocs link containing the account mappings: https://docs.google.com/document/d/1DXYWPXEwi0DkDfG8Fb2ZTI4DQBAz87DBCIW7yQIVrj0/edit?tab=t.0
+const BIFROST_SOV_TRANSLATIONS_RAW: TranslationEntry[] = [
+  // Polkadot/Westend/Paseo - para:2030 (Bifrost sovereign account)
+  {
+    rcAccount: hexToU8a("70617261ee070000000000000000000000000000000000000000000000000000"),
+    rcAddress: "13YMK2eeopZtUNpeHnJ1Ws2HqMQG6Ts9PGCZYGyFbSYoZfcm",
+    ahAccount: hexToU8a("7369626cee070000000000000000000000000000000000000000000000000000"),
+    ahAddress: "13cKp89TtYknbyYnqnF6dWN75q5ZosvFSuqzoEVkUAaNR47A",
+  },
+  // Kusama/Westend/Paseo - para:2001 (Bifrost derived account)
+  {
+    rcAccount: hexToU8a("70617261d1070000000000000000000000000000000000000000000000000000"),
+    rcAddress: "5Ec4AhPV91i9yNuiWuNunPf6AQCYDhFTTA4G5QCbtqYApH9E",
+    ahAccount: hexToU8a("7369626cd1070000000000000000000000000000000000000000000000000000"),
+    ahAddress: "5Eg2fntJDju46yds4uKzu2zuQssqw7JZWohhLMj6mZZjg2pK",
+  },
+];
+
+// Secondary list containg the Bifrost derived accounts on different chains for explicit verification
+const BIFROST_DERIVED_TRANSLATIONS_RAW: DerivedTranslationEntry[] = [
+  // Polkadot/Westend/Paseo - para2030 Utility index 0 (Bifrost derived account)
+  {
+    rcAccount: hexToU8a("adcea185416af2d3e8df8c1c8ee8a634bf1c3275b3820cb6d935300d42c73b2a"),
+    rcAddress: "14vtfeKAVKh1Jzb3s7e43SqZ3zB5MLsdCxZPoKDxeoCFKLu5",
+    derivationIndex: 0,
+    ahAccount: hexToU8a("69f880852768f2d00acfa7824533aa4378e48d1b9fbc6b44500e8b98debeaccd"),
+    ahAddress: "5ETehspFKFNpBbe5DsfuziN6BWq5Qwp1J8qcTQQoAxwa7BsS",
+  },
+  // Polkadot/Westend/Paseo - para2030 Utility index 1 (Bifrost derived account)
+  {
+    rcAccount: hexToU8a("96d16ffaae52a6a195b6d9f0b365677aedb77675f423813112c5ef5434523622"),
+    rcAddress: "14QkQ7wVVDRrhbC1UqHsFwKFUns1SRud94CXMWGHWB8Jhtro",
+    derivationIndex: 1,
+    ahAccount: hexToU8a("39d0a3c793549eda79b5cd3f8ab1c5879326352eb6583696249e38684b9451c1"),
+    ahAddress: "5DNWZkkAxLhqF8tevcbRGyARAVM7abukftmqvoDFUN5dDDDz",
+  },
+  // Polkadot/Westend/Paseo - para2030 Utility index 2 (Bifrost derived account)
+  {
+    rcAccount: hexToU8a("773d6cf20cfdcbb74194ec6afca483facb3751bfb8933163f2e184f2b1424fb1"),
+    rcAddress: "13hLwqcVHqjiJMbZhR9LtfdhoxmTdssi7Kp8EJaW2yfk3knK",
+    derivationIndex: 2,
+    ahAccount: hexToU8a("77c1303f053dc000bcacd591d0267f79ef5124a5b1a9207e8e1b29da9270e3a8"),
+    ahAddress: "5EmiwjDYiackJma1GW3aBbQ74rLfWh756UKDb7Cm83XDkUUZ",
+  },
+  // Kusama/Westend/Paseo - para2001 Utility index 0 (Bifrost derived account)
+  {
+    rcAccount: hexToU8a("5a53736d8e96f1c007cf0d630acf5209b20611617af23ce924c8e25328eb5d28"),
+    rcAddress: "5E78xTBiaN3nAGYtcNnqTJQJqYAkSDGggKqaDfpNsKyPpbcb",
+    derivationIndex: 0,
+    ahAccount: hexToU8a("290bf94235666a351d9c8082c77e689813a905d0bbffdbd8b4a619ec5303ba27"),
+    ahAddress: "5CzXNqgBZT5yMpMETdfH55saYNKQoJBXsSfnu4d2s1ejYFir",
+  },
+  // Kusama/Westend/Paseo - para2001 Utility index 1 (Bifrost derived account)
+  {
+    rcAccount: hexToU8a("f1c5ca0368e7a567945a59aaea92b9be1e0794fe5e077d017462b7ce8fc1ed7c"),
+    rcAddress: "5HXi9pzWnTQzk7VKzY6VQn92KfWCcA5NbSm53uKHrYU1VsjP",
+    derivationIndex: 1,
+    ahAccount: hexToU8a("c94f02677ffb78dc23fbd3b95beb2650fe4fa5c466e5aedee74e89d96351800c"),
+    ahAddress: "5GcexD4YNqcKTbW1YWDRczQzpxic61byeNeLaHgqQHk8pxQJ",
+  },
+  // Kusama/Westend/Paseo - para2001 Utility index 2 (Bifrost derived account)
+  {
+    rcAccount: hexToU8a("f1c5ca0368e7a567945a59aaea92b9be1e0794fe5e077d017462b7ce8fc1ed7c"),
+    rcAddress: "5CkKS3YMx64TguUYrMERc5Bn6Mn2aKMUkcozUFREQDgHS3Tv",
+    derivationIndex: 2,
+    ahAccount: hexToU8a("c94f02677ffb78dc23fbd3b95beb2650fe4fa5c466e5aedee74e89d96351800c"),
+    ahAddress: "5FoYMVucmT552GDMWfYNxcF2XnuuvLbJHt7mU6DfDCpUAS2Y",
+  },
+  // Kusama/Westend/Paseo - para2001 Utility index 3 (Bifrost derived account)
+  {
+    rcAccount: hexToU8a("f1c5ca0368e7a567945a59aaea92b9be1e0794fe5e077d017462b7ce8fc1ed7c"),
+    rcAddress: "5Crxhmiw5CQq3Mnfcu3dR3yJ3YpjbxjqaeDFtNNtqgmcnN4S",
+    derivationIndex: 3,
+    ahAccount: hexToU8a("c94f02677ffb78dc23fbd3b95beb2650fe4fa5c466e5aedee74e89d96351800c"),
+    ahAddress: "5FP39fgPYhJw3vcLwSMqMnwBuEVGexUMG6JQLPR9yPVhq6Wy",
+  },
+  // Kusama/Westend/Paseo - para2001 Utility index 4 (Bifrost derived account)
+  {
+    rcAccount: hexToU8a("f1c5ca0368e7a567945a59aaea92b9be1e0794fe5e077d017462b7ce8fc1ed7c"),
+    rcAddress: "5DAZP4gZKZafGv42uoWNTMau4tYuDd2XteJLGL4upermhQpn",
+    derivationIndex: 4,
+    ahAccount: hexToU8a("c94f02677ffb78dc23fbd3b95beb2650fe4fa5c466e5aedee74e89d96351800c"),
+    ahAddress: "5ExtLdYnjHLJbngU1QpumjPieCGaCXwwkH1JrFBQ9GATuNGv",
+  },
+];
+
+// Sort the Bifrost sovereign translations by rcAccount hex values for binary search optimization
+export const BIFROST_SOV_TRANSLATIONS: TranslationEntry[] = BIFROST_SOV_TRANSLATIONS_RAW.sort((a, b) => {
+  // Convert Uint8Array to hex string for comparison
+  const aHex = Array.from(a.rcAccount).map(b => b.toString(16).padStart(2, '0')).join('');
+  const bHex = Array.from(b.rcAccount).map(b => b.toString(16).padStart(2, '0')).join('');
+  return aHex.localeCompare(bHex);
+});
+
+// Sort the Bifrost derived translations by rcAccount hex values for binary search optimization
+export const BIFROST_DERIVED_TRANSLATIONS: DerivedTranslationEntry[] = BIFROST_DERIVED_TRANSLATIONS_RAW.sort((a, b) => {
+  // Convert Uint8Array to hex string for comparison
+  const aHex = Array.from(a.rcAccount).map(b => b.toString(16).padStart(2, '0')).join('');
+  const bHex = Array.from(b.rcAccount).map(b => b.toString(16).padStart(2, '0')).join('');
+  return aHex.localeCompare(bHex);
+});
+
 // Helper function to convert Uint8Array to hex string for debugging
 export function u8aToHex(bytes: Uint8Array): string {
     return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
