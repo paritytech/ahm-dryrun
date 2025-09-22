@@ -53,14 +53,6 @@ const excludedTestsPerNetwork: Record<Network, MigrationTest[]> = {
   Kusama: [
     referendaTests,
     treasuryTests,
-    multisigTests,
-    voterListTests,
-    proxyTests,
-  ],
-  Kusama: [
-    referendaTests,
-    treasuryTests,
-    multisigTests,
     voterListTests,
     proxyTests,
   ],

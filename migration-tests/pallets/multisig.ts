@@ -70,7 +70,7 @@ export const multisigTests: MigrationTest = {
         for (const rcEntry of rc_multisigs_before) {
             // Validate that depositor is a proper account ID before querying
             if (!rcEntry.depositor || rcEntry.depositor.length < MIN_SS58_ADDRESS_LENGTH) {
-                logger.warn(`Skipping invalid depositor account: ${rcEntry.depositor}`);
+                logger.debug(`Skipping invalid depositor account: ${rcEntry.depositor}`);
                 improper_accounts++;
                 continue;
             }
