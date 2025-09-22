@@ -51,8 +51,6 @@ const excludedTestsPerNetwork: Record<Network, MigrationTest[]> = {
   ],
   Paseo: [],
   Kusama: [
-    referendaTests,
-    treasuryTests,
     voterListTests,
     proxyTests,
   ],
