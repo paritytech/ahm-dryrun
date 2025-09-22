@@ -51,12 +51,20 @@ jobs:
     uses: ./.github/workflows/migration-test-common.yml
     with:
       run-id: ${{ needs.get-run-id.outputs.RUN_ID }}
+<<<<<<< HEAD
       network: ${{ inputs.network }}
+=======
+      network: ${{ inputs.network || 'kusama' }}
+>>>>>>> main
 
   run-tests-with-id:
     if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.run-id != '' }}
     uses: ./.github/workflows/migration-test-common.yml
     with:
       run-id: ${{ inputs.run-id }}
+<<<<<<< HEAD
       network: ${{ inputs.network }}
+=======
+      network: ${{ inputs.network || 'kusama' }}
+>>>>>>> main
 
