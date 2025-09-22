@@ -84,7 +84,6 @@ export async function runTests(context: TestContext, network: Network): Promise<
       } else {
         logger.error(`❌ Test '${test.name}' failed during ${stage}:`, { error });
       }
-      logger.error(`❌ Test '${test.name}' failed during ${stage}:`, { error });
       errs.push(test.name);
     }
   }
