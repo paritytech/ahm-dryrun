@@ -8,11 +8,8 @@ on:
       network:
         description: "network to use, default kusama"
         default: 'kusama'
-        description: "network to use, default kusama"
-        default: 'kusama'
         type: choice
         options:
-          - kusama
           - kusama
           - polkadot
 
