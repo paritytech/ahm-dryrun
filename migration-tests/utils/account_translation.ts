@@ -1,6 +1,8 @@
 import {
   SOV_TRANSLATIONS,
   DERIVED_TRANSLATIONS,
+  BIFROST_SOV_TRANSLATIONS,
+  BIFROST_DERIVED_TRANSLATIONS,
   u8aToHex,
   TranslationEntry,
   DerivedTranslationEntry,
@@ -27,6 +29,13 @@ export class AccountTranslator {
       return derivedResult.account;
     }
 
+    // Try Bifrost translation if sovereign and derived translation fails
+    // This checks both BIFROST_SOV_TRANSLATIONS and BIFROST_DERIVED_TRANSLATIONS
+    const bifrostResult = this.maybeBifrostTranslate(account);
+    if (bifrostResult) {
+      return bifrostResult;
+    }
+
     // Return original account if no translation found
     return account;
   }
@@ -49,15 +58,18 @@ export class AccountTranslator {
     return undefined;
   }
 
-  // Binary search for sovereign translations
-  private binarySearchSovereign(account: string): TranslationEntry | undefined {
+  // Generic binary search for translation entries
+  private binarySearch<T extends { rcAccount: Uint8Array }>(
+    account: string,
+    translations: T[]
+  ): T | undefined {
     // For hex search, use binary search since data is sorted by hex
     let left = 0;
-    let right = SOV_TRANSLATIONS.length - 1;
+    let right = translations.length - 1;
 
     while (left <= right) {
       const mid = Math.floor((left + right) / 2);
-      const entry = SOV_TRANSLATIONS[mid];
+      const entry = translations[mid];
 
       const searchKey = u8aToHex(entry.rcAccount);
       const compareResult = account.localeCompare(searchKey);
@@ -72,6 +84,11 @@ export class AccountTranslator {
     }
 
     return undefined;
+  }
+
+  // Binary search for sovereign translations
+  private binarySearchSovereign(account: string): TranslationEntry | undefined {
+    return this.binarySearch(account, SOV_TRANSLATIONS);
   }
 
   private maybeDerivedTranslate(
@@ -101,28 +118,78 @@ export class AccountTranslator {
   private binarySearchDerived(
     account: string
   ): DerivedTranslationEntry | undefined {
-    // For hex search, use binary search since data is sorted by hex
-    let left = 0;
-    let right = DERIVED_TRANSLATIONS.length - 1;
+    return this.binarySearch(account, DERIVED_TRANSLATIONS);
+  }
 
-    while (left <= right) {
-      const mid = Math.floor((left + right) / 2);
-      const entry = DERIVED_TRANSLATIONS[mid];
+  private maybeBifrostTranslate(account: string): string | undefined {
+    // Try Bifrost sovereign translation first
+    const bifrostSovereignResult = this.maybeBifrostSovereignTranslate(account);
+    if (bifrostSovereignResult) {
+      return bifrostSovereignResult;
+    }
 
-      const searchKey = u8aToHex(entry.rcAccount);
-      const compareResult = account.localeCompare(searchKey);
-
-      if (compareResult === 0) {
-        return entry;
-      } else if (compareResult < 0) {
-        right = mid - 1;
-      } else {
-        left = mid + 1;
-      }
+    // Try Bifrost derived translation if sovereign translation fails
+    const bifrostDerivedResult = this.maybeBifrostDerivedTranslate(account);
+    if (bifrostDerivedResult) {
+      return bifrostDerivedResult.account;
     }
 
     return undefined;
   }
+
+  private maybeBifrostSovereignTranslate(account: string): string | undefined {
+    // Try to find by hex account first using binary search
+    let translation = this.binarySearchBifrostSovereign(account);
+
+    // If not found by hex, try by account address using linear search since account addresses are not sorted
+    if (!translation) {
+      translation = BIFROST_SOV_TRANSLATIONS.find(
+        (entry) => entry.rcAddress === account
+      );
+    }
+
+    if (translation) {
+      return translation.ahAddress;
+    }
+
+    return undefined;
+  }
+
+  private maybeBifrostDerivedTranslate(
+    account: string
+  ): { account: string; derivationIndex: number } | undefined {
+    // Try to find by hex account first using binary search
+    let translation = this.binarySearchBifrostDerived(account);
+
+    // If not found by hex, try by account address using linear search since account addresses are not sorted
+    if (!translation) {
+      translation = BIFROST_DERIVED_TRANSLATIONS.find(
+        (entry) => entry.rcAddress === account
+      );
+    }
+
+    if (translation) {
+      return {
+        account: translation.ahAddress,
+        derivationIndex: translation.derivationIndex,
+      };
+    }
+
+    return undefined;
+  }
+
+  // Binary search for Bifrost sovereign translations
+  private binarySearchBifrostSovereign(account: string): TranslationEntry | undefined {
+    return this.binarySearch(account, BIFROST_SOV_TRANSLATIONS);
+  }
+
+  // Binary search for Bifrost derived translations
+  private binarySearchBifrostDerived(
+    account: string
+  ): DerivedTranslationEntry | undefined {
+    return this.binarySearch(account, BIFROST_DERIVED_TRANSLATIONS);
+  }
+
 }
 
 // Convenience function for simple usage without creating a class instance
