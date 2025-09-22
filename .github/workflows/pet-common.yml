@@ -134,14 +134,14 @@ jobs:
           # export endpoint
           export ASSETHUB${NETWORK^^}_ENDPOINT="ws://localhost:${COL_PORT}"
           export ASSETHUB${NETWORK^^}_BLOCK_NUMBER=ASSETHUB_BLOCK_NUMBER
-          # Run the assetHubKusama tests
+          # Run the Asset Hub tests
           echo "Running tests with:"
           echo "  ASSETHUB${NETWORK^^}_ENDPOINT=$ASSETHUB${NETWORK^^}_ENDPOINT"
           echo "  ASSETHUB${NETWORK^^}_BLOCK_NUMBER=$ASSETHUB${NETWORK^^}_BLOCK_NUMBER"
           # Run only KAH E2E tests
           failed_count=0
           test_results=""
-          ls packages/*/src/*.test.ts | grep assetHubKusama | grep e2e > /tmp/test_list.txt
+          ls packages/*/src/*.test.ts | grep assetHub${NETWORK^} | grep e2e > /tmp/test_list.txt
 
           while read test; do
             echo "Running E2E test: $test"
