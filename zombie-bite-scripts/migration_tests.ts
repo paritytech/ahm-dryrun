@@ -58,7 +58,9 @@ const DEFAULT_NETWORK = "westend";
 
 const main = async () => {
   let maybe_network_or_path = process.argv[2];
-  let network = process.argv[3] || DEFAULT_NETWORK;
+  let network = process.argv[3]  || DEFAULT_NETWORK;
+  // ensure capitalized
+  network = network.charAt(0).toUpperCase() + network.slice(1);
   
   if(!maybe_network_or_path) {
     logger.warn(`⚠️ No path or network was provided, using default (${DEFAULT_NETWORK}) ⚠️`);
