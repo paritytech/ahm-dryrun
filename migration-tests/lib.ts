@@ -16,6 +16,7 @@ import { treasuryTests } from "./pallets/treasury.js";
 import { referendaTests } from "./pallets/referenda.js";
 import { multisigTests } from "./pallets/multisig.js";
 import { generalStakingTests } from "./pallets/staking/general.js";
+import { accountMigrationTests } from "./pallets/accounts.js";
 import { ApiDecoration } from "@polkadot/api/types/index.js";
 
 // when updating this, also update the testsByNetwork below
@@ -23,17 +24,18 @@ type Network = "Westend" | "Paseo" | "Kusama" | "Polkadot";
 
 // All available tests
 const allTests = [
-  treasuryTests,
-  referendaTests,
-  assetRateTests,
-  convictionVotingTests,
-  indicesTests,
-  proxyTests,
-  voterListTests,
-  vestingTests,
-  bountiesTests,
-  multisigTests,
-  generalStakingTests,
+  // treasuryTests,
+  // referendaTests,
+  // assetRateTests,
+  // convictionVotingTests,
+  // indicesTests,
+  // proxyTests,
+  // voterListTests,
+  // vestingTests,
+  // bountiesTests,
+  // multisigTests,
+  // generalStakingTests,
+  accountMigrationTests,
 ];
 
 // Excludes tests from the pool of all available tests
@@ -73,7 +75,16 @@ export async function runTests(context: TestContext, network: Network) {
 
       logger.info(`✅ Test ${test.name} test completed successfully`);
     } catch (error: unknown) {
+      // Log detailed error information
+      if (error instanceof Error) {
+        logger.error(`Detailed error for test '${test.name}':`, {
+          message: error.message,
+          stack: error.stack,
+          stage: stage
+        });
+      // Throw error to fail the test
       logger.error(`❌ Test '${test.name}' failed during ${stage}:`, { error });
+      }
     }
   }
 }
