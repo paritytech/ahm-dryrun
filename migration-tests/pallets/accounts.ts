@@ -371,6 +371,7 @@ export const accountMigrationTests: MigrationTest = {
             console.log(`Pre-fetched ${rcMigratorAccounts.size} RC migrator account states`);
         }
         console.log(`Total RC migrator accounts pre-fetched: ${rcMigratorAccounts.size}`);
+        
 
         // Check RC post-migration state
         console.log('Checking RC post-migration state');
@@ -384,12 +385,14 @@ export const accountMigrationTests: MigrationTest = {
             });
             for (const [key, accountInfo] of rc_accounts_after) {
                 const accountId = key.args[0].toString();
+                startKey = key.toHex();
                 
                 // Get account state from RC migrator (using pre-fetched data)
                 const account_state_result = rcMigratorAccounts.get(accountId);
                 let account_state = account_state_result ? parseAccountState(account_state_result) : null;
                 
                 if (!account_state) {
+                    // ed: 333333333
                     const ed = await rc_api_after.consts.balances.existentialDeposit;
                     const total_balance = accountInfo.data.free.toBigInt() + accountInfo.data.reserved.toBigInt();
                     if (total_balance < ed.toBigInt()) {
@@ -451,7 +454,7 @@ export const accountMigrationTests: MigrationTest = {
                     const total_balance = accountInfo.data.free.toBigInt() + accountInfo.data.reserved.toBigInt();
                     // assert.equal(total_balance, 0n, `Account ${accountId} should have no balance on RC after migration`);
                     if (total_balance !== 0n) {
-                        console.warn(`Account ${accountId} should have no balance on RC after migration`);
+                        console.warn(`Account ${accountId} should have no balance (has: ${total_balance}) on RC after migration`);
                     }
 
                     const locks = await rc_api_after.query.balances.locks(accountId);
@@ -478,6 +481,21 @@ export const accountMigrationTests: MigrationTest = {
             }
             total_accounts_after += rc_accounts_after.length;
             console.log(`Processed ${total_accounts_after} RC accounts after migration`);
+            
+            // Force garbage collection every 10,000 accounts to free memory
+            if (total_accounts_after % 10000 === 0) {
+                if (global.gc) {
+                    global.gc();
+                    console.log(`Forced GC at ${total_accounts_after} accounts`);
+                }
+            }
+        }
+        
+        // Clear the migrator accounts map and force GC after RC processing
+        rcMigratorAccounts.clear();
+        if (global.gc) {
+            global.gc();
+            console.log('Cleared RC migrator accounts map and forced GC');
         }
 
         // Check AH post-migration state
