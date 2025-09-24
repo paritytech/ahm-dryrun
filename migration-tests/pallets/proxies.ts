@@ -114,6 +114,23 @@ export const proxyTests: MigrationTest = {
 
         // Verify RC is empty after migration
         const rc_proxies_after = await rc_api_after.query.proxy.proxies.entries();
+        // Print differences between pre and post state
+        const post_proxies = rc_proxies_after.map(([key, _]) => key.args[0].toString());
+        
+        console.log('Pre migration free proxies:', free_proxies.length);
+        console.log('Post migration proxies:', post_proxies.length);
+
+        // Find entries only in pre state
+        const only_in_pre = free_proxies.filter(x => !post_proxies.includes(x));
+        if (only_in_pre.length > 0) {
+            console.log('Only in pre state:', only_in_pre);
+        }
+
+        // Find entries only in post state  
+        const only_in_post = post_proxies.filter(x => !free_proxies.includes(x));
+        if (only_in_post.length > 0) {
+            console.log('Only in post state:', only_in_post);
+        }
         assert(rc_proxies_after.length === free_proxies.length, `RC proxies got: ${rc_proxies_after.length}, want: ${free_proxies.length}`);
 
         // Get current AH state
