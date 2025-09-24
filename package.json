@@ -14,13 +14,14 @@
     "report-account-migration-status": "node dist/zombie-bite-scripts/report_account_migration_status.js",
     "compare-state": "node dist/migration-tests/index.js",
     "find-rc-block-bite": "node dist/zombie-bite-scripts/find_rc_block_bite.js",
+    "make-new-snapshot": "node dist/zombie-bite-scripts/make_new_snapshot.js",
     "ahm": "node dist/zombie-bite-scripts/orchestrator.js",
     "prettier": "prettier --write .",
     "clean": "rm -rf dist",
     "postinstall": "papi"
   },
   "dependencies": {
-    "@acala-network/chopsticks-testing": "^1.0.3",
+    "@acala-network/chopsticks-testing": "^1.2.2",
     "@polkadot-api/descriptors": "file:.papi/descriptors",
     "@polkadot-labs/hdkd": "^0.0.13",
     "@polkadot/api": "^16.4.1",

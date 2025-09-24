@@ -1,0 +1,178 @@
+name: PET Common
+
+on:
+  workflow_call:
+    inputs:
+      network:
+        required: true
+        type: string
+      run-id:
+        description: "optional run-id to download the artifacts"
+        required: false
+        type: string
+
+env:
+  ZOMBIE_BITE_BASE_PATH: "/tmp/ci"
+  AHM_BINS: "/tmp"
+  RUSTFLAGS: "-A warnings"
+
+jobs:
+  run_pet_tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: extractions/setup-just@v2
+
+      - name: Fetch cache
+        uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2.8.0
+        with:
+          shared-key: "ahm-cache"
+          cache-on-failure: true # cache allways
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: install_zombie_bite
+        shell: bash
+        run: |
+          just install-zombie-bite
+
+      - name: download_doppelganger_binaries
+        uses: ./.github/actions/download-doppelganger-binaries
+        with:
+          destination-path: ${{ env.AHM_BINS }}
+
+      - name: create_base_dir
+        shell: bash
+        run: |
+          mkdir $ZOMBIE_BITE_BASE_PATH
+
+      - name: download_artifacts
+        id: download_artifacts
+        shell: bash
+        env:
+          NETWORK: ${{ inputs.network }}
+          RUN_ID: ${{ inputs.run-id }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ $RUN_ID == "" ]]; then
+            echo "getting the latest completed run"
+            RUN_ID=$(gh run list --workflow zombie-bite.yml -b main -e schedule -L 1 -s completed  --json databaseId | jq -r '.[].databaseId')
+          fi;
+
+          echo "downloading artifacts from https://github.com/paritytech/ahm-dryrun/actions/runs/${RUN_ID}"
+          gh run download $RUN_ID -p "${NETWORK}-post-migration-db*" -D $ZOMBIE_BITE_BASE_PATH
+          ls -ltr $ZOMBIE_BITE_BASE_PATH
+
+      - name: mv_artifacts
+        shell: bash
+        run: |
+          ls -ltr $ZOMBIE_BITE_BASE_PATH
+          ARTIFACTS_DIR_NAME=$(ls -t $ZOMBIE_BITE_BASE_PATH|head -1)
+          echo "artifacts dir"
+          ls -ltr "${ZOMBIE_BITE_BASE_PATH}/${ARTIFACTS_DIR_NAME}"
+
+          mv "${ZOMBIE_BITE_BASE_PATH}/${ARTIFACTS_DIR_NAME}/spawn" $ZOMBIE_BITE_BASE_PATH
+          mv "${ZOMBIE_BITE_BASE_PATH}/${ARTIFACTS_DIR_NAME}/ports.json" $ZOMBIE_BITE_BASE_PATH
+
+          echo "after moving artifacts"
+          ls -ltr $ZOMBIE_BITE_BASE_PATH
+
+      - name: install_pet_deps
+        shell: bash
+        run: |
+          npm install -g yarn
+          yarn install
+
+      - name: run_zombie_bite_post
+        shell: bash
+        run: |
+          export PATH=${AHM_BINS}:$PATH
+
+          # remove previous nohup.out
+          rm nohup.out || true
+          nohup just zb spawn $ZOMBIE_BITE_BASE_PATH post > nohup.out 2>&1 &
+
+      - name: wait_for_network
+        uses: ./.github/actions/wait-zb-network-ready
+
+      - name: get_current_block_number
+        shell: bash
+        run: |
+          COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
+          echo "::group::get-current-block-number"
+          echo "Getting current block from http://localhost:${COL_PORT}"
+          # Get current block number using JSON-RPC
+          BLOCK_NUMBER=$(curl -s -H "Content-Type: application/json" -d '{"id":1,"jsonrpc":"2.0","method":"chain_getHeader","params":[]}' http://localhost:${COL_PORT} | jq -r '.result.number')
+          if [ -z "$BLOCK_NUMBER" ] || [ "$BLOCK_NUMBER" = "null" ]; then
+            echo "Failed to get block number from endpoint"
+            exit 1
+          fi
+          # Convert from hex to decimal
+          BLOCK_NUMBER_DECIMAL=$((BLOCK_NUMBER))
+          echo "Current block number: $BLOCK_NUMBER_DECIMAL"
+          echo "ASSETHUB_BLOCK_NUMBER=$BLOCK_NUMBER_DECIMAL" >> $GITHUB_ENV
+          echo "::endgroup::"
+
+      - name: run_polkadot_ecosystem_tests
+        shell: bash
+        env:
+          ASSETHUB_BLOCK_NUMBER: ${{ env.ASSETHUB_BLOCK_NUMBER }}
+          NETWORK: ${{ inputs.network }}
+        run: |
+          COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
+          echo "::group::run-polkadot-ecosystem-tests"
+          cd polkadot-ecosystem-tests
+          # Install dependencies
+          yarn install
+          # export endpoint
+          export ASSETHUB${NETWORK^^}_ENDPOINT="ws://localhost:${COL_PORT}"
+          export ASSETHUB${NETWORK^^}_BLOCK_NUMBER=ASSETHUB_BLOCK_NUMBER
+          # Run the Asset Hub tests
+          echo "Running tests with:"
+          echo "  ASSETHUB${NETWORK^^}_ENDPOINT=$ASSETHUB${NETWORK^^}_ENDPOINT"
+          echo "  ASSETHUB${NETWORK^^}_BLOCK_NUMBER=$ASSETHUB${NETWORK^^}_BLOCK_NUMBER"
+          # Run only KAH E2E tests
+          failed_count=0
+          test_results=""
+          ls packages/*/src/*.test.ts | grep assetHub${NETWORK^} | grep e2e > /tmp/test_list.txt
+
+          while read test; do
+            echo "Running E2E test: $test"
+            if ! yarn test "$test"; then
+              failed_count=$((failed_count + 1))
+              test_results="${test_results}❌ Test failed: $test\n"
+            else
+              test_results="${test_results}✅ Test passed: $test\n"
+            fi
+          done < /tmp/test_list.txt
+          
+          # Save results for next step
+          echo "$failed_count" > /tmp/failed_count.txt
+          echo -e "$test_results" > /tmp/test_results.txt
+          echo "::endgroup::"
+
+      - name: report_test_results
+        if: always()
+        shell: bash
+        run: |
+          echo "::group::report-test-results"
+          failed_count=$(cat /tmp/failed_count.txt)
+          test_results=$(cat /tmp/test_results.txt)
+          
+          echo "=== Test Results ==="
+          echo -e "$test_results"
+          
+          if [ $failed_count -gt 0 ]; then
+            echo "Total failed tests: $failed_count"
+            exit $failed_count
+          else
+            echo "All tests passed!"
+          fi
+          echo "::endgroup::"

@@ -27,13 +27,19 @@ jobs:
     runs-on: ${{ inputs.runner }}
     container:
       image: docker.io/paritytech/ci-unified:bullseye-1.88.0-2025-06-27-v202507221446
-    timeout-minutes: 720
+    timeout-minutes: ${{ inputs.runner == 'kusama' && 180 || 720  }}
 
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
       - uses: extractions/setup-just@v2
+
+      - name: Fetch cache
+        uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2.8.0
+        with:
+          shared-key: "ahm-cache"
+          cache-on-failure: true # cache allways
 
       - name: download_doppelganger_binaries
         uses: ./.github/actions/download-doppelganger-binaries
@@ -62,6 +68,16 @@ jobs:
         shell: bash
         run: |
           mkdir $ZOMBIE_BITE_BASE_PATH
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: npm
+        shell: bash
+        run: |
+          npm install
+          npm run build
 
       - name: zombie_bite_step_bite
         id: zombie_bite_step_bite
@@ -94,7 +110,10 @@ jobs:
           echo "Found RC block to bite: $RC_BITE_BLOCK"
           echo "::endgroup::"
 
-          zombie-bite bite -r $NETWORK --rc-override $RC_OVERRIDE --ah-override $AH_OVERRIDE -d $ZOMBIE_BITE_BASE_PATH # --rc-bite-block $RC_BITE_BLOCK
+          # TODO: add ones we support this in zombie-bite
+          # --rc-bite-block $RC_BITE_BLOCK
+          zombie-bite bite -r $NETWORK --rc-override $RC_OVERRIDE --ah-override $AH_OVERRIDE -d $ZOMBIE_BITE_BASE_PATH
+
 
         continue-on-error: true
 
@@ -116,55 +135,65 @@ jobs:
           ls ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite-debug
           echo "::endgroup::"
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
 
-      - name: npm
+      - name: run_zombie_bite_spawn
         shell: bash
         run: |
-          npm install
-          npm run build
+          export PATH=${AHM_BINS}:$PATH
+          # remove previous nohup.out
+          rm nohup.out || true
+          nohup zombie-bite spawn -d $ZOMBIE_BITE_BASE_PATH > nohup.out 2>&1 &
 
-      - name: zombie_bite_step_spawn_and_run_migration
-        id: zombie_bite_step_spawn_and_run_migration
+      - name: wait_for_network
+        uses: ./.github/actions/wait-zb-network-ready
+
+      - name: try_runtime_pre
         shell: bash
         env:
           NETWORK: ${{ inputs.network }}
+          TS_LOG_CONSOLE: true
+          TS_LOG_LEVEL: debug
         run: |
           export PATH=${AHM_BINS}:$PATH
-
-          echo "::group::zombie-bite-spawn"
-          nohup zombie-bite spawn -d $ZOMBIE_BITE_BASE_PATH > nohup.out 2>&1 &
-          ZOMBIE_FILE="${ZOMBIE_BITE_BASE_PATH}/spawn/zombie.json"
-          COUNT=0
-          until [ -f "$ZOMBIE_FILE" ]; do
-            echo "ZOMBIE_FILE: $ZOMBIE_FILE not present yet"
-            COUNT=$((COUNT +1))
-             if [[ $COUNT -gt 150 ]];then
-              echo "SPAWN_FAIL=1" >> $GITHUB_OUTPUT
-              exit 1;
-             fi;
-            sleep 2
-          done
-          echo "'zombie.json' file present, network spawned... sleeping a few seconds"
-          echo "::endgroup::"
-
-          echo "::group::zombie-bite-output"
-          cat nohup.out
-          echo "::endgroup::"
-
-          echo "sleeping 1 min to bootstrap"
-          sleep 60
-
 
           ALICE_PORT=$(jq -r .alice_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
           COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
 
+          # Wait for nodes to come online
+          echo "::group::wait-for-nodes"
+          just zb wait-for-nodes $ZOMBIE_BITE_BASE_PATH
+          echo "::endgroup::"
+
           # try-runtime snap pre
           echo "::group::run-try-runtime"
-          try-runtime create-snapshot --uri "ws://localhost:$ALICE_PORT" "${ZOMBIE_BITE_BASE_PATH}/rc-pre.snap"
-          try-runtime create-snapshot --uri "ws://localhost:$COL_PORT" "${ZOMBIE_BITE_BASE_PATH}/ah-pre.snap"
+          just zb snapshot $NETWORK $ZOMBIE_BITE_BASE_PATH pre
+          echo "::endgroup::"
+        continue-on-error: true
+
+      - name: try_runtime_upload_step_pre
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.network }}-try-runtime-snaps-pre-${{ github.sha }}${{ inputs.args }}
+          path: |
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-rc-pre.snap
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-ah-pre.snap
+
+      - name: run_migration
+        id: zombie_bite_step_spawn_and_run_migration
+        shell: bash
+        env:
+          NETWORK: ${{ inputs.network }}
+          TS_LOG_CONSOLE: true
+          TS_LOG_LEVEL: debug
+        run: |
+          export PATH=${AHM_BINS}:$PATH
+
+          ALICE_PORT=$(jq -r .alice_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
+          COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
+
+          # Wait for nodes to come online
+          echo "::group::wait-for-nodes"
+          just zb wait-for-nodes $ZOMBIE_BITE_BASE_PATH
           echo "::endgroup::"
 
           echo "::group::run-migration"
@@ -175,8 +204,7 @@ jobs:
 
           # try-runtime snap post
           echo "::group::run-try-runtime"
-          try-runtime create-snapshot --uri "ws://localhost:$ALICE_PORT" "${ZOMBIE_BITE_BASE_PATH}/rc-post.snap"
-          try-runtime create-snapshot --uri "ws://localhost:$COL_PORT" "${ZOMBIE_BITE_BASE_PATH}/ah-post.snap"
+          just zb snapshot $NETWORK $ZOMBIE_BITE_BASE_PATH post
           echo "::endgroup::"
 
           echo "::group::zombie-bite-stop"
@@ -215,15 +243,13 @@ jobs:
           ls ${{ env.ZOMBIE_BITE_BASE_PATH }}
           echo "::endgroup::"
 
-      - name: zombie_bite_upload_step
+      - name: try_runtime_upload_step_post
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.network }}-try-runtime-snaps-${{ github.sha }}${{ inputs.args }}
+          name: ${{ inputs.network }}-try-runtime-snaps-post-${{ github.sha }}${{ inputs.args }}
           path: |
-            ${{ env.ZOMBIE_BITE_BASE_PATH }}/rc-pre.snap
-            ${{ env.ZOMBIE_BITE_BASE_PATH }}/ah-pre.snap
-            ${{ env.ZOMBIE_BITE_BASE_PATH }}/rc-post.snap
-            ${{ env.ZOMBIE_BITE_BASE_PATH }}/ah-post.snap
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-rc-post.snap
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-ah-post.snap
 
       - name: zombie_bite_upload_step_logs
         uses: actions/upload-artifact@v4
@@ -234,7 +260,7 @@ jobs:
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn-debug/alice/alice.log
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn-debug/bob/bob.log
 
-      - name: try_runtime_upload_step
+      - name: zombie_bite_upload_step
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.network }}-post-migration-db-${{ github.sha }}${{ inputs.args }}
@@ -243,6 +269,16 @@ jobs:
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ports.json
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ready.json
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/migration_done.json
+
+      - name: try_runtime_rust_test
+        id: try_runtime_rust_test
+        shell: bash
+        env:
+          NETWORK: ${{ inputs.network }}
+        run: |
+          export PATH=${AHM_BINS}:$PATH
+          just ahm rust-test $NETWORK $ZOMBIE_BITE_BASE_PATH
+        continue-on-error: true
 
       - name: run_zombie_bite_post
         shell: bash
@@ -255,7 +291,8 @@ jobs:
       - name: wait_for_network
         uses: ./.github/actions/wait-zb-network-ready
 
-      - name: run_migration_comparison_tests
+      - name: ts_comparison_tests
+        id: ts_comparison_tests
         shell: bash
         env:
           NETWORK: ${{ inputs.network }}
@@ -265,42 +302,104 @@ jobs:
           echo "::group::run-compare-state-tests"
           just compare-state ${{ env.ZOMBIE_BITE_BASE_PATH }} ${{ inputs.network }}
           echo "::endgroup::"
+        continue-on-error: true
 
-      #
-      # TODO: post migration setup
-      #
+      # PET
+      - name: install_pet_deps
+        shell: bash
+        run: |
+          npm install -g yarn
+          yarn install
 
-      # - name: run_post_test
-      #   shell: bash
-      #   env:
-      #     RUSTFLAGS: "-A warnings"
-      #   run: |
-      #     # export path
-      #     export PATH=${AHM_BINS}:$PATH
+      - name: get_current_block_number
+        shell: bash
+        run: |
+          COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
+          echo "::group::get-current-block-number"
+          echo "Getting current block from http://127.0.0.1:${COL_PORT}"
+          # Get current block number using JSON-RPC
+          BLOCK_NUMBER=$(curl -s -H "Content-Type: application/json" -d '{"id":1,"jsonrpc":"2.0","method":"chain_getHeader","params":[]}' http://127.0.0.1:${COL_PORT} | jq -r '.result.number')
 
-      #     echo "::group::zombie-bite-spawn"
-      #     nohup zombie-bite spawn -d $ZOMBIE_BITE_BASE_PATH -s post > nohup-post.out 2>&1 &
-      #     ZOMBIE_FILE="$ZOMBIE_BITE_BASE_PATH/spawn/zombie.json"
-      #     until [ -f "$ZOMBIE_FILE" ]; do
-      #       echo "ZOMBIE_FILE: $ZOMBIE_FILE not present yet"
-      #       sleep 2
-      #     done
-      #     echo "'zombie.json' file present, network spawned... sleeping a few seconds"
-      #     echo "::endgroup::"
+          if [ -z "$BLOCK_NUMBER" ] || [ "$BLOCK_NUMBER" = "null" ]; then
+            echo "Failed to get block number from endpoint"
+            exit 1
+          fi
 
-      #     echo "::group::zombie-bite-output"
-      #     cat nohup-post.out
-      #     echo "::endgroup::"
+          # Convert from hex to decimal
+          BLOCK_NUMBER_DECIMAL=$((BLOCK_NUMBER))
+          echo "Current block number: $BLOCK_NUMBER_DECIMAL"
+          echo "ASSETHUB_BLOCK_NUMBER=$BLOCK_NUMBER_DECIMAL" >> $GITHUB_ENV
+          echo "::endgroup::"
 
-      #     echo "sleeping 1 min to bootstrap"
-      #     sleep 60
+      - name: run_polkadot_ecosystem_tests
+        id: run_polkadot_ecosystem_tests
+        timeout-minutes: 60
+        shell: bash
+        env:
+          ASSETHUB_BLOCK_NUMBER: ${{ env.ASSETHUB_BLOCK_NUMBER }}
+          NETWORK: ${{ inputs.network }}
+        run: |
+          COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
+          echo "::group::run-polkadot-ecosystem-tests"
+          cd polkadot-ecosystem-tests
 
-      #     echo "::group::run-post-migration-test"
-      #     echo "::endgroup::"
+          # Install dependencies
+          yarn install
 
-      # - name: zombie_bite_upload_step
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: ${{ inputs.network }}-zb-step-spawn-${{ github.sha }}
-      #     path: |
-      #       $ZOMBIE_BITE_BASE_PATH/post
+          # export endpoint
+          export ASSETHUB${NETWORK}_ENDPOINT="ws://127.0.0.1:${COL_PORT}"
+          export ASSETHUB${NETWORK}_BLOCK_NUMBER=ASSETHUB_BLOCK_NUMBER
+
+          # Run the assetHubKusama tests
+          echo "Running tests with:"
+          echo "  ASSETHUB${NETWORK}_ENDPOINT=$ASSETHUB${NETWORK}_ENDPOINT"
+          echo "  ASSETHUB${NETWORK}_BLOCK_NUMBER=$ASSETHUB${NETWORK}_BLOCK_NUMBER"
+
+          yarn test assetHubKusama
+          echo "::endgroup::"
+        continue-on-error: true
+
+      - name: workflow_summary
+        if: always()
+        shell: bash
+        env:
+          NETWORK: ${{ inputs.network }}
+        run: |
+          echo "## 🧟 Zombie Bite Summary for ${{ inputs.network }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Suite | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------------|--------|" >> $GITHUB_STEP_SUMMARY
+
+          # Migration status
+          if [[ "${{ steps.zombie_bite_step_spawn_and_run_migration.outcome }}" == "success" ]]; then
+            echo "| 🔄 Migration | ✅ Success |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 🔄 Migration | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Rust tests status
+          if [[ "${{ steps.try_runtime_rust_test.outcome }}" == "success" ]]; then
+            echo "| 🦀 Rust Tests | ✅ Success |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 🦀 Rust Tests | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # TS comparison tests status
+          if [[ "${{ steps.ts_comparison_tests.outcome }}" == "success" ]]; then
+            echo "| 📊 TS Comparison | ✅ Success |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 📊 TS Comparison | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # PET tests status
+          if [[ "${{ steps.run_polkadot_ecosystem_tests.outcome }}" == "success" ]]; then
+            echo "| 🧪 PET Tests | ✅ Success |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 🧪 PET Tests | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Network:** ${{ inputs.network }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Run:** ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
+

@@ -1,12 +1,30 @@
-# TL;DR [![AHM flow (all steps)](https://github.com/paritytech/ahm-dryrun/actions/workflows/zombie-bite.yml/badge.svg)](https://github.com/paritytech/ahm-dryrun/actions/workflows/zombie-bite.yml)
+# TL;DR
 
-To run AHM for Paseo using Zombie-Bite:
+## 🧟 Test Results
+
+[![AHM flow (all steps)](https://github.com/paritytech/ahm-dryrun/actions/workflows/zombie-bite.yml/badge.svg)](https://github.com/paritytech/ahm-dryrun/actions/workflows/zombie-bite.yml)
+
+The AHM flow runs automatically:
+- **Kusama**: Daily
+- **Polkadot**: Sundays only
+
+Each workflow run tests:
+- 🔄 **Migration**: Asset Hub migration execution
+- 🦀 **Rust Tests**: Runtime verification tests
+- 📊 **TS Comparison**: State comparison tests
+- 🧪 **PET Tests**: Polkadot Ecosystem Tests
+
+**[View Latest Test Results →](https://github.com/paritytech/ahm-dryrun/actions/workflows/zombie-bite.yml). See `workflow_summary` step for results of each step.**
+
+> 💡 Click on any workflow run to see the detailed test summary table showing which tests passed or failed.
+
+To run AHM for Kusama or Polkadot using Zombie-Bite:
 ```
 git clone --recursive git@github.com:paritytech/ahm-dryrun.git && \
 cd ahm-dryrun && \
 just init && \
 just setup && \
-just ahm paseo || echo "Setup failed"
+just ahm kusama || echo "Setup failed"
 ```
 
 # Just commands
@@ -14,7 +32,7 @@ just ahm paseo || echo "Setup failed"
 - `just` to see the list of commands
 - `just init` to initialize the repo
 - `just setup` to install dependencies
-- `just ahm [paseo|polkadot]` to run the Migration for a given runtime. No args prints the help menu.
+- `just ahm [polkadot|kusama]` to run the Migration for a given runtime. No args prints the help menu.
 - `just zb [bite|spawn|perform-migration]` to run the Zombie-Bite commands. No args prints the help menu.
 - `just e2e-tests` to run the E2E tests
 <!-- TODO @donal: Monitoring here -->
@@ -43,7 +61,7 @@ The _first_ step consists of _biting_ a live network, and once completed, creati
 In order to run _step 0_, you can run:
 
 ```bash
-just zb bite <base_path> <polkadot|kusama|paseo>
+just zb bite <base_path> <polkadot|kusama>
 
 e.g: just zb bite ./migration-run polkadot
 ```
@@ -55,7 +73,7 @@ This directory should contain these files:
 - `<runtime>-spec.json` : chain-spec of the relaychain.
 - `asset-hub-<runtime>-spec.json` : chain-spec of AH.
 - `<runtime>-snap.tgz` : Db snapshot of the relaychain.
-- `asset-hub-paseo-snap.tgz` : Db snapshot of AH.
+- `asset-hub-<runtime>-snap.tgz` : Db snapshot of AH.
 
 
 _NOTE_: this step performs a _warp_ sync of both rc/ah and can take some time (20/25 mins on avg. for polkadot).
@@ -92,7 +110,7 @@ Once the migration is completed, the network instance spawned as part of _step 1
 - `<runtime>-spec.json` : chain-spec of the relaychain.
 - `asset-hub-<runtime>-spec.json` : chain-spec of AH.
 - `<runtime>-snap.tgz` : Db snapshot of the relaychain.
-- `asset-hub-paseo-snap.tgz` : Db snapshot of AH.
+- `asset-hub-<runtime>-snap.tgz` : Db snapshot of AH.
 
 __Also__: after the migration is done a file called `migration_done.json` will be generated in the __base_path__ with the block height (of both rc/ah) where the migration was completed.
 
@@ -117,16 +135,15 @@ e.g: just zb spawn ./migration-run post
 
 This will spawn a new instance of the network (with the state of the previous step) and will print all the network info (ports) to run the _post migration_ tests.
 
-Then you can run the test in a _different terminal_.
+Then you can run tests in a _different terminal_.
 
-### E2E Tests on Westend Asset Hub
+### E2E Tests on Asset Hub
 
 Polkadot Ecosystem Tests offers, among other things, a suite of E2E tests that run against live networks.
-The PET submodule in this repository is set to branch `ahm-tests`, which adapts the (originally) relay chain E2E suites
-to run in post-migration Asset Hubs
+The PET submodule in this repository is set to a branch which extends the existing E2E suites, originally designed to
+run on a relay chain, to run in post-migration Asset Hubs - staking, governance, etc.
 
-In order to run PET tests on the post-migration Asset Hub chain of a network created by `zombie-bite`, assume it is
-named `<network-name>`, and do the following:
+In order to run PET tests on the post-migration Asset Hub chain of a network `<network-name>` created by `zombie-bite`:
 
 1. Start the network with `just zb spawn <base_path> post` (if it is not already running)
 2. Note the port number `<collator-port>` the collator is running on, and the `<block-number>` the AH chain is on
@@ -135,29 +152,38 @@ named `<network-name>`, and do the following:
     ASSETHUB<network-name>_ENDPOINT=ws://[::1]:<collator-port>
     ASSETHUB<network-name>_BLOCK_NUMBER=<block-number>
     ```
+    - Some warnings below ⚠️:
+    - ⚠️🚨 The `<network-name>` must be fully capitalized: `ASSETHUBKUSAMA_ENDPOINT` will work; `ASSETHUBkusama_ENDPOINT` will not
+    - ⚠️🚨 use `ws://[::1]:<collator-port>` and `ws://localhost:<collator-port>` over `ws://127.0.0.1:<collator-port>` 
 4. Run `just e2e-tests packages/<network-name>`
 
-The AHM has already occurred on Westend, so there, you can ignore all steps but the last.
+All steps but the last can be ignored on chains that have already migrated.
+This is because PET is setup to periodically fetch chains' latest block numbers to that state in tests, and thus
+dispenses a local testnet for access to post-AHM runtimes.
 
 #### Notes on E2E `just e2e-tests` command
 
 It accepts multiple arguments, which are then passed to `yarn` to further specify the scope of the tests.
 
 ```sh
-# runs every PET test
-# this will run the adapted test suites on Polkadot/Kusama, and **cause failures** as test suites for AH are
-# incompatible with relaychain
+# This runs every PET test; this takes some time, as it includes relay <-> system parachain XCM connectivity tests,
+# E2E tests for relay + parachains, etc.
 just e2e-tests
 
-# run every test that exists for Paseo chains: relay, AH
-just e2e-tests packages/paseo
-# run every test suite that exists for WAH, E2E or otherwise
-just e2e-tests assetHubWestend
-# run the E2E test suite for the scheduler pallet
-just e2e-tests paseo.scheduler
+# Run every test that exists for Kusama chains: relay, AH, bridge hub, coretime, etc.
+just e2e-tests packages/kusama
+# Run every test suite that exists for PAH, E2E or otherwise
+`just e2e-tests assetHubPaseo`
+# Run the E2E test suite for the scheduler pallet.
+# Note that this will do so for both the relay chain, and KAH: post-AHM, the AH's runtime will contain that pallet, and
+# recall that the branch this repository's PET submodule uses implements that test suite.
+just e2e-tests kusama.scheduler
+# Run the staking and nomination pools E2E test suites in whichever chains that have such a suite.
 just e2e-tests staking nominationPools
 ...
 ```
+
+Alternatively, after `cd`ing to the PET directory, `yarn` test may be called directly.
 
 # Logs
 

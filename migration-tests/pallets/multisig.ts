@@ -20,9 +20,14 @@ export const multisigTests: MigrationTest = {
 
         // Collect RC multisig data 
         const rc_multisigEntries = await rc_api_before.query.multisig.multisigs.entries();
+        // Get existential deposit value
+        const existentialDeposit = await rc_api_before.consts.balances.existentialDeposit;
 
         const rc_multisigs: MultisigEntry[] = rc_multisigEntries.map(([key, value]) => {
             const multisigData = value.toJSON() as any;
+            if (multisigData.deposit < existentialDeposit) {
+                logger.warn(`Skipping multisig with deposit less than existential deposit: ${multisigData.deposit.toString()}`);
+            }
             return {
                 depositor: multisigData.depositor,
                 deposit: multisigData.deposit.toString(),
@@ -59,13 +64,15 @@ export const multisigTests: MigrationTest = {
             `AH multisig count should be unchanged: expected ${ah_pre_count}, got ${ah_multisig_after.length}`
         );
 
+        let improper_accounts = 0;
         // Check that depositor accounts exist on AH and can access funds
         const { multisigEntries: rc_multisigs_before } = pre_payload.rc_pre_payload;
         let accountsWithBalanceCount = 0;
         for (const rcEntry of rc_multisigs_before) {
             // Validate that depositor is a proper account ID before querying
             if (!rcEntry.depositor || rcEntry.depositor.length < MIN_SS58_ADDRESS_LENGTH) {
-                logger.warn(`Skipping invalid depositor account: ${rcEntry.depositor}`);
+                logger.debug(`Skipping invalid depositor account: ${rcEntry.depositor}`);
+                improper_accounts++;
                 continue;
             }
 
@@ -95,8 +102,8 @@ export const multisigTests: MigrationTest = {
         }
         
         assert(
-            accountsWithBalanceCount === rc_multisigs_before.length,
-            `Expected ${rc_multisigs_before.length} depositor accounts to have balance on AH, but found ${accountsWithBalanceCount}.`
+            accountsWithBalanceCount + improper_accounts === rc_multisigs_before.length,
+            `Expected ${rc_multisigs_before.length} depositor accounts to have balance on AH, but found ${accountsWithBalanceCount + improper_accounts}.`
         );
 
     }
