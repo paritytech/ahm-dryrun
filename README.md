@@ -255,16 +255,16 @@ $ tail -f ~/ahm-dryrun/migration-run/post/collator/collator.log
   28: __pthread_cond_wait
 
 
-Thread 'tokio-runtime-worker' panicked at 'SelectNextSome polled after terminated', /Users/alexandrebalde/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/futures-util-0.3.31/src/stream/stream/select_next_some.rs:32
+Thread 'tokio-runtime-worker' panicked at 'SelectNextSome polled after terminated', ~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/futures-util-0.3.31/src/stream/stream/select_next_some.rs:32
 
 This is a bug. Please report it at:
 
 	https://github.com/paritytech/doppelganger-wrapper/issues/new
 ```
 
-this may be caused by improperly shut down nodes.
+this may be caused by improperly shut down nodes in a previously spawned instance.
 
-Try running `pkill -f doppelganger`
+Run `pkill -f doppelganger`, and try again.
 
 ## Help
 List the other available commands with `just help`.
