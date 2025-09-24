@@ -377,6 +377,12 @@ export const accountMigrationTests: MigrationTest = {
         console.log('Checking RC post-migration state');
         let startKey = '0x';
         let total_accounts_after = 0;
+        let balanceMismatches = new Map<string, {
+            rc_balance: bigint,
+            ah_balance: bigint,
+            difference: bigint,
+            ed: bigint
+        }>();
         while (true) {
             const rc_accounts_after = await rc_api_after.query.system.account.entriesPaged({
                 args: [],
@@ -573,12 +579,7 @@ export const accountMigrationTests: MigrationTest = {
             const ah_ed = ah_api_after.consts.balances.existentialDeposit;
 
             // Allow for ED differences due to dusting
-            const balanceMismatches = new Map<string, {
-                rc_balance: bigint,
-                ah_balance: bigint,
-                difference: bigint,
-                ed: bigint
-            }>();
+            
 
             // assert(
             //     rc_migrated_balance - ah_migrated_balance < ah_ed.toBigInt(),
@@ -638,8 +639,12 @@ export const accountMigrationTests: MigrationTest = {
             //     `Freezes mismatch for account ${accountId} between RC pre-migration and AH post-migration`
             // );
         }
-        console.log(`Not found: ${not_found}`);
-        console.log(`Total: ${ah_pre_payload.size}`);
+        // console.log(`Not found: ${not_found}`);
+        console.log(`Balance mismatches: ${balanceMismatches.size}`);
+        console.log('Detailed balance mismatches:');
+        for (const [accountId, mismatch] of balanceMismatches) {
+            console.log(`Account ${accountId}: ${mismatch}`);
+        }
 
         // Check total issuance changes
         const rc_total_issuance_after = await rc_api_after.query.balances.totalIssuance();
