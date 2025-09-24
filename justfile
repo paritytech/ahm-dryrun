@@ -47,17 +47,19 @@ install-try-runtime:
 # only run once, per the runtime that you want to test.
 build runtime:
     #!/usr/bin/env bash
-    if [ "{{ runtime }}" = "paseo" ]; then
-        cd ${PASEO_PATH} && ${CARGO_CMD} build --release -p asset-hub-paseo-runtime -p paseo-runtime && cd ..
-        cp ${PASEO_PATH}/target/release/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
-    elif [ "{{ runtime }}" = "polkadot" ]; then
-        cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --release -p asset-hub-polkadot-runtime -p polkadot-runtime && cd ..
-        cp ${RUNTIMES_PATH}/target/release/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
+    set -xe
+    mkdir -p ./runtime_wasm
+
+    if [ "{{ runtime }}" = "polkadot" ]; then
+        cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --profile production --features on-chain-release-build,polkadot-ahm -p asset-hub-polkadot-runtime -p polkadot-runtime && cd ..
+        cp ${RUNTIMES_PATH}/target/production/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
     elif [ "{{ runtime }}" = "kusama" ]; then
-        cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --release -p asset-hub-kusama-runtime -p staging-kusama-runtime && cd ..
-        cp ${RUNTIMES_PATH}/target/release/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
+        cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --profile production --features on-chain-release-build,kusama-ahm -p asset-hub-kusama-runtime -p staging-kusama-runtime && cd ..
+        cp ${RUNTIMES_PATH}/target/production/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
+        # rename staging_kusama_runtime.compact.compressed.wasm to kusama_runtime.compact.compressed.wasm for naming convention compatibility
+        mv ./runtime_wasm/staging_kusama_runtime.compact.compressed.wasm ./runtime_wasm/kusama_runtime.compact.compressed.wasm
     else
-        echo "Error: Unsupported runtime '{{ runtime }}'. Supported runtimes are: paseo, polkadot, kusama"
+        echo "Error: Unsupported runtime '{{ runtime }}'. Supported runtimes are: polkadot, kusama"
         exit 1
     fi
 
@@ -71,3 +73,11 @@ e2e-tests *TEST:
 compare-state base_path runtime:
     just ahm _npm-build
     npm run compare-state {{ base_path }} {{ runtime }}
+
+find-rc-block-bite network="kusama":
+    just ahm _npm-build
+    npm run find-rc-block-bite {{ network }}
+
+make-new-snapshot base_path:
+    just ahm _npm-build
+    npm run make-new-snapshot {{ base_path }}

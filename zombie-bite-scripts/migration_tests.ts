@@ -58,9 +58,14 @@ const DEFAULT_NETWORK = "westend";
 
 const main = async () => {
   let maybe_network_or_path = process.argv[2];
+  let network = process.argv[3]  || DEFAULT_NETWORK;
+  // ensure capitalized
+  network = network.charAt(0).toUpperCase() + network.slice(1);
+  
   if(!maybe_network_or_path) {
     logger.warn(`⚠️ No path or network was provided, using default (${DEFAULT_NETWORK}) ⚠️`);
     maybe_network_or_path = DEFAULT_NETWORK
+    network = DEFAULT_NETWORK;
   }
 
   const getInfoFn = NETWORKS[maybe_network_or_path] ? NETWORKS[maybe_network_or_path] : () => extractFromPath(maybe_network_or_path);
@@ -75,17 +80,32 @@ const main = async () => {
   } = getInfoFn();
 
   // TODO: add network (default is Westend) parameter to the main function
-  await migrationTestMain(
+  let errs = await migrationTestMain(
     rc_endpoint,
     rc_before,
     rc_after,
     ah_endpoint,
     ah_before,
     ah_after,
+    network as "Westend" | "Paseo" | "Kusama" | "Polkadot"
   );
-  process.exit(0);
+
+  process.exit(errs.length);
 };
 
 main().catch((error) => {
-  logger.error('Migration tests error', { error });
+  const errorInfo = error instanceof Error 
+    ? {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      }
+    : { 
+        error: String(error) 
+      };
+      
+  logger.error('Migration tests error', { 
+    service: "ahm",
+    error: errorInfo 
+  });
 });
