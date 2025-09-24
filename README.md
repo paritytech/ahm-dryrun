@@ -213,6 +213,7 @@ You can run e.g. `cd runtimes && git checkout <commit_hash> && cd - && git add r
 
 
 # FAQ
+
 ## If you've already cloned `ahm-dryrun` repo but didn't use the recursive flag
 You can run:
 ```
@@ -243,6 +244,27 @@ When shown a log line similar to
 
 note that the logs in the file mentioned may be static, and that for further information on the state of the process, a
 nested log file, mentioned in the file above by path, should be opened.
+
+## Error in ZB collator
+
+If some of the nodes in a network spawned with `just zb spawn ./migration-run post` fail to start with errors such as
+
+```bash
+$ tail -f ~/ahm-dryrun/migration-run/post/collator/collator.log
+  27: std::sys::pal::unix::thread::Thread::new::thread_start
+  28: __pthread_cond_wait
+
+
+Thread 'tokio-runtime-worker' panicked at 'SelectNextSome polled after terminated', /Users/alexandrebalde/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/futures-util-0.3.31/src/stream/stream/select_next_some.rs:32
+
+This is a bug. Please report it at:
+
+	https://github.com/paritytech/doppelganger-wrapper/issues/new
+```
+
+this may be caused by improperly shut down nodes.
+
+Try running `pkill -f doppelganger`
 
 ## Help
 List the other available commands with `just help`.
