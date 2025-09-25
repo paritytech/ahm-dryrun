@@ -383,6 +383,7 @@ export const accountMigrationTests: MigrationTest = {
             difference: bigint,
             ed: bigint
         }>();
+        let balancesNotFound = [];
         while (true) {
             const rc_accounts_after = await rc_api_after.query.system.account.entriesPaged({
                 args: [],
@@ -517,6 +518,7 @@ export const accountMigrationTests: MigrationTest = {
         const [rc_account_summaries, rc_total_issuance_before] = pre_payload.rc_pre_payload as RcPrePayload;
         const ah_pre_payload = pre_payload.ah_pre_payload as AhPrePayload;
         let not_found = 0;
+        let found = 0;
         for (const [accountId, summary] of rc_account_summaries) {
             // Checking account balance migration is tested separately.
             // Treasury may be modified during migration.
@@ -531,8 +533,11 @@ export const accountMigrationTests: MigrationTest = {
 
             const ah_pre_data = ah_pre_payload.get(who);
             if (!ah_pre_data) {
+                balancesNotFound.push(accountId);
                 not_found++;
                 continue;
+            } else {
+                found++;
             }
             // console.log(`AH pre-migration state for ${who}: found`);
             const [ah_holds_pre, ah_reserved_before, ah_free_before] = ah_pre_data;
@@ -639,11 +644,17 @@ export const accountMigrationTests: MigrationTest = {
             //     `Freezes mismatch for account ${accountId} between RC pre-migration and AH post-migration`
             // );
         }
-        // console.log(`Not found: ${not_found}`);
+        console.log(`Not found: ${not_found}`);
+        console.log(`Found: ${found}`);
         console.log(`Balance mismatches: ${balanceMismatches.size}`);
         console.log('Detailed balance mismatches:');
-        for (const [accountId, mismatch] of balanceMismatches) {
-            console.log(`Account ${accountId}: ${mismatch}`);
+        const sortedMismatches = Array.from(balanceMismatches.entries())
+            .map(([accountId, mismatch]) => [accountId, mismatch.difference] as [string, bigint])
+            .sort((a, b) => Number(b[1] - a[1]));
+
+        for (const [accountId, difference] of sortedMismatches) {
+            const mismatch = balanceMismatches.get(accountId)!;
+            console.log(`Account ${accountId}: ${difference}`);
         }
 
         // Check total issuance changes
