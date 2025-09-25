@@ -4,6 +4,7 @@ import { PreCheckContext, PostCheckContext, MigrationTest, PreCheckResult } from
 import type { Codec } from '@polkadot/types/types';
 import type { StorageKey } from '@polkadot/types';
 import { ApiDecoration } from '@polkadot/api/types';
+import { translateAccountRcToAh } from '../utils/account_translation.js';
 
 export const treasuryTests: MigrationTest = {
     name: 'treasury_pallet',
@@ -177,8 +178,17 @@ async function verifyAhStorageMatchesRcPreMigrationData(
         );
 
         const [_, ahValue] = matchingEntry;
+        
+        // Translate RC proposal accounts for comparison
+        const rcValueJson = rcValue.toJSON() as any;
+        const translatedRcValue = {
+            ...rcValueJson,
+            proposer: translateAccountRcToAh(rcValueJson.proposer),
+            beneficiary: translateAccountRcToAh(rcValueJson.beneficiary)
+        };
+        
         assert.deepStrictEqual(
-            rcValue.toJSON(),
+            translatedRcValue,
             ahValue.toJSON(),
             `Proposal details mismatch for proposal ${proposalId}`
         );
@@ -217,12 +227,21 @@ async function verifyAhStorageMatchesRcPreMigrationData(
             `Spend ${spendId} not found after migration`
         );
 
-        // const [_, ahValue] = matchingEntry;
-        // assert.deepStrictEqual(
-        //     rcValue.toJSON(),
-        //     ahValue.toJSON(),
-        //     `Spend details mismatch for spend ${spendId}`
-        // );
+
+//         const [_, ahValue] = matchingEntry;
+        
+//         // Translate RC spend beneficiary for comparison
+//         const rcValueJson = rcValue.toJSON() as any;
+//         const translatedRcValue = {
+//             ...rcValueJson,
+//             beneficiary: translateAccountRcToAh(rcValueJson.beneficiary)
+//         };
+        
+//         assert.deepStrictEqual(
+//             translatedRcValue,
+//             ahValue.toJSON(),
+//             `Spend details mismatch for spend ${spendId}`
+//         );
     }
 
     // Verify no extra entries in AH
