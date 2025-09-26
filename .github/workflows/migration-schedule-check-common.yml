@@ -86,5 +86,5 @@ jobs:
           echo "::endgroup::"
 
           echo "::group::run-migration"
-          node dist/zombie-bite-scripts/migration_shedule_migration.js $ALICE_PORT "{\"ignore_staking_check\":false}"
+          node dist/zombie-bite-scripts/migration_shedule_migration.js $ALICE_PORT "{\"ignore_staking_check\":false, \"finalization\": true}"
           echo "::endgroup::"

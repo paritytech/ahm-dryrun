@@ -5,7 +5,8 @@ import { logger } from "../shared/logger.js";
 
 const rcPort = process.env.ZOMBIE_BITE_ALICE_PORT || 63168;
 const ahPort = process.env.ZOMBIE_BITE_AH_PORT || 63170;
-const finalization = false;
+
+let finalization = false;
 let mock_finish_flag = false;
 
 interface At {
@@ -23,7 +24,8 @@ export interface scheduleMigrationArgs {
   rc_block_start?: DispatchTime
   cool_off_end?: DispatchTime
   warm_up_end?: DispatchTime
-  ignore_staking_check?: boolean
+  ignore_staking_check?: boolean,
+  finalization?: boolean,
 };
 
 async function connect(apiUrl: string, types = {}) {
@@ -171,7 +173,9 @@ export async function scheduleMigration(migration_args?: scheduleMigrationArgs) 
   const cool_off_end = migration_args && migration_args.cool_off_end || { after: 2 };
   const ignore_staking_check = (migration_args && migration_args.ignore_staking_check == false) ? false : true;
 
-  logger.info('Scheduling migration', { start, warm_up_end, cool_off_end, nonce, ignore_staking_check });
+  finalization = migration_args && migration_args.finalization ? true : false;
+
+  logger.info('Scheduling migration', { start, warm_up_end, cool_off_end,ignore_staking_check, nonce, finalization });
 
   return new Promise(async (resolve, reject) => {
     const unsub: any = await api.tx.rcMigrator.scheduleMigration(start, warm_up_end, cool_off_end, ignore_staking_check)
