@@ -154,6 +154,7 @@ async function ah_check(uri: string) {
 }
 
 export async function scheduleMigration(migration_args?: scheduleMigrationArgs) {
+  logger.info('migration_args', migration_args);
   const rc_uri = `ws://localhost:${migration_args && migration_args.rc_port || rcPort}`;
   await cryptoWaitReady();
 
@@ -168,7 +169,7 @@ export async function scheduleMigration(migration_args?: scheduleMigrationArgs) 
   const start = migration_args && migration_args.rc_block_start || { after: 1 };
   const warm_up_end = migration_args && migration_args.warm_up_end || { after: 1 };
   const cool_off_end = migration_args && migration_args.cool_off_end || { after: 2 };
-  const ignore_staking_check = migration_args && migration_args.ignore_staking_check || true;
+  const ignore_staking_check = (migration_args && migration_args.ignore_staking_check == false) ? false : true;
 
   logger.info('Scheduling migration', { start, warm_up_end, cool_off_end, nonce, ignore_staking_check });
 
