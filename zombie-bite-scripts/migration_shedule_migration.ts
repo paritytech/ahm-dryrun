@@ -17,7 +17,8 @@ const main = async () => {
     rc_block_start: migration_call_args.rc_block_start,
     cool_off_end: migration_call_args.cool_off_end,
     warm_up_end: migration_call_args.warm_up_end,
-    ignore_staking_check: migration_call_args.ignore_staking_check
+    ignore_staking_check: migration_call_args.ignore_staking_check,
+    finalization: migration_call_args.finalization,
   });
   process.exit(0);
 };
