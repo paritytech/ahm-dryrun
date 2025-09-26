@@ -1,9 +1,6 @@
 name: Migration Schedule Check
 
 on:
-  pull_request:
-  push:
-    branches: [ci-add-migration-schedule-check]
   workflow_dispatch:
     inputs:
       run-id:
