@@ -1,6 +1,9 @@
 name: Rust tests
 
 on:
+  pull_request:
+    branches:
+      - 'ci-add-migration-schedule-check'
   workflow_dispatch:
     inputs:
       run-id:
