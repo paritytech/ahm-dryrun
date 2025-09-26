@@ -72,6 +72,8 @@ jobs:
         env:
           BASE_PATH: ${{ env.ZOMBIE_BITE_BASE_PATH }}
           NETWORK: ${{ inputs.network }}
+          TS_LOG_CONSOLE: true
+          TS_LOG_LEVEL: debug
         run: |
           just ahm _npm-build
 
