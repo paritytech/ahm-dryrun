@@ -18,7 +18,7 @@ interface After {
 
 type DispatchTime = At | After;
 
-interface scheduleMigrationArgs {
+export interface scheduleMigrationArgs {
   rc_port?: number|string,
   rc_block_start?: DispatchTime
   cool_off_end?: DispatchTime
