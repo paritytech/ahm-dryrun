@@ -37,6 +37,7 @@ jobs:
     with:
       network: polkadot
       sudo-key: ${{ inputs.sudo-key }}
+      rc_runtime_override_url: ${{ inputs.rc_runtime_override_url }}
       runner: parity-large-persistent-test
 
   zombie_bite_kusama:
@@ -46,6 +47,7 @@ jobs:
     with:
       network: kusama
       sudo-key: ${{ inputs.sudo-key }}
+      rc_runtime_override_url: ${{ inputs.rc_runtime_override_url }}
       runner: parity-large-persistent-test
 
   # Paseo migration disabled (already done)
