@@ -157,28 +157,6 @@ export interface ChainConfig {
   after_block: number;
 }
 
-async function getFirstAvailableBlock(api: ApiPromise, block: number): Promise<number> {
-  // only check the first 10 blocks, since should be one available in that range
-  let block_to_use: number|undefined = undefined;
-  for(let i=block; i<= block+10; i++) {
-    try {
-      logger.debug('Checkig block:', { i } );
-      const rc_block_hash_before = await api.rpc.chain.getBlockHash(i);
-      await api.at(rc_block_hash_before);
-      block_to_use = i;
-      break;
-    } catch(_) {
-      logger.warn('Block not available:', { "block": i } );
-    }
-  }
-
-  if(!block_to_use) throw new Error(`Can't find any block to use in the range(${block}, ${block+10})`);
-
-  logger.info("Available block:", { "block": block_to_use });
-
-  return block_to_use;
-}
-
 async function setupTestContext(
   relayChainConfig: ChainConfig,
   assetHubConfig: ChainConfig,
@@ -188,13 +166,16 @@ async function setupTestContext(
     provider: new WsProvider(relayChainConfig.endpoint),
   });
 
-  const rc_block_to_use = await getFirstAvailableBlock(rc_api, relayChainConfig.before_block);
-  const rc_block_hash_before = await rc_api.rpc.chain.getBlockHash(rc_block_to_use);
+  const rc_migration_start_result = await rc_api.query.rcMigrator.migrationStartBlock();
+  const rc_migration_finish_result = await rc_api.query.rcMigrator.migrationEndBlock();  
+  const rc_migration_start_block = rc_migration_start_result.isEmpty ? 0 : rc_migration_start_result.toPrimitive();
+  const rc_migration_finish_block = rc_migration_finish_result.isEmpty ? 0 : rc_migration_finish_result.toPrimitive();
 
+  const rc_block_hash_before = await rc_api.rpc.chain.getBlockHash(rc_migration_start_block as number);
   const rc_api_before = await rc_api.at(rc_block_hash_before);
 
   const rc_block_hash_after = await rc_api.rpc.chain.getBlockHash(
-    relayChainConfig.after_block,
+    rc_migration_finish_block as number,
   );
   const rc_api_after = await rc_api.at(rc_block_hash_after);
 
@@ -203,13 +184,16 @@ async function setupTestContext(
     provider: new WsProvider(assetHubConfig.endpoint),
   });
 
-  const ah_block_to_use = await getFirstAvailableBlock(ah_api, assetHubConfig.before_block);
-  const ah_block_hash_before = await ah_api.rpc.chain.getBlockHash(ah_block_to_use);
+  const ah_migration_start_result = await ah_api.query.ahMigrator.migrationStartBlock();
+  const ah_migration_finish_result = await ah_api.query.ahMigrator.migrationEndBlock();
+  const ah_migration_start_block = ah_migration_start_result.isEmpty ? 0 : ah_migration_start_result.toPrimitive();
+  const ah_migration_finish_block = ah_migration_finish_result.isEmpty ? 0 : ah_migration_finish_result.toPrimitive();
 
+  const ah_block_hash_before = await ah_api.rpc.chain.getBlockHash(ah_migration_start_block as number);
   const ah_api_before = await ah_api.at(ah_block_hash_before);
 
   const ah_block_hash_after = await ah_api.rpc.chain.getBlockHash(
-    assetHubConfig.after_block,
+    ah_migration_finish_block as number,
   );
   const ah_api_after = await ah_api.at(ah_block_hash_after);
 
