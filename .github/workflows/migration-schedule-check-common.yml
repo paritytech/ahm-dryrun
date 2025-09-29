@@ -1,0 +1,90 @@
+name: Migration Schedule Common
+on:
+  workflow_call:
+    inputs:
+      network:
+        type: string
+        required: false
+        default: 'kusama'
+      run-id:
+        type: string
+        description: "run-id of the artifacts to download"
+        required: true
+
+env:
+  ZOMBIE_BITE_BASE_PATH: ${{ github.workspace }}/migration-run
+
+jobs:
+  schedule-migration-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: extractions/setup-just@v2
+
+      - name: download_pre_migration_db
+        uses: ./.github/actions/download-artifact
+        env:
+          RUN_ID: ${{ inputs.run-id }}
+          GH_TOKEN: ${{ github.token }}
+          NETWORK: ${{ inputs.network }}
+        with:
+          gh-token: ${{ env.GH_TOKEN }}
+          destination-path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
+          run-id: ${{ env.RUN_ID }}
+          name-pattern: "${{ env.NETWORK }}-pre-migration-db-*"
+
+      - name: download_doppelganger_binaries
+        uses: ./.github/actions/download-doppelganger-binaries
+        with:
+          destination-path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
+
+      - name: install_zombie_bite
+        shell: bash
+        run: |
+          just install-zombie-bite
+
+      - name: verify
+        shell: bash
+        run: |
+          echo "::group::dest contents"
+          ls -la "$ZOMBIE_BITE_BASE_PATH" || true
+          echo "::endgroup::"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: run_zombie_bite
+        shell: bash
+        env:
+          BASE_PATH: ${{ env.ZOMBIE_BITE_BASE_PATH }}
+        run: |
+          export PATH="${BASE_PATH}:$PATH"
+          nohup just zb spawn ./migration-run > nohup.out 2>&1 &
+
+      - name: wait_for_network
+        uses: ./.github/actions/wait-zb-network-ready
+
+      - name: schedule_migration_call_test
+        shell: bash
+        timeout-minutes: 10
+        env:
+          BASE_PATH: ${{ env.ZOMBIE_BITE_BASE_PATH }}
+          NETWORK: ${{ inputs.network }}
+          TS_LOG_CONSOLE: true
+          TS_LOG_LEVEL: debug
+        run: |
+          just ahm _npm-build
+
+          ALICE_PORT=$(jq -r .alice_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
+          COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
+
+          # Wait for nodes to come online
+          echo "::group::wait-for-nodes"
+          just zb wait-for-nodes $ZOMBIE_BITE_BASE_PATH
+          echo "::endgroup::"
+
+          echo "::group::scheduleMigration_call_test"
+          node dist/zombie-bite-scripts/schedule_migration_test.js $ALICE_PORT
+          echo "::endgroup::"
