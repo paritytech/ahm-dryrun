@@ -21,6 +21,10 @@ on:
         required: false
         type: string
         default: ""
+      ah_runtime_override_url:
+        required: false
+        type: string
+        default: ""
 
 env:
   ZOMBIE_BITE_BASE_PATH: "/tmp/ci"
@@ -90,6 +94,7 @@ jobs:
           NETWORK: ${{ inputs.network }}
           SUDO: ${{ inputs.sudo-key }}
           RC_OVERRIDE_URL: ${{ inputs.rc_runtime_override_url }}
+          AH_OVERRIDE_URL: ${{ inputs.ah_runtime_override_url }}
         run: |
           export PATH=${AHM_BINS}:$PATH
 
@@ -103,10 +108,16 @@ jobs:
           RC_OVERRIDE="./runtime_wasm/${NETWORK}_runtime.compact.compressed.wasm"
           AH_OVERRIDE="./runtime_wasm/asset_hub_${NETWORK}_runtime.compact.compressed.wasm"
 
-          if [[ $RC_OVERRIDE != "" ]];then
+          if [[ $RC_OVERRIDE_URL != "" ]];then
             RC_OVERRIDE="/tmp/${NETWORK}_custom_runtime.compact.compressed.wasm"
-            curl $RC_OVERRIDE_URL -o "/tmp/${NETWORK}_custom_runtime.compact.compressed.wasm"
+            curl $RC_OVERRIDE_URL -o "/tmp/${NETWORK}_custom_rc_runtime.compact.compressed.wasm"
             echo "runtime downloaded from ${RC_OVERRIDE_URL}"
+          fi;
+
+          if [[ $AH_OVERRIDE_URL != "" ]];then
+            RC_OVERRIDE="/tmp/${NETWORK}_custom_runtime.compact.compressed.wasm"
+            curl $AH_OVERRIDE_URL -o "/tmp/${NETWORK}_custom_ah_runtime.compact.compressed.wasm"
+            echo "runtime downloaded from ${AH_OVERRIDE_URL}"
           fi;
 
           ls $RC_OVERRIDE

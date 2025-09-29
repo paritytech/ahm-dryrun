@@ -19,6 +19,11 @@ on:
         required: false
         type: string
         default: ""
+      ah_runtime_override_url:
+        description: "An url to download the AH runtime to override"
+        required: false
+        type: string
+        default: ""
   schedule:
     - cron: "0 0 * * *" # Every Day for Kusama
     - cron: "0 0 * * 0" # Only on Sundays for Polkadot
@@ -38,6 +43,7 @@ jobs:
       network: polkadot
       sudo-key: ${{ inputs.sudo-key }}
       rc_runtime_override_url: ${{ inputs.rc_runtime_override_url }}
+      ah_runtime_override_url: ${{ inputs.ah_runtime_override_url }}
       runner: parity-large-persistent-test
 
   zombie_bite_kusama:
@@ -48,6 +54,7 @@ jobs:
       network: kusama
       sudo-key: ${{ inputs.sudo-key }}
       rc_runtime_override_url: ${{ inputs.rc_runtime_override_url }}
+      ah_runtime_override_url: ${{ inputs.ah_runtime_override_url }}
       runner: parity-large-persistent-test
 
   # Paseo migration disabled (already done)
