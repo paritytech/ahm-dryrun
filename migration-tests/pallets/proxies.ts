@@ -106,7 +106,6 @@ async function collectRcProxyEntries(api: ApiDecoration<"promise">): Promise<Map
     return proxies;
 }
 
-let free_proxies: string[] = [];
 export const proxyTests: MigrationTest = {
     name: 'proxy_pallet',
 
@@ -127,6 +126,10 @@ export const proxyTests: MigrationTest = {
         pre_payload: PreCheckResult
     ): Promise<void> => {
         const { rc_api_after, ah_api_after } = context;
+        let anyZero = 0;
+        let anyZeroErrors = 0;
+        let anyNonZero = 0;
+        let anyNonZeroErrors = 0;
 
         // Verify RC is empty after migration
         const rc_proxies_after = await rc_api_after.query.proxy.proxies.entries();
@@ -151,100 +154,39 @@ export const proxyTests: MigrationTest = {
                 continue;
             }
 
-            // Count number of Any proxy types
+            // Count number of Any proxy types for that account
             const numAny = proxies.filter(([proxyType]) => proxyType === 'Any').length;
+            console.log(`Proxies for ${account}: ${proxies}`);
+            console.log(`Num any: ${numAny}`);
+            const [postProxies, deposit] = await rc_api_after.query.proxy.proxies(account);
+            console.log(`Post proxies for ${account}: ${postProxies}`);
+            
             if (numAny === 0) {
-                // Verify no empty vectors in storage
-                const hasProxies = await rc_api_after.query.proxy.proxies(account);
-                if (hasProxies) {
+                anyZero++;
+                const containsKey = rc_proxies_after.some(([k]) => k.args[0].toString() === account);
+                if (containsKey) {
+                    anyZeroErrors++;
                     console.log(`Has proxies for ${account}`);
                 }
-                // assert(!hasProxies, "No empty vectors should exist in storage");
+                // assert(!containsKey, "No empty vectors should exist in storage");
                 continue;
             }
 
-            // Get post-migration proxies for this account
-            const [postProxies, deposit] = await rc_api_after.query.proxy.proxies(account);
-
-            console.log(`Number of proxies should match for ${account}. Got: ${postProxies.length}, Expected: ${numAny}`);
+            anyNonZero++;
             // Verify deposit is zero and proxy count matches
             assert(deposit.isZero(), `Deposit should be zero for pure proxy ${account}`);
             if (postProxies.length !== numAny) {
-                // console.log(`Number of proxies should match for ${account}. Got: ${postProxies.length}, Expected: ${numAny}`);
+                anyNonZeroErrors++;
+                console.log(`Number of proxies should match for ${account}. Got: ${postProxies.length}, Expected: ${numAny}`);
             }
             // assert.equal(postProxies.length, numAny, 
             //     `Number of proxies should match for ${account}. Got: ${postProxies.length}, Expected: ${numAny}`);
         }
-
-
-
-
-    },
-
-    //     for (const [key, _] of rc_proxies_after) {
-    //     // Print differences between pre and post state
-    //     const post_proxies = rc_proxies_after.map(([key, _]) => key.args[0].toString());
         
-    //     console.log('Pre migration free proxies:', free_proxies.length);
-    //     console.log('Post migration proxies:', post_proxies.length);
-
-    //     // Find entries only in pre state
-    //     const only_in_pre = free_proxies.filter(x => !post_proxies.includes(x));
-    //     if (only_in_pre.length > 0) {
-    //         console.log('Only in pre state:', only_in_pre);
-    //     }
-
-    //     // Find entries only in post state  
-    //     const only_in_post = post_proxies.filter(x => !free_proxies.includes(x));
-    //     if (only_in_post.length > 0) {
-    //         console.log('Only in post state:', only_in_post);
-    //     }
-    //     assert(rc_proxies_after.length === free_proxies.length, `RC proxies got: ${rc_proxies_after.length}, want: ${free_proxies.length}`);
-
-    //     // Get current AH state
-    //     const ah_post = await collectProxyEntries(ah_api_after);
-
-    //     // Check merged delegations
-    //     const delegators = new Set([...rc_pre.keys(), ...ah_pre.keys()]);
-
-    //     for (const delegator of delegators) {
-    //         const ah_pre_delegations = ah_pre.get(delegator) || [];
-    //         const rc_pre_delegations = rc_pre.get(delegator) || [];
-    //         const ah_post_delegations = ah_post.get(delegator) || [];
-
-    //         // Check all AH pre-delegations still exist
-    //         for (const pre_d of ah_pre_delegations) {
-    //             assert(
-    //                 ah_post_delegations.some(post_d => 
-    //                     post_d.delegate === pre_d.delegate && 
-    //                     post_d.proxyType.toString() === pre_d.proxyType.toString()
-    //                 ),
-    //                 `Missing AH pre-delegation after migration for ${delegator}`
-    //             );
-    //         }
-
-    //         // Check translated RC delegations exist
-    //         for (const rc_d of rc_pre_delegations) {
-    //             const rcProxyType = rc_d.proxyType.toNumber();
-    //             const expectedAhProxyType = convertProxyType(rcProxyType);
-
-    //             // Skip unsupported proxy types
-    //             if (expectedAhProxyType === null) {
-    //                 console.debug(`Skipping unsupported RC proxy type ${RcProxyType[rcProxyType]} for ${delegator}`);
-    //                 continue;
-    //             }
-
-    //             // Check if the converted proxy type exists in AH post-migration
-    //             const found = ah_post_delegations.some(post_d => {
-    //                 const postProxyType = post_d.proxyType.toNumber();
-    //                 return post_d.delegate === rc_d.delegate && postProxyType === expectedAhProxyType;
-    //             });
-
-    //             assert(
-    //                 found,
-    //                 `Missing translated RC delegation for ${delegator}: RC type ${rcProxyType} (${RcProxyType[rcProxyType]}) should be converted to AH type ${expectedAhProxyType} (${AhProxyType[expectedAhProxyType]})`
-    //             );
-    //         }
-    //     }
-    // }
+        console.log(`Any zero: ${anyZero}`);
+        console.log(`Any zero errors: ${anyZeroErrors}`);
+        console.log(`Any non zero: ${anyNonZero}`);
+        console.log(`Any non zero errors: ${anyNonZeroErrors}`);
+        console.log(`Total: ${rc_pre.size}`);
+    },
 };
