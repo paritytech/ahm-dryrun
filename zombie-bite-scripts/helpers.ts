@@ -236,37 +236,6 @@ export async function checkScheduleMigrationCallStatus(atBlock: string, status: 
       return true;
     }
   }
-//   rcMigrator.scheduleMigration
-
-//   block.extrinsics.forEach(({ dispatchError, dispatchInfo, events, extrinsic }, index) => {
-//   console.log('>>', index, `${extrinsic.method.section}.${extrinsic.method.method}(${JSON.stringify(extrinsic.args)})`);
-//   console.log('events', JSON.stringify(events));
-//   console.log('dispatchInfo', JSON.stringify(dispatchInfo));
-
-//   // we can go through events, but for failed the dispatchError is extracted already
-//   if (dispatchError) {
-//     let errorInfo;
-
-//     // decode the error
-//     if (dispatchError.isModule) {
-//       // for module errors, we have the section indexed, lookup
-//       // (For specific known errors, we can also do a check against the
-//       // api.errors.<module>.<ErrorName>.is(dispatchError.asModule) guard)
-//       const decoded = api.registry.findMetaError(dispatchError.asModule);
-
-//       errorInfo = `${decoded.section}.${decoded.name} ${decoded.docs.join('')}`;
-//     } else {
-//       // Other, CannotLookup, BadOrigin, no extra info
-//       errorInfo = dispatchError.toString();
-//     }
-
-//     console.log('dispatchError', errorInfo);
-//   }
-
-//   console.log();
-// });
-
-// return true;
 }
 
 export async function scheduleMigration(migration_args?: scheduleMigrationArgs) {
