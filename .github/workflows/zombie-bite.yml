@@ -14,7 +14,11 @@ on:
           - ALL
           - kusama
           - polkadot
-
+      rc_runtime_override_url:
+        description: "An url to download the RC runtime to override"
+        required: false
+        type: string
+        default: ""
   schedule:
     - cron: "0 0 * * *" # Every Day for Kusama
     - cron: "0 0 * * 0" # Only on Sundays for Polkadot
