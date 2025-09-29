@@ -155,6 +155,120 @@ async function ah_check(uri: string) {
   });
 }
 
+export interface ScheduleMigrationStatus {
+  success: boolean,
+  errorName?: string
+}
+
+export async function waitForEvent(eventSubstring: string, rc_port?:number): Promise<boolean> {
+  logger.debug('args', rc_port, eventSubstring);
+  const rc_uri = `ws://localhost:${rc_port || rcPort}`;
+  const api = await connect(rc_uri);
+
+  const found = await new Promise((resolve) => {
+    api.query.system.events((events: any) => {
+      let eventString = "";
+      const matchedEvent = events.find((record: any) => {
+        eventString = "";
+        // extract the phase, event and the event types
+        const { event, phase } = record;
+        const types = event.typeDef;
+        eventString += `${event.section} : ${
+          event.method
+        } :: phase=${phase.toString()}\n`;
+        eventString += event.meta.docs.toString();
+        // loop through each of the parameters, displaying the type and data
+        event.data.forEach((data: any, index: any) => {
+          eventString += `${types[index].type};${data.toString()}`;
+        });
+        logger.debug("eventString", eventString);
+        return eventString.includes(eventString);
+      });
+
+      if (matchedEvent) {
+        logger.debug("mached event string", eventString);
+        return resolve(true);
+      }
+    });
+  });
+  return !!found;
+}
+
+export async function checkScheduleMigrationCallStatus(atBlock: string, status: ScheduleMigrationStatus, rc_port?: number): Promise<boolean> {
+  logger.debug('args', rc_port, atBlock);
+  const rc_uri = `ws://localhost:${rc_port || rcPort}`;
+  const api = await connect(rc_uri);
+
+  const block = await api.derive.chain.getBlock(atBlock);
+
+  let scheduleMigrationCall = block.extrinsics.find(({ dispatchError, dispatchInfo, events, extrinsic }) =>
+    extrinsic.method.section == "rcMigrator" && extrinsic.method.method == "scheduleMigration"
+  );
+
+  if(!scheduleMigrationCall) throw new Error("Can't find scheduleMigration Call");
+
+  // expect no error
+  if(status.success) {
+    logger.debug("scheduleMigration dispatched ok");
+    return scheduleMigrationCall.dispatchError ? false : true;
+  } else {
+    // ensure the tx fails
+    if(!scheduleMigrationCall.dispatchError) {
+      logger.debug("scheduleMigration dispatched ok, but error was expected");
+      return false;
+    }
+    // check the error if passed
+    if(status.errorName) {
+      let errorfinded;
+      // decode the error
+      if (scheduleMigrationCall?.dispatchError.isModule) {
+        const decoded = api.registry.findMetaError(scheduleMigrationCall?.dispatchError.asModule);
+        errorfinded = status.errorName == decoded.name;
+      } else {
+        // Other, CannotLookup,
+        errorfinded = scheduleMigrationCall?.dispatchError.toString().includes(status.errorName);
+      }
+      logger.debug(`scheduleMigration generate an error as expected, errorName: '${status.errorName}' matched: ${errorfinded}`);
+      return errorfinded;
+    } else {
+      // tx fail and not error was provided
+      logger.debug("scheduleMigration generate an error as expected");
+      return true;
+    }
+  }
+//   rcMigrator.scheduleMigration
+
+//   block.extrinsics.forEach(({ dispatchError, dispatchInfo, events, extrinsic }, index) => {
+//   console.log('>>', index, `${extrinsic.method.section}.${extrinsic.method.method}(${JSON.stringify(extrinsic.args)})`);
+//   console.log('events', JSON.stringify(events));
+//   console.log('dispatchInfo', JSON.stringify(dispatchInfo));
+
+//   // we can go through events, but for failed the dispatchError is extracted already
+//   if (dispatchError) {
+//     let errorInfo;
+
+//     // decode the error
+//     if (dispatchError.isModule) {
+//       // for module errors, we have the section indexed, lookup
+//       // (For specific known errors, we can also do a check against the
+//       // api.errors.<module>.<ErrorName>.is(dispatchError.asModule) guard)
+//       const decoded = api.registry.findMetaError(dispatchError.asModule);
+
+//       errorInfo = `${decoded.section}.${decoded.name} ${decoded.docs.join('')}`;
+//     } else {
+//       // Other, CannotLookup, BadOrigin, no extra info
+//       errorInfo = dispatchError.toString();
+//     }
+
+//     console.log('dispatchError', errorInfo);
+//   }
+
+//   console.log();
+// });
+
+// return true;
+}
+
 export async function scheduleMigration(migration_args?: scheduleMigrationArgs) {
   logger.info('migration_args', migration_args);
   const rc_uri = `ws://localhost:${migration_args && migration_args.rc_port || rcPort}`;
@@ -183,21 +297,23 @@ export async function scheduleMigration(migration_args?: scheduleMigrationArgs) 
         logger.info('Migration transaction status', { status: result.status.toString() });
 
         if (result.status.isInBlock) {
+          const blockHash = result.status.asInBlock.toString();
           logger.info('Transaction included in block', {
-            blockHash: result.status.asInBlock.toString()
+            blockHash
           });
           if (finalization) {
             logger.info('Waiting for finalization...');
           } else {
             finish(unsub, api);
-            return resolve(true);
+            return resolve(blockHash);
           }
         } else if (result.status.isFinalized) {
+          const blockHash = result.status.asFinalized.toString()
           logger.info('Transaction finalized', {
-            blockHash: result.status.asFinalized.toString()
+            blockHash
           });
           finish(unsub, api);
-          return resolve(true);
+          return resolve(blockHash);
         } else if (result.isError) {
           logger.error('Transaction error', { error: result.toHuman() });
           finish(unsub, api);
