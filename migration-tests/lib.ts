@@ -54,7 +54,7 @@ const excludedTestsPerNetwork: Record<Network, MigrationTest[]> = {
     // https://github.com/paritytech/ahm-dryrun/issues/67
     convictionVotingTests,
     voterListTests,
-    proxyTests,
+    // proxyTests,
   ],
   Polkadot: [],
 };
@@ -168,8 +168,11 @@ async function setupTestContext(
 
   const rc_migration_start_result = await rc_api.query.rcMigrator.migrationStartBlock();
   const rc_migration_finish_result = await rc_api.query.rcMigrator.migrationEndBlock();  
-  const rc_migration_start_block = rc_migration_start_result.isEmpty ? 0 : rc_migration_start_result.toPrimitive();
-  const rc_migration_finish_block = rc_migration_finish_result.isEmpty ? 0 : rc_migration_finish_result.toPrimitive();
+  if (rc_migration_start_result.isEmpty || rc_migration_finish_result.isEmpty) {
+    throw new Error('Migration blocks not found in rcMigrator storage');
+  }
+  const rc_migration_start_block = rc_migration_start_result.toPrimitive();
+  const rc_migration_finish_block = rc_migration_finish_result.toPrimitive();
 
   const rc_block_hash_before = await rc_api.rpc.chain.getBlockHash(rc_migration_start_block as number);
   const rc_api_before = await rc_api.at(rc_block_hash_before);
@@ -186,8 +189,11 @@ async function setupTestContext(
 
   const ah_migration_start_result = await ah_api.query.ahMigrator.migrationStartBlock();
   const ah_migration_finish_result = await ah_api.query.ahMigrator.migrationEndBlock();
-  const ah_migration_start_block = ah_migration_start_result.isEmpty ? 0 : ah_migration_start_result.toPrimitive();
-  const ah_migration_finish_block = ah_migration_finish_result.isEmpty ? 0 : ah_migration_finish_result.toPrimitive();
+  if (ah_migration_start_result.isEmpty || ah_migration_finish_result.isEmpty) {
+    throw new Error('Migration blocks not found in ahMigrator storage');
+  }
+  const ah_migration_start_block = ah_migration_start_result.toPrimitive();
+  const ah_migration_finish_block = ah_migration_finish_result.toPrimitive();
 
   const ah_block_hash_before = await ah_api.rpc.chain.getBlockHash(ah_migration_start_block as number);
   const ah_api_before = await ah_api.at(ah_block_hash_before);
