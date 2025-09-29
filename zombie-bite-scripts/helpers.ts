@@ -5,7 +5,8 @@ import { logger } from "../shared/logger.js";
 
 const rcPort = process.env.ZOMBIE_BITE_ALICE_PORT || 63168;
 const ahPort = process.env.ZOMBIE_BITE_AH_PORT || 63170;
-const finalization = false;
+
+let finalization = false;
 let mock_finish_flag = false;
 
 interface At {
@@ -18,12 +19,13 @@ interface After {
 
 type DispatchTime = At | After;
 
-interface scheduleMigrationArgs {
+export interface scheduleMigrationArgs {
   rc_port?: number|string,
   rc_block_start?: DispatchTime
   cool_off_end?: DispatchTime
   warm_up_end?: DispatchTime
-  ignore_staking_check?: boolean
+  ignore_staking_check?: boolean,
+  finalization?: boolean,
 };
 
 async function connect(apiUrl: string, types = {}) {
@@ -153,7 +155,91 @@ async function ah_check(uri: string) {
   });
 }
 
+export interface ScheduleMigrationStatus {
+  success: boolean,
+  errorName?: string
+}
+
+export async function waitForEvent(eventSubstring: string, rc_port?:number): Promise<boolean> {
+  logger.debug('args', rc_port, eventSubstring);
+  const rc_uri = `ws://localhost:${rc_port || rcPort}`;
+  const api = await connect(rc_uri);
+
+  const found = await new Promise((resolve) => {
+    api.query.system.events((events: any) => {
+      let eventString = "";
+      const matchedEvent = events.find((record: any) => {
+        eventString = "";
+        // extract the phase, event and the event types
+        const { event, phase } = record;
+        const types = event.typeDef;
+        eventString += `${event.section} : ${
+          event.method
+        } :: phase=${phase.toString()}\n`;
+        eventString += event.meta.docs.toString();
+        // loop through each of the parameters, displaying the type and data
+        event.data.forEach((data: any, index: any) => {
+          eventString += `${types[index].type};${data.toString()}`;
+        });
+        logger.debug("eventString", eventString);
+        return eventString.includes(eventString);
+      });
+
+      if (matchedEvent) {
+        logger.debug("mached event string", eventString);
+        return resolve(true);
+      }
+    });
+  });
+  return !!found;
+}
+
+export async function checkScheduleMigrationCallStatus(atBlock: string, status: ScheduleMigrationStatus, rc_port?: number): Promise<boolean> {
+  logger.debug('args', rc_port, atBlock);
+  const rc_uri = `ws://localhost:${rc_port || rcPort}`;
+  const api = await connect(rc_uri);
+
+  const block = await api.derive.chain.getBlock(atBlock);
+
+  let scheduleMigrationCall = block.extrinsics.find(({ dispatchError, dispatchInfo, events, extrinsic }) =>
+    extrinsic.method.section == "rcMigrator" && extrinsic.method.method == "scheduleMigration"
+  );
+
+  if(!scheduleMigrationCall) throw new Error("Can't find scheduleMigration Call");
+
+  // expect no error
+  if(status.success) {
+    logger.debug("scheduleMigration dispatched ok");
+    return scheduleMigrationCall.dispatchError ? false : true;
+  } else {
+    // ensure the tx fails
+    if(!scheduleMigrationCall.dispatchError) {
+      logger.debug("scheduleMigration dispatched ok, but error was expected");
+      return false;
+    }
+    // check the error if passed
+    if(status.errorName) {
+      let errorfinded;
+      // decode the error
+      if (scheduleMigrationCall?.dispatchError.isModule) {
+        const decoded = api.registry.findMetaError(scheduleMigrationCall?.dispatchError.asModule);
+        errorfinded = status.errorName == decoded.name;
+      } else {
+        // Other, CannotLookup,
+        errorfinded = scheduleMigrationCall?.dispatchError.toString().includes(status.errorName);
+      }
+      logger.debug(`scheduleMigration generate an error as expected, errorName: '${status.errorName}' matched: ${errorfinded}`);
+      return errorfinded;
+    } else {
+      // tx fail and not error was provided
+      logger.debug("scheduleMigration generate an error as expected");
+      return true;
+    }
+  }
+}
+
 export async function scheduleMigration(migration_args?: scheduleMigrationArgs) {
+  logger.info('migration_args', migration_args);
   const rc_uri = `ws://localhost:${migration_args && migration_args.rc_port || rcPort}`;
   await cryptoWaitReady();
 
@@ -168,9 +254,11 @@ export async function scheduleMigration(migration_args?: scheduleMigrationArgs) 
   const start = migration_args && migration_args.rc_block_start || { after: 1 };
   const warm_up_end = migration_args && migration_args.warm_up_end || { after: 1 };
   const cool_off_end = migration_args && migration_args.cool_off_end || { after: 2 };
-  const ignore_staking_check = migration_args && migration_args.ignore_staking_check || true;
+  const ignore_staking_check = (migration_args && migration_args.ignore_staking_check == false) ? false : true;
 
-  logger.info('Scheduling migration', { start, warm_up_end, cool_off_end, nonce, ignore_staking_check });
+  finalization = migration_args && migration_args.finalization ? true : false;
+
+  logger.info('Scheduling migration', { start, warm_up_end, cool_off_end,ignore_staking_check, nonce, finalization });
 
   return new Promise(async (resolve, reject) => {
     const unsub: any = await api.tx.rcMigrator.scheduleMigration(start, warm_up_end, cool_off_end, ignore_staking_check)
@@ -178,21 +266,23 @@ export async function scheduleMigration(migration_args?: scheduleMigrationArgs) 
         logger.info('Migration transaction status', { status: result.status.toString() });
 
         if (result.status.isInBlock) {
+          const blockHash = result.status.asInBlock.toString();
           logger.info('Transaction included in block', {
-            blockHash: result.status.asInBlock.toString()
+            blockHash
           });
           if (finalization) {
             logger.info('Waiting for finalization...');
           } else {
             finish(unsub, api);
-            return resolve(true);
+            return resolve(blockHash);
           }
         } else if (result.status.isFinalized) {
+          const blockHash = result.status.asFinalized.toString()
           logger.info('Transaction finalized', {
-            blockHash: result.status.asFinalized.toString()
+            blockHash
           });
           finish(unsub, api);
-          return resolve(true);
+          return resolve(blockHash);
         } else if (result.isError) {
           logger.error('Transaction error', { error: result.toHuman() });
           finish(unsub, api);
