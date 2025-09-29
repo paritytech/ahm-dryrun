@@ -108,17 +108,24 @@ jobs:
           RC_OVERRIDE="./runtime_wasm/${NETWORK}_runtime.compact.compressed.wasm"
           AH_OVERRIDE="./runtime_wasm/asset_hub_${NETWORK}_runtime.compact.compressed.wasm"
 
+          echo "::group::custom-overrides"
+
           if [[ $RC_OVERRIDE_URL != "" ]];then
             RC_OVERRIDE="/tmp/${NETWORK}_custom_runtime.compact.compressed.wasm"
             curl $RC_OVERRIDE_URL -o "/tmp/${NETWORK}_custom_rc_runtime.compact.compressed.wasm"
             echo "runtime downloaded from ${RC_OVERRIDE_URL}"
+          else
+            echo "No custom runtime for RC"
           fi;
 
           if [[ $AH_OVERRIDE_URL != "" ]];then
             RC_OVERRIDE="/tmp/${NETWORK}_custom_runtime.compact.compressed.wasm"
             curl $AH_OVERRIDE_URL -o "/tmp/${NETWORK}_custom_ah_runtime.compact.compressed.wasm"
             echo "runtime downloaded from ${AH_OVERRIDE_URL}"
+          else
+            echo "No custom runtime for AH"
           fi;
+          echo "::endgroup::"
 
           ls $RC_OVERRIDE
           ls $AH_OVERRIDE
