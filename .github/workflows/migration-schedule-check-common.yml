@@ -66,7 +66,7 @@ jobs:
       - name: wait_for_network
         uses: ./.github/actions/wait-zb-network-ready
 
-      - name: schedule_migration_earlier
+      - name: schedule_migration_call_test
         shell: bash
         timeout-minutes: 10
         env:
@@ -85,6 +85,6 @@ jobs:
           just zb wait-for-nodes $ZOMBIE_BITE_BASE_PATH
           echo "::endgroup::"
 
-          echo "::group::run-migration"
-          node dist/zombie-bite-scripts/migration_shedule_migration.js $ALICE_PORT "{\"ignore_staking_check\":false}"
+          echo "::group::scheduleMigration_call_test"
+          node dist/zombie-bite-scripts/schedule_migration_test.js $ALICE_PORT
           echo "::endgroup::"
