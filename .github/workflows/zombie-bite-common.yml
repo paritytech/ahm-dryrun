@@ -69,8 +69,14 @@ jobs:
         env:
           RUSTFLAGS: "-A warnings"
           NETWORK: ${{ inputs.network }}
+          RC_OVERRIDE_URL: ${{ inputs.rc_runtime_override_url }}
+          AH_OVERRIDE_URL: ${{ inputs.ah_runtime_override_url }}
         run: |
-          just build $NETWORK
+          if [[ $RC_OVERRIDE_URL == "" || $AH_OVERRIDE_URL == "" ]];then
+            just build $NETWORK
+          else
+            echo "Both RC/AH custom runtime url provided, skipping build step."
+          fi;
 
       - name: create_base_dir
         shell: bash
