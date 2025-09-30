@@ -141,10 +141,11 @@ jobs:
           source .env
           set +a
 
-          echo "::group::find-rc-block-bite"
-          RC_BITE_BLOCK=$(just find-rc-block-bite $NETWORK)
-          echo "Found RC block to bite: $RC_BITE_BLOCK"
-          echo "::endgroup::"
+          # @x3c41a is this still needed?
+          # echo "::group::find-rc-block-bite"
+          # RC_BITE_BLOCK=$(just find-rc-block-bite $NETWORK)
+          # echo "Found RC block to bite: $RC_BITE_BLOCK"
+          # echo "::endgroup::"
 
           # TODO: add ones we support this in zombie-bite
           # --rc-bite-block $RC_BITE_BLOCK
