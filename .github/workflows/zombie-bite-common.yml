@@ -17,6 +17,14 @@ on:
         required: false
         type: string
         default: ""
+      rc_runtime_override_url:
+        required: false
+        type: string
+        default: ""
+      ah_runtime_override_url:
+        required: false
+        type: string
+        default: ""
 
 env:
   ZOMBIE_BITE_BASE_PATH: "/tmp/ci"
@@ -61,8 +69,14 @@ jobs:
         env:
           RUSTFLAGS: "-A warnings"
           NETWORK: ${{ inputs.network }}
+          RC_OVERRIDE_URL: ${{ inputs.rc_runtime_override_url }}
+          AH_OVERRIDE_URL: ${{ inputs.ah_runtime_override_url }}
         run: |
-          just build $NETWORK
+          if [[ $RC_OVERRIDE_URL == "" || $AH_OVERRIDE_URL == "" ]];then
+            just build $NETWORK
+          else
+            echo "Both RC/AH custom runtime url provided, skipping build step."
+          fi;
 
       - name: create_base_dir
         shell: bash
@@ -85,6 +99,8 @@ jobs:
         env:
           NETWORK: ${{ inputs.network }}
           SUDO: ${{ inputs.sudo-key }}
+          RC_OVERRIDE_URL: ${{ inputs.rc_runtime_override_url }}
+          AH_OVERRIDE_URL: ${{ inputs.ah_runtime_override_url }}
         run: |
           export PATH=${AHM_BINS}:$PATH
 
@@ -97,6 +113,26 @@ jobs:
           echo $(pwd)
           RC_OVERRIDE="./runtime_wasm/${NETWORK}_runtime.compact.compressed.wasm"
           AH_OVERRIDE="./runtime_wasm/asset_hub_${NETWORK}_runtime.compact.compressed.wasm"
+
+          echo "::group::custom-overrides"
+
+          if [[ $RC_OVERRIDE_URL != "" ]];then
+            RC_OVERRIDE="/tmp/${NETWORK}_custom_runtime.compact.compressed.wasm"
+            curl $RC_OVERRIDE_URL -o $RC_OVERRIDE
+            echo "runtime downloaded from ${RC_OVERRIDE_URL}"
+          else
+            echo "No custom runtime for RC"
+          fi;
+
+          if [[ $AH_OVERRIDE_URL != "" ]];then
+            AH_OVERRIDE="/tmp/${NETWORK}_ah_custom_runtime.compact.compressed.wasm"
+            curl $AH_OVERRIDE_URL -o $AH_OVERRIDE
+            echo "runtime downloaded from ${AH_OVERRIDE_URL}"
+          else
+            echo "No custom runtime for AH"
+          fi;
+          echo "::endgroup::"
+
           ls $RC_OVERRIDE
           ls $AH_OVERRIDE
 
