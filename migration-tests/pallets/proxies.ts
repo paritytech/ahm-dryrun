@@ -90,9 +90,8 @@ async function collectRcProxyEntries(api: ApiDecoration<"promise">): Promise<Map
         const nonce = await api.query.system.account(delegator).then(acc => acc.nonce.toNumber());
 
         const [delegations] = value as unknown as [Vec<PalletProxyProxyDefinition>, u128];
+        const mapKey = [delegator.toString(), nonce] as [delegator: string, nonce: number];
         for (const delegation of delegations) {
-            const mapKey = [delegator.toString(), nonce] as [delegator: string, nonce: number];
-            
             if (!proxies.has(mapKey)) {
                 proxies.set(mapKey, []);
             }
@@ -126,10 +125,6 @@ export const proxyTests: MigrationTest = {
         pre_payload: PreCheckResult
     ): Promise<void> => {
         const { rc_api_after, ah_api_after } = context;
-        let anyZero = 0;
-        let anyZeroErrors = 0;
-        let anyNonZero = 0;
-        let anyNonZeroErrors = 0;
 
         // Verify RC is empty after migration
         const rc_proxies_after = await rc_api_after.query.proxy.proxies.entries();
@@ -156,37 +151,18 @@ export const proxyTests: MigrationTest = {
 
             // Count number of Any proxy types for that account
             const numAny = proxies.filter(([proxyType]) => proxyType === 'Any').length;
-            console.log(`Proxies for ${account}: ${proxies}`);
-            console.log(`Num any: ${numAny}`);
             const [postProxies, deposit] = await rc_api_after.query.proxy.proxies(account);
-            console.log(`Post proxies for ${account}: ${postProxies}`);
             
             if (numAny === 0) {
-                anyZero++;
                 const containsKey = rc_proxies_after.some(([k]) => k.args[0].toString() === account);
-                if (containsKey) {
-                    anyZeroErrors++;
-                    console.log(`Has proxies for ${account}`);
-                }
-                // assert(!containsKey, "No empty vectors should exist in storage");
+                assert(!containsKey, "No empty vectors should exist in storage");
                 continue;
             }
 
-            anyNonZero++;
             // Verify deposit is zero and proxy count matches
             assert(deposit.isZero(), `Deposit should be zero for pure proxy ${account}`);
-            if (postProxies.length !== numAny) {
-                anyNonZeroErrors++;
-                console.log(`Number of proxies should match for ${account}. Got: ${postProxies.length}, Expected: ${numAny}`);
-            }
-            // assert.equal(postProxies.length, numAny, 
-            //     `Number of proxies should match for ${account}. Got: ${postProxies.length}, Expected: ${numAny}`);
+            assert.equal(postProxies.length, numAny, 
+                `Number of proxies should match for ${account}. Got: ${postProxies.length}, Expected: ${numAny}`);
         }
-        
-        console.log(`Any zero: ${anyZero}`);
-        console.log(`Any zero errors: ${anyZeroErrors}`);
-        console.log(`Any non zero: ${anyNonZero}`);
-        console.log(`Any non zero errors: ${anyNonZeroErrors}`);
-        console.log(`Total: ${rc_pre.size}`);
     },
 };
