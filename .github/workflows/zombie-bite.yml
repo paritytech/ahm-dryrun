@@ -15,12 +15,12 @@ on:
           - kusama
           - polkadot
       rc_runtime_override_url:
-        description: "An url to download the RC runtime to override"
+        description: "An url to download the RC runtime to override (e.g https://some-server.com/kusama_runtime-v1009000.compact.compressed_processed.wasm)"
         required: false
         type: string
         default: ""
       ah_runtime_override_url:
-        description: "An url to download the AH runtime to override"
+        description: "An url to download the AH runtime to override (e.g https://some-server.com/asset-hub-kusama_runtime-v1009000.compact.compressed_processed.wasm)"
         required: false
         type: string
         default: ""
