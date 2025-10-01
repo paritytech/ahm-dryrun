@@ -15,12 +15,12 @@ on:
           - kusama
           - polkadot
       rc_runtime_override_url:
-        description: "An url to download the RC runtime to override (e.g https://some-server.com/kusama_runtime-v1009000.compact.compressed_processed.wasm)"
+        description: "Url to download the RC runtime to override (e.g https://some-server.com/kusama_runtime-v1009000.compact.compressed_processed.wasm)"
         required: false
         type: string
         default: ""
       ah_runtime_override_url:
-        description: "An url to download the AH runtime to override (e.g https://some-server.com/asset-hub-kusama_runtime-v1009000.compact.compressed_processed.wasm)"
+        description: "Url to download the AH runtime to override (e.g https://some-server.com/asset-hub-kusama_runtime-v1009000.compact.compressed_processed.wasm)"
         required: false
         type: string
         default: ""
@@ -57,42 +57,3 @@ jobs:
       ah_runtime_override_url: ${{ inputs.ah_runtime_override_url }}
       runner: parity-large-persistent-test
 
-  # Paseo migration disabled (already done)
-  # zombie_bite_paseo:
-  #   # run by schedule everyday or by demand
-  #   if: ${{ inputs.network == 'ALL' || inputs.network == 'paseo' || github.event.schedule == '0 0 * * *' }}
-  #   uses: ./.github/workflows/zombie-bite-common.yml
-  #   with:
-  #     network: paseo
-  #     sudo-key: ${{ inputs.sudo-key }}
-
-  # zombie_bite_polkadot_test_runner:
-  #   # run by schedule only in Sundays or by demand
-  #   if: ${{ inputs.network == 'ALL' || inputs.network == 'polkadot' || github.event.schedule == '0 0 * * 0' }}
-  #   uses: ./.github/workflows/zombie-bite-common.yml
-  #   with:
-  #     network: polkadot
-  #     sudo-key: ${{ inputs.sudo-key }}
-  #     runner: parity-large-persistent-test
-  #     args: "-test-runner"
-
-  # zombie_bite_kusama_test_runner:
-  #   # run by demand
-  #   if: ${{ inputs.network == 'ALL' || inputs.network == 'kusama' || github.event.schedule == '0 0 * * *' }}
-  #   uses: ./.github/workflows/zombie-bite-common.yml
-  #   with:
-  #     network: kusama
-  #     sudo-key: ${{ inputs.sudo-key }}
-  #     runner: parity-large-persistent-test
-  #     args: "-test-runner"
-
-  # Paseo migration disabled (already done)
-  # zombie_bite_paseo_test_runner:
-  #   # run by schedule everyday or by demand
-  #   if: ${{ inputs.network == 'ALL' || inputs.network == 'paseo' || github.event.schedule == '0 0 * * *' }}
-  #   uses: ./.github/workflows/zombie-bite-common.yml
-  #   with:
-  #     network: paseo
-  #     sudo-key: ${{ inputs.sudo-key }}
-  #     runner: parity-large-persistent-test
-  #     args: "-test-runner"
