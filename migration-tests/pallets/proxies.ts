@@ -206,7 +206,7 @@ export const proxyTests: MigrationTest = {
             ...Array.from(ah_pre.keys())
         ]);
 
-        let failed = 0;
+        let not_found = 0;
         for (const delegator of translated_delegators) {
             // Get post-migration AH delegations
             const [ah_post_proxies] = await ah_api_after.query.proxy.proxies(delegator);
@@ -237,25 +237,20 @@ export const proxyTests: MigrationTest = {
 
                 // Verify all translatable RC delegations exist in post-migration state
                 for (const [rcProxyType, rcDelegate] of rc_delegations) {
-                    
                     const convertedType = convertProxyType(rcProxyTypeFromString(rcProxyType));
-                    // Skip if proxy type cannot be translated
                     if (convertedType === null) continue;
 
                     const translatedDelegate = translateAccountRcToAh(rcDelegate);
-
                     
-                    const res = ah_post_delegations.some(d =>
+                    const exists = ah_post_delegations.some(d =>
                         d.proxyType.toString() === AhProxyType[convertedType] &&
                         d.delegate === translatedDelegate
                     );
-                    if (!res) {
+                    if (!exists) {
                         console.log(`Converted type ${AhProxyType[convertedType]} translated delegate ${translatedDelegate} in post-migration state`);
                         console.log(`AH post delegations: ${JSON.stringify(ah_post_delegations)}`);
                         console.log(`Delegator: ${delegator}`);
-                        failed++;
-                        // console.log(`RC delegations: ${JSON.stringify(rc_delegations)}`);
-                        // console.log(`AH post delegations: ${JSON.stringify(ah_post_delegations)}`);
+                        not_found++;
                     }
                     // assert(
                     //     res,
@@ -264,7 +259,7 @@ export const proxyTests: MigrationTest = {
                 }
             }
         }
-        console.log(`Failed: ${failed}`);
+        console.log(`Not found: ${not_found}`);
 
     },
 };
