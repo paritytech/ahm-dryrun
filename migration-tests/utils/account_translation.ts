@@ -6,6 +6,7 @@ import {
   TranslationEntry,
   DerivedTranslationEntry,
   u8aToHex,
+  compareUint8Arrays,
 } from "./sovereign_account_translation.js";
 import { hexToU8a } from "@polkadot/util";
 
@@ -83,7 +84,7 @@ export class AccountTranslator {
       const mid = Math.floor((left + right) / 2);
       const entry = translations[mid];
 
-      const compareResult = this.compareUint8Arrays(account, entry.rcAccount);
+      const compareResult = compareUint8Arrays(account, entry.rcAccount);
 
       if (compareResult === 0) {
         return entry;
@@ -184,19 +185,6 @@ export class AccountTranslator {
     account: Uint8Array
   ): DerivedTranslationEntry | undefined {
     return this.binarySearch(account, BIFROST_DERIVED_TRANSLATIONS);
-  }
-
-  private compareUint8Arrays(a: Uint8Array, b: Uint8Array): number {
-    // Compare raw bytes directly for better performance
-    if (a.length !== b.length) {
-      return a.length - b.length;
-    }
-    for (let i = 0; i < a.length; i++) {
-      if (a[i] !== b[i]) {
-        return a[i] - b[i];
-      }
-    }
-    return 0;
   }
 }
 

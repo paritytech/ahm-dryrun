@@ -18,7 +18,7 @@ export interface DerivedTranslationEntry {
 }
 
 // List of RC para to AH sibl sovereign account translation.
-// Note: This data will be sorted by rcAccount hex values for binary search optimization.
+// Note: This data will be sorted by rcAccount for binary search optimization.
 const SOV_TRANSLATIONS_RAW: TranslationEntry[] = [
   // para 0
   {
@@ -400,7 +400,7 @@ export const SOV_TRANSLATIONS: TranslationEntry[] = SOV_TRANSLATIONS_RAW.sort((a
 });
 
 /// List of RC para to AH sibl derived account translation.
-/// Note: This data will be sorted by rcAccount hex values for binary search optimization.
+/// Note: This data will be sorted by rcAccount for binary search optimization.
 const DERIVED_TRANSLATIONS_RAW: DerivedTranslationEntry[] = [
   // para 2000
   // para 2000 (derivation index 0)
@@ -633,7 +633,7 @@ export const BIFROST_DERIVED_TRANSLATIONS: DerivedTranslationEntry[] = BIFROST_D
 });
 
 // Helper function to compare Uint8Arrays for sorting
-function compareUint8Arrays(a: Uint8Array, b: Uint8Array): number {
+export function compareUint8Arrays(a: Uint8Array, b: Uint8Array): number {
   if (a.length !== b.length) {
     return a.length - b.length;
   }
