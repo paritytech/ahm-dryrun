@@ -393,12 +393,10 @@ const SOV_TRANSLATIONS_RAW: TranslationEntry[] = [
   },
 ];
 
-// Sort the sovereign translations by rcAccount hex values for binary search optimization
+// Sort the sovereign translations by rcAccount raw bytes for binary search optimization
 export const SOV_TRANSLATIONS: TranslationEntry[] = SOV_TRANSLATIONS_RAW.sort((a, b) => {
-  // Convert Uint8Array to hex string for comparison
-  const aHex = Array.from(a.rcAccount).map(b => b.toString(16).padStart(2, '0')).join('');
-  const bHex = Array.from(b.rcAccount).map(b => b.toString(16).padStart(2, '0')).join('');
-  return aHex.localeCompare(bHex);
+  // Compare raw bytes directly for better performance
+  return compareUint8Arrays(a.rcAccount, b.rcAccount);
 });
 
 /// List of RC para to AH sibl derived account translation.
@@ -529,12 +527,10 @@ const DERIVED_TRANSLATIONS_RAW: DerivedTranslationEntry[] = [
   },
 ];
 
-// Sort the derived translations by rcAccount hex values for binary search optimization
+// Sort the derived translations by rcAccount raw bytes for binary search optimization
 export const DERIVED_TRANSLATIONS: DerivedTranslationEntry[] = DERIVED_TRANSLATIONS_RAW.sort((a, b) => {
-  // Convert Uint8Array to hex string for comparison
-  const aHex = Array.from(a.rcAccount).map(b => b.toString(16).padStart(2, '0')).join('');
-  const bHex = Array.from(b.rcAccount).map(b => b.toString(16).padStart(2, '0')).join('');
-  return aHex.localeCompare(bHex);
+  // Compare raw bytes directly for better performance
+  return compareUint8Arrays(a.rcAccount, b.rcAccount);
 });
 
 // Secondary list containg the Bifrost soverign accounts on different chains for explicit verification
@@ -624,23 +620,32 @@ const BIFROST_DERIVED_TRANSLATIONS_RAW: DerivedTranslationEntry[] = [
   },
 ];
 
-// Sort the Bifrost sovereign translations by rcAccount hex values for binary search optimization
+// Sort the Bifrost sovereign translations by rcAccount raw bytes for binary search optimization
 export const BIFROST_SOV_TRANSLATIONS: TranslationEntry[] = BIFROST_SOV_TRANSLATIONS_RAW.sort((a, b) => {
-  // Convert Uint8Array to hex string for comparison
-  const aHex = Array.from(a.rcAccount).map(b => b.toString(16).padStart(2, '0')).join('');
-  const bHex = Array.from(b.rcAccount).map(b => b.toString(16).padStart(2, '0')).join('');
-  return aHex.localeCompare(bHex);
+  // Compare raw bytes directly for better performance
+  return compareUint8Arrays(a.rcAccount, b.rcAccount);
 });
 
-// Sort the Bifrost derived translations by rcAccount hex values for binary search optimization
+// Sort the Bifrost derived translations by rcAccount raw bytes for binary search optimization
 export const BIFROST_DERIVED_TRANSLATIONS: DerivedTranslationEntry[] = BIFROST_DERIVED_TRANSLATIONS_RAW.sort((a, b) => {
-  // Convert Uint8Array to hex string for comparison
-  const aHex = Array.from(a.rcAccount).map(b => b.toString(16).padStart(2, '0')).join('');
-  const bHex = Array.from(b.rcAccount).map(b => b.toString(16).padStart(2, '0')).join('');
-  return aHex.localeCompare(bHex);
+  // Compare raw bytes directly for better performance
+  return compareUint8Arrays(a.rcAccount, b.rcAccount);
 });
+
+// Helper function to compare Uint8Arrays for sorting
+function compareUint8Arrays(a: Uint8Array, b: Uint8Array): number {
+  if (a.length !== b.length) {
+    return a.length - b.length;
+  }
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) {
+      return a[i] - b[i];
+    }
+  }
+  return 0;
+}
 
 // Helper function to convert Uint8Array to hex string for debugging
 export function u8aToHex(bytes: Uint8Array): string {
     return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
-  }
+}
