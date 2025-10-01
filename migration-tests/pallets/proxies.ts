@@ -137,38 +137,47 @@ export const proxyTests: MigrationTest = {
         // Get current AH state
         const ah_post = await collectProxyEntries(ah_api_after);
 
-        // Check merged delegations
-        const delegators = new Set([...rc_pre.keys(), ...ah_pre.keys()]);
+        // Apply account translation to RC delegators 
+        const translated_rc_delegators_set = new Set(
+            [...rc_pre.keys()].map(delegator => translateAccountRcToAh(delegator))
+        );
+        // add ah_pre.keys() to the set
+        const translated_rc_delegators = new Set([...translated_rc_delegators_set, ...ah_pre.keys()]);
 
-        for (const delegator of delegators) {
-            const ah_pre_delegations = ah_pre.get(delegator) || [];
-            const rc_pre_delegations = rc_pre.get(delegator) || [];
-            const ah_post_delegations = ah_post.get(delegator) || [];
+        for (const translated_delegator of translated_rc_delegators) {
+            const ah_pre_delegations = ah_pre.get(translated_delegator) || [];
+            const ah_post_delegations = ah_post.get(translated_delegator) || [];
 
             // Check all AH pre-delegations still exist
-            for (const pre_d of ah_pre_delegations) {
+            for (const ah_pre_d of ah_pre_delegations) {
                 assert(
-                    ah_post_delegations.some(post_d => 
-                        post_d.delegate === pre_d.delegate && 
-                        post_d.proxyType.toString() === pre_d.proxyType.toString()
+                    ah_post_delegations.some(ah_post_d => 
+                        ah_post_d.delegate === ah_pre_d.delegate && 
+                        ah_post_d.proxyType.toString() === ah_pre_d.proxyType.toString()
                     ),
-                    `Missing AH pre-delegation after migration for ${delegator}`
+                    `Missing AH pre-delegation after migration for ${translated_delegator}`
                 );
             }
 
+            // Find corresponding RC delegations for this translated delegator
+            const original_rc_delegator = [...rc_pre.keys()].find(orig => 
+                translateAccountRcToAh(orig) === translated_delegator
+            );
+            const rc_pre_delegations = original_rc_delegator ? rc_pre.get(original_rc_delegator) || [] : [];
+
             // Check translated RC delegations exist
-            for (const rc_d of rc_pre_delegations) {
-                const rcProxyType = rc_d.proxyType.toNumber();
+            for (const rc_pre_d of rc_pre_delegations) {
+                const rcProxyType = rc_pre_d.proxyType.toNumber();
                 const expectedAhProxyType = convertProxyType(rcProxyType);
 
                 // Skip unsupported proxy types
                 if (expectedAhProxyType === null) {
-                    console.debug(`Skipping unsupported RC proxy type ${RcProxyType[rcProxyType]} for ${delegator}`);
+                    console.debug(`Skipping unsupported RC proxy type ${RcProxyType[rcProxyType]} for ${translated_delegator}`);
                     continue;
                 }
 
                 // Translate the delegate account for comparison
-                const translatedDelegate = translateAccountRcToAh(rc_d.delegate);
+                const translatedDelegate = translateAccountRcToAh(rc_pre_d.delegate);
 
                 // Check if the converted proxy type exists in AH post-migration
                 const found = ah_post_delegations.some(post_d => {
@@ -178,44 +187,10 @@ export const proxyTests: MigrationTest = {
 
                 assert(
                     found,
-                    `Missing translated RC delegation for ${delegator}: RC type ${rcProxyType} (${RcProxyType[rcProxyType]}) should be converted to AH type ${expectedAhProxyType} (${AhProxyType[expectedAhProxyType]})`
+                    `Missing translated RC delegation for ${translated_delegator}: RC type ${rcProxyType} (${RcProxyType[rcProxyType]}) should be converted to AH type ${expectedAhProxyType} (${AhProxyType[expectedAhProxyType]})`
                 );
             }
         }
 
-        // Also check that translated RC delegators exist in AH
-        for (const rcDelegator of rc_pre.keys()) {
-            const translatedDelegator = translateAccountRcToAh(rcDelegator);
-            const rcDelegations = rc_pre.get(rcDelegator) || [];
-            
-            // Check if the translated delegator exists in AH post-migration
-            const ahPostDelegations = ah_post.get(translatedDelegator);
-            assert(
-                ahPostDelegations !== undefined,
-                `Translated RC delegator ${translatedDelegator} (from ${rcDelegator}) not found in AH after migration`
-            );
-
-            // Verify that all translatable RC delegations exist for this translated delegator
-            for (const rc_d of rcDelegations) {
-                const rcProxyType = rc_d.proxyType.toNumber();
-                const expectedAhProxyType = convertProxyType(rcProxyType);
-
-                // Skip unsupported proxy types
-                if (expectedAhProxyType === null) {
-                    continue;
-                }
-
-                const translatedDelegate = translateAccountRcToAh(rc_d.delegate);
-                const found = ahPostDelegations.some(post_d => {
-                    const postProxyType = post_d.proxyType.toNumber();
-                    return post_d.delegate === translatedDelegate && postProxyType === expectedAhProxyType;
-                });
-
-                assert(
-                    found,
-                    `Missing translated RC delegation for translated delegator ${translatedDelegator}: RC type ${rcProxyType} (${RcProxyType[rcProxyType]}) should be converted to AH type ${expectedAhProxyType} (${AhProxyType[expectedAhProxyType]})`
-                );
-            }
-        }
     }
 };
