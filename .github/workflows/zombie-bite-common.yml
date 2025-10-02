@@ -201,10 +201,7 @@ jobs:
           echo "::endgroup::"
 
           echo "::group::run-migration"
-          # Schedule the migration
-          node dist/zombie-bite-scripts/migration_shedule_migration.js $ALICE_PORT
-
-          # Start both pre and post-migration snapshot monitoring before migration completes
+          # Start both pre and post-migration snapshot monitoring before scheduling migration
           echo "Starting pre-migration snapshot monitoring..."
           nohup node dist/zombie-bite-scripts/migration_snapshot.js $ZOMBIE_BITE_BASE_PATH $NETWORK pre > pre_snapshot.log 2>&1 &
           PRE_SNAPSHOT_PID=$!
@@ -212,6 +209,9 @@ jobs:
           echo "Starting post-migration snapshot monitoring..."
           nohup node dist/zombie-bite-scripts/migration_snapshot.js $ZOMBIE_BITE_BASE_PATH $NETWORK post > post_snapshot.log 2>&1 &
           POST_SNAPSHOT_PID=$!
+
+          # Schedule the migration
+          node dist/zombie-bite-scripts/migration_shedule_migration.js $ALICE_PORT
 
           # Monitor migration completion (this waits until both chains reach MigrationDone)
           node dist/zombie-bite-scripts/migration_finished_monitor.js $ZOMBIE_BITE_BASE_PATH $ALICE_PORT $COL_PORT
