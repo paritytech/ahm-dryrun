@@ -1,7 +1,7 @@
-// Monitor for AccountsMigrationInit stage and take pre-migration snapshot
+// Monitor RC and AH migration stages and take pre/post-migration snapshots
 //
-// This script monitors the RC migration stage and takes snapshots exactly when
-// the migration transitions into the AccountsMigrationInit state.
+// Pre-migration: Monitors RC for AccountsMigrationInit, then finds the corresponding AH block
+// Post-migration: Monitors both RC and AH in parallel, waits for both to reach MigrationDone
 //
 // Usage: node dist/zombie-bite-scripts/migration_pre_snapshot.js <base_path> <network>
 
@@ -100,12 +100,7 @@ async function findCorrespondingAHBlock(
   const rcBlock = await rcApi.rpc.chain.getBlock(rcBlockHash);
   const rcHeader = rcBlock.block.header;
 
-  // Look through the extrinsics to find parachain backing information
-  // Asset Hub typically has para ID 1000 (Kusama) or 1000 (Polkadot)
-  const assetHubParaId = 1000;
-
-  // For now, use a simpler approach: get AH block that was finalized around the same time
-  // We'll look for the AH block with validation data pointing to this RC block or nearby
+  // Look for the AH block with validation data pointing to this RC block or nearby
   let ahCurrentHash = await ahApi.rpc.chain.getFinalizedHead();
   let attempts = 0;
   const maxAttempts = 50; // Look back further
@@ -132,18 +127,9 @@ async function findCorrespondingAHBlock(
             `Checking AH block ${ahCurrentHash}: validation parent = ${relayParentNumber}, target RC block = ${rcBlockNumber}`,
           );
 
-          // Look for exact match first
           if (relayParentNumber === rcBlockNumber) {
             console.log(
               `✅ Found exact matching AH block at ${ahCurrentHash} (AH validation parent: ${relayParentNumber}, RC block: ${rcBlockNumber})`,
-            );
-            return ahCurrentHash.toString();
-          }
-
-          // Also accept RC block - 1 (AH might reference the immediately previous RC block)
-          if (relayParentNumber === rcBlockNumber - 1) {
-            console.log(
-              `✅ Found near matching AH block at ${ahCurrentHash} (AH validation parent: ${relayParentNumber}, RC block: ${rcBlockNumber})`,
             );
             return ahCurrentHash.toString();
           }
@@ -159,7 +145,6 @@ async function findCorrespondingAHBlock(
     attempts++;
   }
 
-  // No fallback - fail with clear error
   throw new Error(
     `Failed to find synchronized AH block after ${maxAttempts} attempts. ` +
       `Searched for AH block with validation parent == ${rcHeader.number.toNumber()} or ${rcHeader.number.toNumber() - 1}. ` +
@@ -191,7 +176,6 @@ async function takeSnapshotsAtBlock(
     console.log(`Executing: ${rcCommand}`);
     await execAsync(rcCommand);
 
-    // Find the corresponding AH block using parachain backing information
     // We look at the RC block to see which AH blocks were backed/included
     const ahProvider = new WsProvider(`ws://127.0.0.1:${ahPort}`);
     const ahApi = await ApiPromise.create({ provider: ahProvider });
@@ -264,7 +248,6 @@ async function takeSnapshotsAtBlock(
 }
 
 async function main() {
-  // Get ports from ports.json (same pattern as make_new_snapshot.ts)
   const ahPort = await getAHPort(basePath);
   const rcPort = await getRCPort(basePath);
 
