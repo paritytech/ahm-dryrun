@@ -380,18 +380,21 @@ async function monitorBothChainsForPostMigration(
   let ahDoneBlock: string | null = null;
   let snapshotTaken = false;
 
-  // Set a timeout to prevent hanging indefinitely
-  const timeout = setTimeout(
-    () => {
-      if (!snapshotTaken) {
-        console.error(
-          `⏰ Timeout waiting for both chains to reach MigrationDone (2 hours)`,
-        );
-        process.exit(1);
-      }
-    },
-    2 * 60 * 60 * 1000,
-  );
+  // Set a timeout to prevent hanging indefinitely.
+  // If MIGRATION_TIMEOUT_HOURS is not set, default to 2h.
+  const timeoutHours = process.env.MIGRATION_TIMEOUT_HOURS
+    ? parseInt(process.env.MIGRATION_TIMEOUT_HOURS)
+    : 2;
+  const timeoutMs = timeoutHours * 60 * 60 * 1000;
+
+  const timeout = setTimeout(() => {
+    if (!snapshotTaken) {
+      console.error(
+        `⏰ Timeout waiting for both chains to reach MigrationDone (${timeoutHours} hours)`,
+      );
+      process.exit(1);
+    }
+  }, timeoutMs);
 
   // Monitor RC for MigrationDone
   const rcUnsub = await rcApi.rpc.chain.subscribeFinalizedHeads(
