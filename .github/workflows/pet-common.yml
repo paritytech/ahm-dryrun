@@ -53,36 +53,17 @@ jobs:
         run: |
           mkdir $ZOMBIE_BITE_BASE_PATH
 
-      - name: download_artifacts
-        id: download_artifacts
-        shell: bash
+      - name: download_post_migration_db
+        uses: ./.github/actions/download-artifact
         env:
-          NETWORK: ${{ inputs.network }}
           RUN_ID: ${{ inputs.run-id }}
           GH_TOKEN: ${{ github.token }}
-        run: |
-          if [[ $RUN_ID == "" ]]; then
-            echo "getting the latest completed run"
-            RUN_ID=$(gh run list --workflow zombie-bite.yml -b main -e schedule -L 1 -s completed  --json databaseId | jq -r '.[].databaseId')
-          fi;
-
-          echo "downloading artifacts from https://github.com/paritytech/ahm-dryrun/actions/runs/${RUN_ID}"
-          gh run download $RUN_ID -p "${NETWORK}-post-migration-db*" -D $ZOMBIE_BITE_BASE_PATH
-          ls -ltr $ZOMBIE_BITE_BASE_PATH
-
-      - name: mv_artifacts
-        shell: bash
-        run: |
-          ls -ltr $ZOMBIE_BITE_BASE_PATH
-          ARTIFACTS_DIR_NAME=$(ls -t $ZOMBIE_BITE_BASE_PATH|head -1)
-          echo "artifacts dir"
-          ls -ltr "${ZOMBIE_BITE_BASE_PATH}/${ARTIFACTS_DIR_NAME}"
-
-          mv "${ZOMBIE_BITE_BASE_PATH}/${ARTIFACTS_DIR_NAME}/spawn" $ZOMBIE_BITE_BASE_PATH
-          mv "${ZOMBIE_BITE_BASE_PATH}/${ARTIFACTS_DIR_NAME}/ports.json" $ZOMBIE_BITE_BASE_PATH
-
-          echo "after moving artifacts"
-          ls -ltr $ZOMBIE_BITE_BASE_PATH
+          NETWORK: ${{ inputs.network }}
+        with:
+          gh-token: ${{ env.GH_TOKEN }}
+          destination-path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
+          run-id: ${{ env.RUN_ID }}
+          name-pattern: "${{ env.NETWORK }}-post-migration-db-*"
 
       - name: install_pet_deps
         shell: bash
@@ -152,7 +133,7 @@ jobs:
               test_results="${test_results}✅ Test passed: $test\n"
             fi
           done < /tmp/test_list.txt
-          
+
           # Save results for next step
           echo "$failed_count" > /tmp/failed_count.txt
           echo -e "$test_results" > /tmp/test_results.txt
@@ -165,10 +146,10 @@ jobs:
           echo "::group::report-test-results"
           failed_count=$(cat /tmp/failed_count.txt)
           test_results=$(cat /tmp/test_results.txt)
-          
+
           echo "=== Test Results ==="
           echo -e "$test_results"
-          
+
           if [ $failed_count -gt 0 ]; then
             echo "Total failed tests: $failed_count"
             exit $failed_count
