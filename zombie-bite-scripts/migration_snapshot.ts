@@ -6,10 +6,12 @@
 // Usage: node dist/zombie-bite-scripts/migration_pre_snapshot.js <base_path> <network>
 
 import { ApiPromise, WsProvider } from "@polkadot/api";
+import type { Header } from "@polkadot/types/interfaces";
 import { readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import { exec } from "child_process";
 import { promisify } from "util";
+import { logger } from "../shared/logger.js";
 
 const execAsync = promisify(exec);
 
@@ -19,14 +21,14 @@ const network = process.argv[3];
 const snapshotType = process.argv[4]; // 'pre' or 'post'
 
 if (!basePath || !network || !snapshotType) {
-  console.error(
+  logger.error(
     "Usage: node migration_snapshot.js <base_path> <network> <pre|post>",
   );
   process.exit(1);
 }
 
 if (snapshotType !== "pre" && snapshotType !== "post") {
-  console.error("Error: snapshot type must be 'pre' or 'post'");
+  logger.error("Error: snapshot type must be 'pre' or 'post'");
   process.exit(1);
 }
 
@@ -36,7 +38,7 @@ async function getAHPort(basePath: string): Promise<number> {
     const ports = JSON.parse(readFileSync(portsFile, "utf8"));
     return ports.collator_port;
   } catch (error) {
-    console.error("Could not read ports.json, using default port 63170");
+    logger.error("Could not read ports.json, using default port 63170");
     return 63170; // Default AH port
   }
 }
@@ -47,7 +49,7 @@ async function getRCPort(basePath: string): Promise<number> {
     const ports = JSON.parse(readFileSync(portsFile, "utf8"));
     return ports.alice_port;
   } catch (error) {
-    console.error("Could not read ports.json, using default port 63168");
+    logger.error("Could not read ports.json, using default port 63168");
     return 63168; // Default RC port
   }
 }
@@ -90,11 +92,11 @@ function isMigrationDone(stage: any): boolean {
 
 // Find the AH block that corresponds to a given RC block by looking at parachain backing
 async function findCorrespondingAHBlock(
-  rcApi: any,
-  ahApi: any,
+  rcApi: ApiPromise,
+  ahApi: ApiPromise,
   rcBlockHash: string,
 ): Promise<string> {
-  console.log(`Looking for AH block backed in RC block ${rcBlockHash}`);
+  logger.info(`Looking for AH block backed in RC block ${rcBlockHash}`);
 
   // Get the RC block to examine which parachain blocks were backed
   const rcBlock = await rcApi.rpc.chain.getBlock(rcBlockHash);
@@ -110,8 +112,7 @@ async function findCorrespondingAHBlock(
       const ahBlock = await ahApi.rpc.chain.getBlock(ahCurrentHash);
 
       // Look for setValidationData extrinsic in this AH block
-      for (const ext of ahBlock.block.extrinsics) {
-        const extrinsic = ahApi.registry.createType("Extrinsic", ext);
+      for (const extrinsic of ahBlock.block.extrinsics) {
         const { method } = extrinsic;
 
         if (
@@ -123,12 +124,12 @@ async function findCorrespondingAHBlock(
             args.validationData.relayParentNumber.toNumber();
           const rcBlockNumber = rcHeader.number.toNumber();
 
-          console.log(
+          logger.info(
             `Checking AH block ${ahCurrentHash}: validation parent = ${relayParentNumber}, target RC block = ${rcBlockNumber}`,
           );
 
           if (relayParentNumber === rcBlockNumber) {
-            console.log(
+            logger.info(
               `✅ Found exact matching AH block at ${ahCurrentHash} (AH validation parent: ${relayParentNumber}, RC block: ${rcBlockNumber})`,
             );
             return ahCurrentHash.toString();
@@ -162,10 +163,10 @@ async function takeSnapshotsAtBlock(
   blockHash: string,
   type: "pre" | "post",
 ): Promise<void> {
-  console.log(
+  logger.info(
     `Taking ${type}-migration snapshots at block ${blockHash} for ${network}...`,
   );
-  console.log(`Using ports - RC: ${rcPort}, AH: ${ahPort}`);
+  logger.info(`Using ports - RC: ${rcPort}, AH: ${ahPort}`);
 
   try {
     const rcSnapshotPath = `${basePath}/${network}-rc-${type}.snap`;
@@ -173,7 +174,7 @@ async function takeSnapshotsAtBlock(
 
     // Take RC snapshot at the exact block where AccountsMigrationInit was detected
     const rcCommand = `try-runtime create-snapshot --uri ws://127.0.0.1:${rcPort} --at ${blockHash} "${rcSnapshotPath}"`;
-    console.log(`Executing: ${rcCommand}`);
+    logger.info(`Executing: ${rcCommand}`);
     await execAsync(rcCommand);
 
     // We look at the RC block to see which AH blocks were backed/included
@@ -182,7 +183,7 @@ async function takeSnapshotsAtBlock(
     const rcProvider = new WsProvider(`ws://127.0.0.1:${rcPort}`);
     const rcApi = await ApiPromise.create({ provider: rcProvider });
 
-    console.log(`🔍 Finding corresponding AH block for RC block...`);
+    logger.info(`🔍 Finding corresponding AH block for RC block...`);
 
     let ahTargetHash: string;
     let ahStage: any;
@@ -203,10 +204,10 @@ async function takeSnapshotsAtBlock(
     ahStage = ahStageRaw.toHuman();
     const ahHeader = await ahApi.rpc.chain.getHeader(ahTargetHash);
 
-    console.log(
+    logger.info(
       `🔍 Final AH Migration Stage at snapshot: ${JSON.stringify(ahStage)}`,
     );
-    console.log(
+    logger.info(
       `📍 AH snapshot at block #${ahHeader.number.toNumber()}: ${ahTargetHash.toString()}`,
     );
 
@@ -214,7 +215,7 @@ async function takeSnapshotsAtBlock(
 
     // Use the found AH block for the snapshot
     const ahCommand = `try-runtime create-snapshot --uri ws://127.0.0.1:${ahPort} --at ${ahTargetHash} "${ahSnapshotPath}"`;
-    console.log(`Executing: ${ahCommand}`);
+    logger.info(`Executing: ${ahCommand}`);
     await execAsync(ahCommand);
 
     await ahApi.disconnect();
@@ -237,12 +238,12 @@ async function takeSnapshotsAtBlock(
     const infoPath = join(basePath, `${type}_migration_snapshot_info.json`);
     writeFileSync(infoPath, JSON.stringify(snapshotInfo, null, 2));
 
-    console.log(`${type}-migration snapshots completed successfully!`);
-    console.log(`RC snapshot: ${rcSnapshotPath}`);
-    console.log(`AH snapshot: ${ahSnapshotPath}`);
-    console.log(`Info written to: ${infoPath}`);
+    logger.info(`${type}-migration snapshots completed successfully!`);
+    logger.info(`RC snapshot: ${rcSnapshotPath}`);
+    logger.info(`AH snapshot: ${ahSnapshotPath}`);
+    logger.info(`Info written to: ${infoPath}`);
   } catch (error) {
-    console.error("Failed to take snapshots at block:", error);
+    logger.error("Failed to take snapshots at block:", error);
     throw error;
   }
 }
@@ -251,13 +252,13 @@ async function main() {
   const ahPort = await getAHPort(basePath);
   const rcPort = await getRCPort(basePath);
 
-  console.log(`Using ports - RC: ${rcPort}, AH: ${ahPort}`);
+  logger.info(`Using ports - RC: ${rcPort}, AH: ${ahPort}`);
 
   // Connect to relay chain to monitor migration stage
   const wsProvider = new WsProvider(`ws://127.0.0.1:${rcPort}`);
   const api = await ApiPromise.create({ provider: wsProvider });
 
-  console.log(
+  logger.info(
     `Starting to monitor RC migration stage for ${network} (${snapshotType} snapshots)...`,
   );
 
@@ -278,7 +279,7 @@ async function main() {
 
 // Monitor RC for pre-migration (AccountsMigrationInit)
 async function monitorRCForPreMigration(
-  api: any,
+  api: ApiPromise,
   basePath: string,
   network: string,
   rcPort: number,
@@ -290,7 +291,7 @@ async function monitorRCForPreMigration(
   const timeout = setTimeout(
     () => {
       if (!snapshotTaken) {
-        console.error(
+        logger.error(
           `⏰ Timeout waiting for AccountsMigrationInit stage (10min)`,
         );
         process.exit(1);
@@ -300,7 +301,7 @@ async function monitorRCForPreMigration(
   );
 
   const unsub = await api.rpc.chain.subscribeFinalizedHeads(
-    async (header: any) => {
+    async (header: Header) => {
       if (snapshotTaken) return;
 
       try {
@@ -308,15 +309,15 @@ async function monitorRCForPreMigration(
         const raw = await apiAt.query.rcMigrator.rcMigrationStage();
         const stage = raw.toHuman();
 
-        console.log(
+        logger.info(
           `Block #${header.number}: Migration stage = ${JSON.stringify(stage)}`,
         );
 
         if (isAccountsMigrationInit(stage)) {
-          console.log(
+          logger.info(
             `🎯 AccountsMigrationInit stage detected at block ${header.number}!`,
           );
-          console.log(`Taking pre-migration snapshots at exact block...`);
+          logger.info(`Taking pre-migration snapshots at exact block...`);
 
           snapshotTaken = true;
 
@@ -339,11 +340,11 @@ async function monitorRCForPreMigration(
               `Pre-migration snapshot completed at block ${header.number}\nTimestamp: ${new Date().toISOString()}`,
             );
 
-            console.log(
+            logger.info(
               `✅ pre-migration snapshot process completed successfully!`,
             );
           } catch (error) {
-            console.error(`❌ Failed to take pre-migration snapshots:`, error);
+            logger.error(`❌ Failed to take pre-migration snapshots:`, error);
             process.exit(1);
           }
 
@@ -353,7 +354,7 @@ async function monitorRCForPreMigration(
           process.exit(0);
         }
       } catch (error) {
-        console.error("Error checking migration stage:", error);
+        logger.error("Error checking migration stage:", error);
       }
     },
   );
@@ -361,13 +362,13 @@ async function monitorRCForPreMigration(
 
 // Monitor both RC and AH for post-migration (both MigrationDone)
 async function monitorBothChainsForPostMigration(
-  rcApi: any,
+  rcApi: ApiPromise,
   basePath: string,
   network: string,
   rcPort: number,
   ahPort: number,
 ): Promise<void> {
-  console.log(
+  logger.info(
     `Starting parallel monitoring for both RC and AH MigrationDone states...`,
   );
 
@@ -389,7 +390,7 @@ async function monitorBothChainsForPostMigration(
 
   const timeout = setTimeout(() => {
     if (!snapshotTaken) {
-      console.error(
+      logger.error(
         `⏰ Timeout waiting for both chains to reach MigrationDone (${timeoutHours} hours)`,
       );
       process.exit(1);
@@ -398,7 +399,7 @@ async function monitorBothChainsForPostMigration(
 
   // Monitor RC for MigrationDone
   const rcUnsub = await rcApi.rpc.chain.subscribeFinalizedHeads(
-    async (header: any) => {
+    async (header: Header) => {
       if (rcDone || snapshotTaken) return;
 
       try {
@@ -406,12 +407,12 @@ async function monitorBothChainsForPostMigration(
         const raw = await apiAt.query.rcMigrator.rcMigrationStage();
         const stage = raw.toHuman();
 
-        console.log(
+        logger.info(
           `RC Block #${header.number}: Migration stage = ${JSON.stringify(stage)}`,
         );
 
         if (isMigrationDone(stage)) {
-          console.log(
+          logger.info(
             `✅ RC MigrationDone detected at block ${header.number}!`,
           );
           rcDone = true;
@@ -422,14 +423,14 @@ async function monitorBothChainsForPostMigration(
           }
         }
       } catch (error) {
-        console.error("Error checking RC migration stage:", error);
+        logger.error("Error checking RC migration stage:", error);
       }
     },
   );
 
   // Monitor AH for MigrationDone
   const ahUnsub = await ahApi.rpc.chain.subscribeFinalizedHeads(
-    async (header: any) => {
+    async (header: Header) => {
       if (ahDone || snapshotTaken) return;
 
       try {
@@ -437,12 +438,12 @@ async function monitorBothChainsForPostMigration(
         const raw = await apiAt.query.ahMigrator.ahMigrationStage();
         const stage = raw.toHuman();
 
-        console.log(
+        logger.info(
           `AH Block #${header.number}: Migration stage = ${JSON.stringify(stage)}`,
         );
 
         if (isMigrationDone(stage)) {
-          console.log(
+          logger.info(
             `✅ AH MigrationDone detected at block ${header.number}!`,
           );
           ahDone = true;
@@ -453,7 +454,7 @@ async function monitorBothChainsForPostMigration(
           }
         }
       } catch (error) {
-        console.error("Error checking AH migration stage:", error);
+        logger.error("Error checking AH migration stage:", error);
       }
     },
   );
@@ -463,7 +464,7 @@ async function monitorBothChainsForPostMigration(
     if (snapshotTaken) return;
     snapshotTaken = true;
 
-    console.log(
+    logger.info(
       `🎯 Both chains reached MigrationDone! Taking post-migration snapshots...`,
     );
 
@@ -473,11 +474,11 @@ async function monitorBothChainsForPostMigration(
 
       // Take snapshots at the blocks where each chain reached MigrationDone
       const rcCommand = `try-runtime create-snapshot --uri ws://127.0.0.1:${rcPort} --at ${rcDoneBlock} "${rcSnapshotPath}"`;
-      console.log(`Executing: ${rcCommand}`);
+      logger.info(`Executing: ${rcCommand}`);
       await execAsync(rcCommand);
 
       const ahCommand = `try-runtime create-snapshot --uri ws://127.0.0.1:${ahPort} --at ${ahDoneBlock} "${ahSnapshotPath}"`;
-      console.log(`Executing: ${ahCommand}`);
+      logger.info(`Executing: ${ahCommand}`);
       await execAsync(ahCommand);
 
       // Write snapshot info
@@ -501,12 +502,12 @@ async function monitorBothChainsForPostMigration(
         `Post-migration snapshot completed\nTimestamp: ${new Date().toISOString()}`,
       );
 
-      console.log(`post-migration snapshots completed successfully!`);
-      console.log(`RC snapshot: ${rcSnapshotPath}`);
-      console.log(`AH snapshot: ${ahSnapshotPath}`);
-      console.log(`Info written to: ${infoPath}`);
+      logger.info(`post-migration snapshots completed successfully!`);
+      logger.info(`RC snapshot: ${rcSnapshotPath}`);
+      logger.info(`AH snapshot: ${ahSnapshotPath}`);
+      logger.info(`Info written to: ${infoPath}`);
     } catch (error) {
-      console.error(`❌ Failed to take post-migration snapshots:`, error);
+      logger.error(`❌ Failed to take post-migration snapshots:`, error);
       process.exit(1);
     }
 
@@ -520,6 +521,6 @@ async function monitorBothChainsForPostMigration(
 }
 
 main().catch((err) => {
-  console.error("❌ Unexpected error:", err);
+  logger.error("❌ Unexpected error:", err);
   process.exit(1);
 });
