@@ -21,9 +21,38 @@ concurrency:
 permissions: {}
 
 jobs:
-  pet_tests:
+  get-run-id:
+    runs-on: ubuntu-latest
+    if: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.run-id == '') || 'true' }}
+    outputs:
+      RUN_ID: ${{ steps.get_run_id.outputs.RUN_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: get_run_id
+        id: get_run_id
+        uses: ./.github/actions/get-latest-ahm-run-id
+        with:
+          gh-token: ${{ github.token }}
+          network: ${{ inputs.network || 'kusama' }}
+
+      - name: verify
+        shell: bash
+        run: |
+          echo "RUN_ID: ${{ steps.get_run_id.outputs.RUN_ID }}"
+
+  pet_tests_with_id:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.run-id != '' }}
     # run by demand
     uses: ./.github/workflows/pet-common.yml
     with:
       network: ${{ inputs.network }}
       run-id: ${{ inputs.run-id }}
+
+  pet_tests_without_id:
+    needs: [get-run-id]
+    # run by demand
+    uses: ./.github/workflows/pet-common.yml
+    with:
+      network: ${{ inputs.network }}
+      run-id: ${{ needs.get-run-id.outputs.RUN_ID }}
