@@ -153,3 +153,17 @@ wait-for-nodes base_path:
     wait $AH_PID
 
     echo "Both nodes are ready"
+
+# Monitor for AccountsMigrationInit and take pre-migration snapshot
+monitor-pre-snapshot base_path network:
+    #!/usr/bin/env bash
+    set -xe
+    just ahm _npm-build
+    node dist/zombie-bite-scripts/migration_snapshot.js {{ base_path }} {{ network }} pre
+
+# Monitor for MigrationDone and take post-migration snapshot
+monitor-post-snapshot base_path network:
+    #!/usr/bin/env bash
+    set -xe
+    just ahm _npm-build
+    node dist/zombie-bite-scripts/migration_snapshot.js {{ base_path }} {{ network }} post

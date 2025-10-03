@@ -151,7 +151,6 @@ jobs:
           # --rc-bite-block $RC_BITE_BLOCK
           zombie-bite bite -r $NETWORK --rc-override $RC_OVERRIDE --ah-override $AH_OVERRIDE -d $ZOMBIE_BITE_BASE_PATH
 
-
         continue-on-error: true
 
       - name: zombie_bite_upload_step
@@ -172,7 +171,6 @@ jobs:
           ls ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite-debug
           echo "::endgroup::"
 
-
       - name: run_zombie_bite_spawn
         shell: bash
         run: |
@@ -183,37 +181,6 @@ jobs:
 
       - name: wait_for_network
         uses: ./.github/actions/wait-zb-network-ready
-
-      - name: try_runtime_pre
-        shell: bash
-        env:
-          NETWORK: ${{ inputs.network }}
-          TS_LOG_CONSOLE: true
-          TS_LOG_LEVEL: debug
-        run: |
-          export PATH=${AHM_BINS}:$PATH
-
-          ALICE_PORT=$(jq -r .alice_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
-          COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
-
-          # Wait for nodes to come online
-          echo "::group::wait-for-nodes"
-          just zb wait-for-nodes $ZOMBIE_BITE_BASE_PATH
-          echo "::endgroup::"
-
-          # try-runtime snap pre
-          echo "::group::run-try-runtime"
-          just zb snapshot $NETWORK $ZOMBIE_BITE_BASE_PATH pre
-          echo "::endgroup::"
-        continue-on-error: true
-
-      - name: try_runtime_upload_step_pre
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ inputs.network }}-try-runtime-snaps-pre-${{ github.sha }}${{ inputs.args }}
-          path: |
-            ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-rc-pre.snap
-            ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-ah-pre.snap
 
       - name: run_migration
         id: zombie_bite_step_spawn_and_run_migration
@@ -234,14 +201,28 @@ jobs:
           echo "::endgroup::"
 
           echo "::group::run-migration"
+          # Start both pre and post-migration snapshot monitoring before scheduling migration
+          echo "Starting pre-migration snapshot monitoring..."
+          nohup node dist/zombie-bite-scripts/migration_snapshot.js $ZOMBIE_BITE_BASE_PATH $NETWORK pre > pre_snapshot.log 2>&1 &
+          PRE_SNAPSHOT_PID=$!
+
+          echo "Starting post-migration snapshot monitoring..."
+          nohup node dist/zombie-bite-scripts/migration_snapshot.js $ZOMBIE_BITE_BASE_PATH $NETWORK post > post_snapshot.log 2>&1 &
+          POST_SNAPSHOT_PID=$!
+
+          # Schedule the migration
           node dist/zombie-bite-scripts/migration_shedule_migration.js $ALICE_PORT
+
+          # Monitor migration completion (this waits until both chains reach MigrationDone)
           node dist/zombie-bite-scripts/migration_finished_monitor.js $ZOMBIE_BITE_BASE_PATH $ALICE_PORT $COL_PORT
 
-          echo "::endgroup::"
+          # Wait for both snapshot processes to complete
+          echo "Waiting for pre-migration snapshot to complete..."
+          wait $PRE_SNAPSHOT_PID || echo "Pre-snapshot process already completed"
 
-          # try-runtime snap post
-          echo "::group::run-try-runtime"
-          just zb snapshot $NETWORK $ZOMBIE_BITE_BASE_PATH post
+          echo "Waiting for post-migration snapshot to complete..."
+          wait $POST_SNAPSHOT_PID || echo "Post-snapshot process already completed"
+
           echo "::endgroup::"
 
           echo "::group::zombie-bite-stop"
@@ -271,6 +252,17 @@ jobs:
           echo "::endgroup::"
         continue-on-error: true
 
+      - name: try_runtime_upload_step_pre
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.network }}-try-runtime-snaps-pre-${{ github.sha }}${{ inputs.args }}
+          path: |
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-rc-pre.snap
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-ah-pre.snap
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/pre_migration_snapshot_info.json
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/pre_migration_snapshot_done.txt
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/pre_snapshot.log
+
       - name: checkpoint_spawn
         shell: bash
         run: |
@@ -287,6 +279,9 @@ jobs:
           path: |
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-rc-post.snap
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-ah-post.snap
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/post_migration_snapshot_info.json
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/post_migration_snapshot_done.txt
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/post_snapshot.log
 
       - name: zombie_bite_upload_step_logs
         uses: actions/upload-artifact@v4
@@ -439,4 +434,3 @@ jobs:
           echo "**Network:** ${{ inputs.network }}" >> $GITHUB_STEP_SUMMARY
           echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "**Run:** ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
-
