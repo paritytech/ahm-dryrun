@@ -391,6 +391,10 @@ jobs:
           test_results=""
           ls packages/*/src/*.test.ts | grep assetHub${NETWORK^} | grep e2e > /tmp/test_list.txt
 
+          # Sleep for 1 minute before running tests
+          echo "Sleeping for 90 seconds before running tests..."
+          sleep 90
+
           while read test; do
             echo "Running E2E test: $test"
             if ! yarn test "$test" -u; then
