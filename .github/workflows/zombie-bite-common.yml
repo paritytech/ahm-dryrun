@@ -111,13 +111,13 @@ jobs:
           fi
 
           echo $(pwd)
-          RC_OVERRIDE="./runtime_wasm/${NETWORK^^}_runtime.compact.compressed.wasm"
-          AH_OVERRIDE="./runtime_wasm/asset_hub_${NETWORK^^}_runtime.compact.compressed.wasm"
+          RC_OVERRIDE="./runtime_wasm/${NETWORK}_runtime.compact.compressed.wasm"
+          AH_OVERRIDE="./runtime_wasm/asset_hub_${NETWORK}_runtime.compact.compressed.wasm"
 
           echo "::group::custom-overrides"
 
           if [[ $RC_OVERRIDE_URL != "" ]];then
-            RC_OVERRIDE="/tmp/${NETWORK^^}_custom_runtime.compact.compressed.wasm"
+            RC_OVERRIDE="/tmp/${NETWORK}_custom_runtime.compact.compressed.wasm"
             curl $RC_OVERRIDE_URL -o $RC_OVERRIDE
             echo "runtime downloaded from ${RC_OVERRIDE_URL}"
           else
@@ -125,7 +125,7 @@ jobs:
           fi;
 
           if [[ $AH_OVERRIDE_URL != "" ]];then
-            AH_OVERRIDE="/tmp/${NETWORK^^}_ah_custom_runtime.compact.compressed.wasm"
+            AH_OVERRIDE="/tmp/${NETWORK}_ah_custom_runtime.compact.compressed.wasm"
             curl $AH_OVERRIDE_URL -o $AH_OVERRIDE
             echo "runtime downloaded from ${AH_OVERRIDE_URL}"
           else
