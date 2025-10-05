@@ -391,7 +391,8 @@ jobs:
           test_results=""
           ls packages/*/src/*.test.ts | grep assetHub${NETWORK^} | grep e2e > /tmp/test_list.txt
 
-          # Sleep for 1 minute before running tests
+          # Sleep before running tests - running them immediately after the network has been spun up
+          # can lead to missing data in the `chopsticks` node, and false negatives.
           echo "Sleeping for 90 seconds before running tests..."
           sleep 90
 
