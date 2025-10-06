@@ -40,8 +40,8 @@ randomize-names:
 	mkdir -p chains
 	TIMESTAMP=$(date +%s)
 
-	echo "relay-$TIMESTAMP" > chains/rc-name.txt
-	echo "asset-$TIMESTAMP" > chains/ah-name.txt
+	echo "ahm-sync-$TIMESTAMP" > chains/rc-name.txt
+	echo "ahm-sync-$TIMESTAMP" > chains/ah-name.txt
 
 # Download Asset Hub Kusama Spec
 download-chain-spec:
