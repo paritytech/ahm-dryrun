@@ -34,7 +34,6 @@ just ahm kusama || echo "Setup failed"
 - `just setup` to install dependencies
 - `just ahm [polkadot|kusama]` to run the Migration for a given runtime. No args prints the help menu.
 - `just zb [bite|spawn|perform-migration]` to run the Zombie-Bite commands. No args prints the help menu.
-- `just e2e-tests` to run the E2E tests
 <!-- TODO @donal: Monitoring here -->
 
 ## AHM Flows (manual steps)
@@ -153,7 +152,9 @@ In order to run PET tests on the post-migration Asset Hub chain of a network `<n
     ASSETHUB<network-name>_BLOCK_NUMBER=<block-number>
     ```
     - Some warnings below ⚠️:
-    - ⚠️🚨 The `<network-name>` must be fully capitalized: `ASSETHUBKUSAMA_ENDPOINT` will work; `ASSETHUBkusama_ENDPOINT` will not
+    - ⚠️🚨 The `<network-name>` must be fully capitalized
+        - `ASSETHUBKUSAMA_ENDPOINT` will work;
+        - `ASSETHUBkusama_ENDPOINT` will **NOT**
     - ⚠️🚨 use `ws://[::1]:<collator-port>` and `ws://localhost:<collator-port>` over `ws://127.0.0.1:<collator-port>` 
 4. Run `just e2e-tests packages/<network-name>`
 
