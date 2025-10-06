@@ -156,31 +156,31 @@ In order to run PET tests on the post-migration Asset Hub chain of a network `<n
         - `ASSETHUBKUSAMA_ENDPOINT` will work;
         - `ASSETHUBkusama_ENDPOINT` will **NOT**
     - ⚠️🚨 use `ws://[::1]:<collator-port>` and `ws://localhost:<collator-port>` over `ws://127.0.0.1:<collator-port>` 
-4. Run `just e2e-tests packages/<network-name>`
+4. Run `just e2e-tests <network-name>`
 
 All steps but the last can be ignored on chains that have already migrated.
 This is because PET is setup to periodically fetch chains' latest block numbers to that state in tests, and thus
 dispenses a local testnet for access to post-AHM runtimes.
 
-#### Notes on E2E `just e2e-tests` command
+#### Commands to run E2E tests
 
-It accepts multiple arguments, which are then passed to `yarn` to further specify the scope of the tests.
+Use `just e2e-tests` for all E2E test suites for a given network, or `yarn test` for simpler filtering.
 
 ```sh
-# This runs every PET test; this takes some time, as it includes relay <-> system parachain XCM connectivity tests,
-# E2E tests for relay + parachains, etc.
-just e2e-tests
+# This runs every E2E test for the given network (necessarily one of `kusama|polkadot`).
+# This will take some time.
+just e2e-tests <kusama|polkadot>
 
 # Run every test that exists for Kusama chains: relay, AH, bridge hub, coretime, etc.
-just e2e-tests packages/kusama
-# Run every test suite that exists for PAH, E2E or otherwise
-`just e2e-tests assetHubPaseo`
+yarn test packages/kusama
+# Run every test suite that exists for KAH, E2E or otherwise
+yarn test assetHubKusama
 # Run the E2E test suite for the scheduler pallet.
 # Note that this will do so for both the relay chain, and KAH: post-AHM, the AH's runtime will contain that pallet, and
 # recall that the branch this repository's PET submodule uses implements that test suite.
-just e2e-tests kusama.scheduler
+yarn test kusama.scheduler
 # Run the staking and nomination pools E2E test suites in whichever chains that have such a suite.
-just e2e-tests staking nominationPools
+yarn test staking nominationPools
 ...
 ```
 
