@@ -34,6 +34,7 @@ just ahm kusama || echo "Setup failed"
 - `just setup` to install dependencies
 - `just ahm [polkadot|kusama]` to run the Migration for a given runtime. No args prints the help menu.
 - `just zb [bite|spawn|perform-migration]` to run the Zombie-Bite commands. No args prints the help menu.
+- `just node [run-kusama]` Run a Kusama RC and AH node locally.
 <!-- TODO @donal: Monitoring here -->
 
 ## AHM Flows (manual steps)
