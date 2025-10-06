@@ -62,6 +62,6 @@ run spec_path sync port port_para db_dir rc_name ah_name:
 	#!/usr/bin/env bash
 	set -ex
 
-	@echo "NODE NAMES: {{ rc_name }} and {{ ah_name }}"
+	echo "NODE NAMES: {{ rc_name }} and {{ ah_name }}"
 
 	polkadot-omni-node --chain "{{ spec_path }}" -lruntime=info --sync {{ sync }} --blocks-pruning 600 --state-pruning 600 --base-path {{ db_dir }} --no-hardware-benchmarks --rpc-max-request-size 1000000 --rpc-max-response-size 1000000 --rpc-port {{ port }} --name {{ rc_name }} -- -lruntime=info --sync {{ sync }} --blocks-pruning 600 --state-pruning 600 --base-path {{ db_dir }} --no-hardware-benchmarks --rpc-max-request-size 1000000 --rpc-max-response-size 1000000 --rpc-port {{ port_para }} --name {{ ah_name }}
