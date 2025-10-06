@@ -119,15 +119,16 @@ jobs:
           echo "Running tests with:"
           echo "  ASSETHUB${NETWORK^^}_ENDPOINT=$ASSETHUB${NETWORK^^}_ENDPOINT"
           echo "  ASSETHUB${NETWORK^^}_BLOCK_NUMBER=$ASSETHUB${NETWORK^^}_BLOCK_NUMBER"
+
+           # Sleep before running tests - running them immediately after the network has been spun up
+          # can lead to missing data in the `chopsticks` node, and false negatives.
+          echo "Sleeping for 90 seconds before running tests..."
+          sleep 90
+
           # Run only KAH E2E tests
           failed_count=0
           test_results=""
           ls packages/*/src/*.test.ts | grep assetHub${NETWORK^} | grep e2e > /tmp/test_list.txt
-
-          # Sleep before running tests - running them immediately after the network has been spun up
-          # can lead to missing data in the `chopsticks` node, and false negatives.
-          echo "Sleeping for 90 seconds before running tests..."
-          sleep 90
 
           while read test; do
             echo "Running E2E test: $test"
