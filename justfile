@@ -51,10 +51,12 @@ build runtime:
     mkdir -p ./runtime_wasm
 
     if [ "{{ runtime }}" = "polkadot" ]; then
-        cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --profile production --features on-chain-release-build,polkadot-ahm -p asset-hub-polkadot-runtime -p polkadot-runtime && cd ..
+        # only enable `metadata-hash`, but not `on-chain-release-build` to still have logs enabled.
+        cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --profile production --features metadata-hash,polkadot-ahm -p asset-hub-polkadot-runtime -p polkadot-runtime && cd ..
         cp ${RUNTIMES_PATH}/target/production/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
     elif [ "{{ runtime }}" = "kusama" ]; then
-        cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --profile production --features on-chain-release-build,kusama-ahm -p asset-hub-kusama-runtime -p staging-kusama-runtime && cd ..
+        # only enable `metadata-hash`, but not `on-chain-release-build` to still have logs enabled.
+        cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --profile production --features metadata-hash,kusama-ahm -p asset-hub-kusama-runtime -p staging-kusama-runtime && cd ..
         cp ${RUNTIMES_PATH}/target/production/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
         # rename staging_kusama_runtime.compact.compressed.wasm to kusama_runtime.compact.compressed.wasm for naming convention compatibility
         mv ./runtime_wasm/staging_kusama_runtime.compact.compressed.wasm ./runtime_wasm/kusama_runtime.compact.compressed.wasm

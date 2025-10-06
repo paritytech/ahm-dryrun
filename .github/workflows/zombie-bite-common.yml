@@ -147,6 +147,12 @@ jobs:
           # echo "Found RC block to bite: $RC_BITE_BLOCK"
           # echo "::endgroup::"
 
+          export RUST_LOG_RC=$ZOMBIE_BITE_RUST_LOG
+          export RUST_LOG_COL=$ZOMBIE_BITE_RUST_LOG_COL
+
+          echo "RUST_LOG_RC: $RUST_LOG_RC"
+          echo "RUST_LOG_COL: $RUST_LOG_COL"
+
           # TODO: add ones we support this in zombie-bite
           # --rc-bite-block $RC_BITE_BLOCK
           zombie-bite bite -r $NETWORK --rc-override $RC_OVERRIDE --ah-override $AH_OVERRIDE -d $ZOMBIE_BITE_BASE_PATH
