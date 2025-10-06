@@ -8,6 +8,7 @@ logs/
 .claude
 zombie-bite/doppelganger/bin/
 .vscode
+chains/
 
 # for local testing, it is conventional in this repo to use `migration-run-{id}` as the name of the folder; ignore it
 migration-run-*
