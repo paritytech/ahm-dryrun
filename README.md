@@ -154,7 +154,7 @@ In order to run PET tests on the post-migration Asset Hub chain of a network `<n
     - Some warnings below ⚠️:
     - ⚠️🚨 The `<network-name>` must be fully capitalized
         - `ASSETHUBKUSAMA_ENDPOINT` will work;
-        - `ASSETHUBkusama_ENDPOINT` will **not**
+        - `ASSETHUBkusama_ENDPOINT` will **NOT**
     - ⚠️🚨 use `ws://[::1]:<collator-port>` and `ws://localhost:<collator-port>` over `ws://127.0.0.1:<collator-port>` 
 4. Run `just e2e-tests packages/<network-name>`
 
