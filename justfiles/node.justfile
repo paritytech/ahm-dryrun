@@ -52,7 +52,7 @@ download-chain-spec:
 	# If chains/asset-hub-kusama-spec.json is not present, download it
 	if [ ! -f chains/asset-hub-kusama-spec.json ]; then
 		echo "chains/asset-hub-kusama-spec.json is not present, downloading..."
-		curl -L https://raw.githubusercontent.com/paritytech/polkadot-sdk/6007549589b8cb441159728e6894748bdaefe504/cumulus/parachains/chain-specs/asset-hub-kusama-genesis.json -o chains/asset-hub-kusama-spec.json -s
+		curl -L https://raw.githubusercontent.com/paritytech/polkadot-sdk/6007549589b8cb441159728e6894748bdaefe504/cumulus/parachains/chain-specs/asset-hub-kusama.json -o chains/asset-hub-kusama-spec.json -s
 	else
 		echo "chains/asset-hub-kusama-spec.json is already present"
 	fi
