@@ -27,6 +27,9 @@ export const generalStakingTests: MigrationTest = {
         const currentEra = await ah_api_after.query.staking.currentEra();
         assert(activeEra.isSome, 'Assert activeEra is Some');
 
+        const forcing = await ah_api_after.query.staking.forceEra();
+        assert(forcing.toHuman() === 'NotForcing', 'Assert forceEra is NotForcing');
+
         const currentMultiBlockPhase = await ah_api_after.query.multiBlockElection.currentPhase();
 
         // TODO: check for session report. Is it an event or a query?
