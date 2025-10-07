@@ -111,8 +111,8 @@ jobs:
           echo "::group::run-polkadot-ecosystem-tests"
           
           # Set up environment variables for the just command
-          export ASSETHUB${NETWORK^^}_ENDPOINT="ws://localhost:${COL_PORT}"
-          export ASSETHUB${NETWORK^^}_BLOCK_NUMBER=$ASSETHUB_BLOCK_NUMBER
+          #export ASSETHUB${NETWORK^^}_ENDPOINT="ws://localhost:${COL_PORT}"
+          #export ASSETHUB${NETWORK^^}_BLOCK_NUMBER=$ASSETHUB_BLOCK_NUMBER
           
           # Sleep before running tests - running them immediately after the network has been spun up
           # can lead to missing data in the `chopsticks` node, and false negatives.
