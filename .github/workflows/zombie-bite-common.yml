@@ -354,9 +354,9 @@ jobs:
         run: |
           COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
           echo "::group::get-current-block-number"
-          echo "Getting current block from http://127.0.0.1:${COL_PORT}"
+          echo "Getting current block from http://localhost:${COL_PORT}"
           # Get current block number using JSON-RPC
-          BLOCK_NUMBER=$(curl -s -H "Content-Type: application/json" -d '{"id":1,"jsonrpc":"2.0","method":"chain_getHeader","params":[]}' http://127.0.0.1:${COL_PORT} | jq -r '.result.number')
+          BLOCK_NUMBER=$(curl -s -H "Content-Type: application/json" -d '{"id":1,"jsonrpc":"2.0","method":"chain_getHeader","params":[]}' http://localhost:${COL_PORT} | jq -r '.result.number')
 
           if [ -z "$BLOCK_NUMBER" ] || [ "$BLOCK_NUMBER" = "null" ]; then
             echo "Failed to get block number from endpoint"
@@ -385,15 +385,40 @@ jobs:
           yarn install
 
           # export endpoint
-          export ASSETHUB${NETWORK}_ENDPOINT="ws://127.0.0.1:${COL_PORT}"
-          export ASSETHUB${NETWORK}_BLOCK_NUMBER=ASSETHUB_BLOCK_NUMBER
+          export ASSETHUB${NETWORK^^}_ENDPOINT="ws://localhost:${COL_PORT}"
+          export ASSETHUB${NETWORK^^}_BLOCK_NUMBER=ASSETHUB_BLOCK_NUMBER
 
-          # Run the assetHubKusama tests
+          # Run only KAH E2E tests
           echo "Running tests with:"
-          echo "  ASSETHUB${NETWORK}_ENDPOINT=$ASSETHUB${NETWORK}_ENDPOINT"
-          echo "  ASSETHUB${NETWORK}_BLOCK_NUMBER=$ASSETHUB${NETWORK}_BLOCK_NUMBER"
+          echo "  ASSETHUB${NETWORK^^}_ENDPOINT=$ASSETHUB${NETWORK^^}_ENDPOINT"
+          echo "  ASSETHUB${NETWORK^^}_BLOCK_NUMBER=$ASSETHUB${NETWORK^^}_BLOCK_NUMBER"
 
-          yarn test assetHubKusama
+          failed_count=0
+          test_results=""
+          ls packages/*/src/*.test.ts | grep assetHub${NETWORK^} | grep e2e > /tmp/test_list.txt
+
+          # Sleep before running tests - running them immediately after the network has been spun up
+          # can lead to missing data in the `chopsticks` node, and false negatives.
+          echo "Sleeping for 90 seconds before running tests..."
+          sleep 90
+
+          while read test; do
+            echo "Running E2E test: $test"
+            if ! yarn test "$test" -u; then
+              failed_count=$((failed_count + 1))
+              test_results="${test_results}❌ Test failed: $test\n"
+            else
+              test_results="${test_results}✅ Test passed: $test\n"
+            fi
+          done < /tmp/test_list.txt
+
+          # Print results and exit with failed count
+          echo -e "$test_results"
+          echo "Total failed tests: $failed_count"
+
+          # Exit with failed count as exit code
+          exit $failed_count
+          
           echo "::endgroup::"
         continue-on-error: true
 
