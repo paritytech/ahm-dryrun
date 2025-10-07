@@ -34,6 +34,8 @@ just ahm kusama || echo "Setup failed"
 - `just setup` to install dependencies
 - `just ahm [polkadot|kusama]` to run the Migration for a given runtime. No args prints the help menu.
 - `just zb [bite|spawn|perform-migration]` to run the Zombie-Bite commands. No args prints the help menu.
+- `just e2e-tests <kusama|polkadot>` to run E2E Polkadot Ecosystem Tests
+    - see [E2E test section](#e2e-tests) below for more details
 <!-- TODO @donal: Monitoring here -->
 
 ## AHM Flows (manual steps)
@@ -136,55 +138,61 @@ This will spawn a new instance of the network (with the state of the previous st
 
 Then you can run tests in a _different terminal_.
 
-### E2E Tests on Asset Hub
+### E2E Tests
 
 Polkadot Ecosystem Tests offers, among other things, a suite of E2E tests that run against live networks.
-The PET submodule in this repository is set to a branch which extends the existing E2E suites, originally designed to
-run on a relay chain, to run in post-migration Asset Hubs - staking, governance, etc.
+
+The PET submodule in this repository is set to a branch which extends the existing E2E suites - originally designed to
+run on a relay chain - to run in post-migration Asset Hubs - which have staking, governance, etc.
 
 In order to run PET tests on the post-migration Asset Hub chain of a network `<network-name>` created by `zombie-bite`:
 
 1. Start the network with `just zb spawn <base_path> post` (if it is not already running)
-2. Note the port number `<collator-port>` the collator is running on, and the `<block-number>` the AH chain is on
+2. Note the port number `<collator-port>` the collator is running on, and the first post-migration `<block-number>` of the AH chain
 3. in `./polkadot-ecosystem-tests/.env`, add the following data
     ```sh
     ASSETHUB<network-name>_ENDPOINT=ws://[::1]:<collator-port>
     ASSETHUB<network-name>_BLOCK_NUMBER=<block-number>
     ```
-    - Some warnings below ⚠️:
-    - ⚠️🚨 The `<network-name>` must be fully capitalized
+    - Some warnings about this step:
+    - ⚠️🚨 The `<network-name>` must be fully capitalized🚨⚠️
         - `ASSETHUBKUSAMA_ENDPOINT` will work;
         - `ASSETHUBkusama_ENDPOINT` will **NOT**
-    - ⚠️🚨 use `ws://[::1]:<collator-port>` and `ws://localhost:<collator-port>` over `ws://127.0.0.1:<collator-port>` 
-4. Run `just e2e-tests packages/<network-name>`
+    - ⚠️🚨 regarding the endpoint's address format⚠️🚨
+        - ✅ `ws://[::1]:<collator-port>`
+        - ✅ `ws://localhost:<collator-port>`
+        - ❌ `ws://127.0.0.1:<collator-port>` 
+4. Run `just e2e-tests <network-name>`
+    - obligatory network name: `kusama` or `polkadot` (case-sensitive)
 
-All steps but the last can be ignored on chains that have already migrated.
-This is because PET is setup to periodically fetch chains' latest block numbers to that state in tests, and thus
-dispenses a local testnet for access to post-AHM runtimes.
+All steps **but** the last can be ignored on chains that have already migrated.
 
-#### Notes on E2E `just e2e-tests` command
+This is because PET is setup to periodically fetch chains' latest block numbers, in order to use the state at that block number in tests, and thus
+dispenses a local testnet for access to runtimes that are already deployed in a live network.
 
-It accepts multiple arguments, which are then passed to `yarn` to further specify the scope of the tests.
+#### Commands to run E2E tests
+
+Use `just e2e-tests <network-name>` for all E2E test suites for a given network, or `yarn test` for simpler filtering.
+- with `yarn`, remember to`cd polkadot-ecosystem-tests` 
 
 ```sh
-# This runs every PET test; this takes some time, as it includes relay <-> system parachain XCM connectivity tests,
-# E2E tests for relay + parachains, etc.
-just e2e-tests
+# This runs every E2E test for the given network (necessarily one of `kusama|polkadot`).
+# It will take some time, and print a report at the end.
+just e2e-tests <kusama|polkadot>
 
 # Run every test that exists for Kusama chains: relay, AH, bridge hub, coretime, etc.
-just e2e-tests packages/kusama
-# Run every test suite that exists for PAH, E2E or otherwise
-`just e2e-tests assetHubPaseo`
+# Includes both E2E and XCM tests.
+yarn test packages/kusama
+# Run every test suite that exists for KAH, E2E or otherwise.
+yarn test assetHubKusama
 # Run the E2E test suite for the scheduler pallet.
 # Note that this will do so for both the relay chain, and KAH: post-AHM, the AH's runtime will contain that pallet, and
-# recall that the branch this repository's PET submodule uses implements that test suite.
-just e2e-tests kusama.scheduler
+# recall that the branch this repository's PET submodule uses implements tests for newly added Asset Hub pallets.
+yarn test kusama.scheduler
 # Run the staking and nomination pools E2E test suites in whichever chains that have such a suite.
-just e2e-tests staking nominationPools
+yarn test staking nominationPools
 ...
 ```
-
-Alternatively, after `cd`ing to the PET directory, `yarn` test may be called directly.
 
 # Logs
 

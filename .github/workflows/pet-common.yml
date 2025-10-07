@@ -109,56 +109,16 @@ jobs:
         run: |
           COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
           echo "::group::run-polkadot-ecosystem-tests"
-          cd polkadot-ecosystem-tests
-          # Install dependencies
-          yarn install
-          # export endpoint
+          
+          # Set up environment variables for the just command
           export ASSETHUB${NETWORK^^}_ENDPOINT="ws://localhost:${COL_PORT}"
-          export ASSETHUB${NETWORK^^}_BLOCK_NUMBER=ASSETHUB_BLOCK_NUMBER
-          # Run the Asset Hub tests
-          echo "Running tests with:"
-          echo "  ASSETHUB${NETWORK^^}_ENDPOINT=$ASSETHUB${NETWORK^^}_ENDPOINT"
-          echo "  ASSETHUB${NETWORK^^}_BLOCK_NUMBER=$ASSETHUB${NETWORK^^}_BLOCK_NUMBER"
-          # Run only KAH E2E tests
-          failed_count=0
-          test_results=""
-          ls packages/*/src/*.test.ts | grep assetHub${NETWORK^} | grep e2e > /tmp/test_list.txt
-
+          export ASSETHUB${NETWORK^^}_BLOCK_NUMBER=$ASSETHUB_BLOCK_NUMBER
+          
           # Sleep before running tests - running them immediately after the network has been spun up
           # can lead to missing data in the `chopsticks` node, and false negatives.
           echo "Sleeping for 90 seconds before running tests..."
           sleep 90
-
-          while read test; do
-            echo "Running E2E test: $test"
-            if ! yarn test "$test"; then
-              failed_count=$((failed_count + 1))
-              test_results="${test_results}❌ Test failed: $test\n"
-            else
-              test_results="${test_results}✅ Test passed: $test\n"
-            fi
-          done < /tmp/test_list.txt
-
-          # Save results for next step
-          echo "$failed_count" > /tmp/failed_count.txt
-          echo -e "$test_results" > /tmp/test_results.txt
-          echo "::endgroup::"
-
-      - name: report_test_results
-        if: always()
-        shell: bash
-        run: |
-          echo "::group::report-test-results"
-          failed_count=$(cat /tmp/failed_count.txt)
-          test_results=$(cat /tmp/test_results.txt)
-
-          echo "=== Test Results ==="
-          echo -e "$test_results"
-
-          if [ $failed_count -gt 0 ]; then
-            echo "Total failed tests: $failed_count"
-            exit $failed_count
-          else
-            echo "All tests passed!"
-          fi
+          
+          # Run E2E tests using the just command
+          just e2e-tests ${{ inputs.network }}
           echo "::endgroup::"
