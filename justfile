@@ -98,7 +98,8 @@ e2e-tests NETWORK:
     BLOCK_VAR="ASSETHUB${NETWORK_UPPER}_BLOCK_NUMBER"
     
     # Load PET's .env file if it exists.
-    # If not, log that, and run with PET's default. Will cause false positives if run on an umigrated network.
+    # If not, log that, and run with PET's default. Will cause meaningless test failures if run on an umigrated network
+    # due to absence of required pallets.
     if [[ -f "${PET_PATH}/.env" ]]; then
         source "${PET_PATH}/.env"
     fi
