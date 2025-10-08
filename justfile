@@ -66,11 +66,6 @@ build runtime:
         exit 1
     fi
 
-# ------------------------- RUNNING E2E TESTS -------------------
-
-e2e-tests *TEST:
-    cd "${PET_PATH}" && yarn && yarn test "{{ TEST }}"
-
 # ------------------------- RUNNING INTEGRATION TESTS -------------------
 
 compare-state base_path runtime:
@@ -84,3 +79,77 @@ find-rc-block-bite network="kusama":
 make-new-snapshot base_path:
     just ahm _npm-build
     npm run make-new-snapshot {{ base_path }}
+
+# ------------------------- RUNNING E2E TESTS -------------------
+
+e2e-tests NETWORK:
+    #!/usr/bin/env bash
+    set -e
+    
+    # Validate NETWORK argument
+    if [[ "{{ NETWORK }}" != "kusama" && "{{ NETWORK }}" != "polkadot" ]]; then
+        echo "Error: NETWORK must be one of: kusama, polkadot"
+        exit 1
+    fi
+    
+    # Check required environment variables in PET's .env file
+    NETWORK_UPPER="{{ NETWORK }}"
+    NETWORK_UPPER=${NETWORK_UPPER^^}
+    ENDPOINT_VAR="ASSETHUB${NETWORK_UPPER}_ENDPOINT"
+    BLOCK_VAR="ASSETHUB${NETWORK_UPPER}_BLOCK_NUMBER"
+    
+    # Load PET's .env file if it exists.
+    # If not, log that, and run with PET's default. Will cause meaningless test failures if run on an umigrated network
+    # due to absence of required pallets.
+    if [[ -f "${PET_PATH}/.env" ]]; then
+        source "${PET_PATH}/.env"
+    fi
+    
+    if [[ -z "${!ENDPOINT_VAR}" ]]; then
+        echo "Warning: ${ENDPOINT_VAR} environment variable is not set in ${PET_PATH}/.env"
+        echo "Running with default PET endpoint for network {{ NETWORK }} (check PET source code)"
+    fi
+    
+    if [[ -z "${!BLOCK_VAR}" ]]; then
+        echo "Warning: ${BLOCK_VAR} environment variable is not set in ${PET_PATH}/.env"
+        echo "Running with default block number for network {{ NETWORK }} (check PET source code)"
+    fi
+    
+    echo "Running tests with:"
+    echo "  ${ENDPOINT_VAR}=${!ENDPOINT_VAR}"
+    echo "  ${BLOCK_VAR}=${!BLOCK_VAR}"
+    
+    cd polkadot-ecosystem-tests
+    
+    # Install dependencies
+    yarn install
+
+    # Run only KAH E2E tests
+    failed_count=0
+    test_results=""
+    NETWORK_CAPITALIZED="{{ NETWORK }}"
+    NETWORK_CAPITALIZED=${NETWORK_CAPITALIZED^}
+    find packages -name "*assetHub${NETWORK_CAPITALIZED}*e2e*.test.ts" -type f > /tmp/test_list.txt
+    
+    # Set up interrupt handler to exit on `CTRL^C` without starting the next set of tests
+    # `pkill -P $$` kills all descendant processes which were spawned by the current process, to avoid leaving
+    # orphaned processes running.
+    # `exit 130` is the standard signal for `SIGINT` in bash.
+    trap 'echo -e "\nInterrupted. Killing yarn processes and exiting..."; pkill -P $$; exit 130' INT
+    
+    while read -r test; do
+        echo "Running E2E test: $test"
+        if ! yarn test "$test" -u; then
+            failed_count=$((failed_count + 1))
+            test_results="${test_results}❌ Test failed: $test\n"
+        else
+            test_results="${test_results}✅ Test passed: $test\n"
+        fi
+    done < /tmp/test_list.txt
+    
+    # Print results and failure count
+    echo -e "$test_results"
+    echo "Total failed tests: $failed_count"
+    
+    # Exit with failed count as exit code
+    exit $failed_count
