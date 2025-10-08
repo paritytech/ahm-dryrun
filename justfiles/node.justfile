@@ -6,8 +6,8 @@ _default: help
 help:
     @just --list node --unsorted
 
-run-kusama: deps
-	just node run chains/asset-hub-kusama-spec.json warp 9944 9945 chains/ $(cat chains/rc-name.txt) $(cat chains/ah-name.txt)
+run-polkadot: deps
+	just node run chains/asset-hub-polkadot-spec.json warp 9944 9945 chains/ $(cat chains/rc-name.txt) $(cat chains/ah-name.txt)
 
 deps: download-chain-spec install-omni-node randomize-names
 
@@ -43,25 +43,25 @@ randomize-names:
 	echo "ahm-sync-$TIMESTAMP" > chains/rc-name.txt
 	echo "ahm-sync-$TIMESTAMP" > chains/ah-name.txt
 
-# Download Asset Hub Kusama Spec
+# Download Asset Hub Polkadot Spec
 download-chain-spec:
 	#!/usr/bin/env bash
 	set -ex
 
 	mkdir -p chains
-	# If chains/asset-hub-kusama-spec.json is not present, download it
-	if [ ! -f chains/asset-hub-kusama-spec.json ]; then
-		echo "chains/asset-hub-kusama-spec.json is not present, downloading..."
-		curl -L https://raw.githubusercontent.com/paritytech/polkadot-sdk/6007549589b8cb441159728e6894748bdaefe504/cumulus/parachains/chain-specs/asset-hub-kusama.json -o chains/asset-hub-kusama-spec.json -s
+	# If chains/asset-hub-polkadot-spec.json is not present, download it
+	if [ ! -f chains/asset-hub-polkadot-spec.json ]; then
+		echo "chains/asset-hub-polkadot-spec.json is not present, downloading..."
+		curl -L https://raw.githubusercontent.com/paritytech/polkadot-sdk/f385a3ed8494e11323dd97a071aac602edaa536f/cumulus/parachains/chain-specs/asset-hub-polkadot.json -o chains/asset-hub-polkadot-spec.json -s
 	else
-		echo "chains/asset-hub-kusama-spec.json is already present"
+		echo "chains/asset-hub-polkadot-spec.json is already present"
 	fi
 
 # Run the polkadot-omni-node binary with the given Spec, Sync mode, Ports and DB directory
-run spec_path sync port port_para db_dir rc_name ah_name:
+run spec_path sync rc_port ah_port db_dir rc_name ah_name:
 	#!/usr/bin/env bash
 	set -ex
 
 	echo "NODE NAMES: {{ rc_name }} and {{ ah_name }}"
 
-	polkadot-omni-node --chain "{{ spec_path }}" -lruntime=info --sync {{ sync }} --blocks-pruning 600 --state-pruning 600 --base-path {{ db_dir }} --no-hardware-benchmarks --rpc-max-request-size 1000000 --rpc-max-response-size 1000000 --rpc-port {{ port }} --name {{ rc_name }} -- -lruntime=info --sync {{ sync }} --blocks-pruning 600 --state-pruning 600 --base-path {{ db_dir }} --no-hardware-benchmarks --rpc-max-request-size 1000000 --rpc-max-response-size 1000000 --rpc-port {{ port_para }} --name {{ ah_name }}
+	polkadot-omni-node --chain "{{ spec_path }}" -lruntime=info --sync {{ sync }} --blocks-pruning 600 --state-pruning 600 --base-path {{ db_dir }} --no-hardware-benchmarks --rpc-max-request-size 1000000 --rpc-max-response-size 1000000 --rpc-port {{ ah_port }} --name {{ ah_name }} -- -lruntime=info --sync {{ sync }} --blocks-pruning 600 --state-pruning 600 --base-path {{ db_dir }} --no-hardware-benchmarks --rpc-max-request-size 1000000 --rpc-max-response-size 1000000 --rpc-port {{ rc_port }} --name {{ rc_name }}
