@@ -16,6 +16,11 @@ import { join } from "path";
 import { exec } from "child_process";
 import { promisify } from "util";
 import { logger } from "../shared/logger.js";
+import {
+  isAccountsMigrationInit,
+  isDataMigrationOngoing,
+  isCoolOff,
+} from "./helpers.js";
 
 const execAsync = promisify(exec);
 
@@ -55,177 +60,6 @@ async function getRCPort(basePath: string): Promise<number> {
   } catch (error) {
     logger.error("Could not read ports.json, using default port 63168");
     return 63168; // Default RC port
-  }
-}
-
-function isAccountsMigrationInit(stage: any): boolean {
-  return JSON.stringify(stage) === '"AccountsMigrationInit"';
-}
-
-function isDataMigrationOngoing(stage: any): boolean {
-  return JSON.stringify(stage) === '"DataMigrationOngoing"';
-}
-
-function isCoolOff(stage: any): boolean {
-  const stageStr = JSON.stringify(stage);
-  return stageStr !== null && stageStr.includes('"CoolOff"');
-}
-
-// Find the AH block that corresponds to a given RC block by looking at parachain backing
-async function findCorrespondingAHBlock(
-  rcApi: ApiPromise,
-  ahApi: ApiPromise,
-  rcBlockHash: string,
-): Promise<string> {
-  logger.info(`Looking for AH block backed in RC block ${rcBlockHash}`);
-
-  // Get the RC block to examine which parachain blocks were backed
-  const rcBlock = await rcApi.rpc.chain.getBlock(rcBlockHash);
-  const rcHeader = rcBlock.block.header;
-
-  // Look for the AH block with validation data pointing to this RC block or nearby
-  let ahCurrentHash = await ahApi.rpc.chain.getFinalizedHead();
-  let attempts = 0;
-  const maxAttempts = 50; // Look back further
-
-  while (attempts < maxAttempts) {
-    try {
-      const ahBlock = await ahApi.rpc.chain.getBlock(ahCurrentHash);
-
-      // Look for setValidationData extrinsic in this AH block
-      for (const extrinsic of ahBlock.block.extrinsics) {
-        const { method } = extrinsic;
-
-        if (
-          method.section === "parachainSystem" &&
-          method.method === "setValidationData"
-        ) {
-          const args = method.args[0] as any;
-          const relayParentNumber =
-            args.validationData.relayParentNumber.toNumber();
-          const rcBlockNumber = rcHeader.number.toNumber();
-
-          logger.info(
-            `Checking AH block ${ahCurrentHash}: validation parent = ${relayParentNumber}, target RC block = ${rcBlockNumber}`,
-          );
-
-          if (relayParentNumber === rcBlockNumber) {
-            logger.info(
-              `✅ Found exact matching AH block at ${ahCurrentHash} (AH validation parent: ${relayParentNumber}, RC block: ${rcBlockNumber})`,
-            );
-            return ahCurrentHash.toString();
-          }
-        }
-      }
-    } catch (error) {
-      // Silent retry on error
-    }
-
-    // Move to parent AH block
-    const ahHeader = await ahApi.rpc.chain.getHeader(ahCurrentHash);
-    ahCurrentHash = ahHeader.parentHash;
-    attempts++;
-  }
-
-  throw new Error(
-    `Failed to find synchronized AH block after ${maxAttempts} attempts. ` +
-      `Searched for AH block with validation parent == ${rcHeader.number.toNumber()} or ${rcHeader.number.toNumber() - 1}. ` +
-      `This indicates a synchronization issue between RC and AH chains. ` +
-      `RC block: ${rcBlockHash}, RC block number: ${rcHeader.number.toNumber()}`,
-  );
-}
-
-// Take snapshots at a specific block hash
-async function takeSnapshotsAtBlock(
-  basePath: string,
-  network: string,
-  rcPort: number,
-  ahPort: number,
-  blockHash: string,
-  type: "pre" | "post",
-): Promise<void> {
-  logger.info(
-    `Taking ${type}-migration snapshots at block ${blockHash} for ${network}...`,
-  );
-  logger.info(`Using ports - RC: ${rcPort}, AH: ${ahPort}`);
-
-  try {
-    const rcSnapshotPath = `${basePath}/${network}-rc-${type}.snap`;
-    const ahSnapshotPath = `${basePath}/${network}-ah-${type}.snap`;
-
-    // Take RC snapshot at the exact block where AccountsMigrationInit was detected
-    const rcCommand = `try-runtime create-snapshot --uri ws://127.0.0.1:${rcPort} --at ${blockHash} "${rcSnapshotPath}"`;
-    logger.info(`Executing: ${rcCommand}`);
-    await execAsync(rcCommand);
-
-    // We look at the RC block to see which AH blocks were backed/included
-    const ahProvider = new WsProvider(`ws://127.0.0.1:${ahPort}`);
-    const ahApi = await ApiPromise.create({ provider: ahProvider });
-    const rcProvider = new WsProvider(`ws://127.0.0.1:${rcPort}`);
-    const rcApi = await ApiPromise.create({ provider: rcProvider });
-
-    logger.info(`🔍 Finding corresponding AH block for RC block...`);
-
-    let ahTargetHash: string;
-    let ahStage: any;
-
-    if (type === "pre") {
-      // For pre-migration: find AH block that corresponds to the RC block
-      ahTargetHash = await findCorrespondingAHBlock(rcApi, ahApi, blockHash);
-    } else {
-      // For post-migration: AH monitoring is handled in main() - this should not be reached
-      throw new Error(
-        "Post-migration AH snapshot should be handled by parallel monitoring, not here",
-      );
-    }
-
-    // Get the AH migration stage at the chosen block
-    const ahApiAt = await ahApi.at(ahTargetHash);
-    const ahStageRaw = await ahApiAt.query.ahMigrator.ahMigrationStage();
-    ahStage = ahStageRaw.toHuman();
-    const ahHeader = await ahApi.rpc.chain.getHeader(ahTargetHash);
-
-    logger.info(
-      `🔍 Final AH Migration Stage at snapshot: ${JSON.stringify(ahStage)}`,
-    );
-    logger.info(
-      `📍 AH snapshot at block #${ahHeader.number.toNumber()}: ${ahTargetHash.toString()}`,
-    );
-
-    await rcApi.disconnect();
-
-    // Use the found AH block for the snapshot
-    const ahCommand = `try-runtime create-snapshot --uri ws://127.0.0.1:${ahPort} --at ${ahTargetHash} "${ahSnapshotPath}"`;
-    logger.info(`Executing: ${ahCommand}`);
-    await execAsync(ahCommand);
-
-    await ahApi.disconnect();
-
-    // Write snapshot info for reference
-    const snapshotInfo = {
-      [`rc_${type}_snapshot_path`]: rcSnapshotPath,
-      [`ah_${type}_snapshot_path`]: ahSnapshotPath,
-      rc_block_hash: blockHash,
-      ah_block_hash: ahTargetHash.toString(),
-      ah_migration_stage: ahStage,
-      network: network,
-      timestamp: new Date().toISOString(),
-      trigger:
-        type === "pre"
-          ? "RC AccountsMigrationInit detected, AH snapshot at corresponding block"
-          : "RC MigrationDone detected, AH snapshot at corresponding MigrationDone block",
-    };
-
-    const infoPath = join(basePath, `${type}_migration_snapshot_info.json`);
-    writeFileSync(infoPath, JSON.stringify(snapshotInfo, null, 2));
-
-    logger.info(`${type}-migration snapshots completed successfully!`);
-    logger.info(`RC snapshot: ${rcSnapshotPath}`);
-    logger.info(`AH snapshot: ${ahSnapshotPath}`);
-    logger.info(`Info written to: ${infoPath}`);
-  } catch (error) {
-    logger.error("Failed to take snapshots at block:", error);
-    throw error;
   }
 }
 
@@ -408,8 +242,8 @@ async function monitorBothChainsForPreMigration(
               logger.info(`Info written to: ${infoPath}`);
 
               clearTimeout(timeout);
-              await rcUnsub();
-              await ahUnsub();
+              rcUnsub();
+              ahUnsub();
               await api.disconnect();
               await ahApi.disconnect();
               process.exit(0);
@@ -574,8 +408,8 @@ async function monitorBothChainsForPostMigration(
     }
 
     clearTimeout(timeout);
-    await rcUnsub();
-    await ahUnsub();
+    rcUnsub();
+    ahUnsub();
     await rcApi.disconnect();
     await ahApi.disconnect();
     process.exit(0);
