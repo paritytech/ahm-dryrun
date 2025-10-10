@@ -22,6 +22,17 @@ const westend =  () => {
     }
 };
 
+const kusama =  () => {
+    return {
+      rc_endpoint: 'wss://kusama-rpc.n.dwellir.com',
+      rc_before: 30423691,
+      rc_after: 30425590,
+      ah_endpoint: 'wss://asset-hub-kusama-rpc.n.dwellir.com',
+      ah_before: 11150168,
+      ah_after: 11151931,
+    }
+};
+
 const extractFromPath = (base_path: string) => {
   let ports = JSON.parse(fs.readFileSync(`${base_path}/ports.json`, "utf-8"));
   let start_blocks = JSON.parse(
@@ -53,14 +64,18 @@ const extractFromPath = (base_path: string) => {
 
 const NETWORKS: Record<string, Function> = {
     "westend": westend,
+    "Kusama": kusama,
 };
-const DEFAULT_NETWORK = "westend";
+const DEFAULT_NETWORK = "Kusama";
 
 const main = async () => {
   let maybe_network_or_path = process.argv[2];
   let network = process.argv[3]  || DEFAULT_NETWORK;
   // ensure capitalized
   network = network.charAt(0).toUpperCase() + network.slice(1);
+
+  console.log("network", network);
+  console.log("maybe_network_or_path", maybe_network_or_path);
   
   if(!maybe_network_or_path) {
     logger.warn(`⚠️ No path or network was provided, using default (${DEFAULT_NETWORK}) ⚠️`);
@@ -68,7 +83,7 @@ const main = async () => {
     network = DEFAULT_NETWORK;
   }
 
-  const getInfoFn = NETWORKS[maybe_network_or_path] ? NETWORKS[maybe_network_or_path] : () => extractFromPath(maybe_network_or_path);
+  const getInfoFn = NETWORKS[network] ? NETWORKS[network] : () => extractFromPath(maybe_network_or_path);
 
   const {
     rc_endpoint,
