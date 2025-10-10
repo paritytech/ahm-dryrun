@@ -83,6 +83,18 @@ function migration_done(stage: any) {
   return JSON.stringify(stage) == '"MigrationDone"';
 }
 
+export function isAccountsMigrationInit(stage: any): boolean {
+  return JSON.stringify(stage) === '"AccountsMigrationInit"';
+}
+
+export function isDataMigrationOngoing(stage: any): boolean {
+  return JSON.stringify(stage) === '"DataMigrationOngoing"';
+}
+
+export function isCoolOff(stage: any): boolean {
+  const stageStr = JSON.stringify(stage);
+  return stageStr !== null && stageStr.includes('"CoolOff"');
+}
 async function rc_check(uri: string) {
   return new Promise(async (resolve) => {
     logger.info('Checking RC migration status', { uri });
