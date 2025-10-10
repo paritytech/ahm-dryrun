@@ -34,6 +34,7 @@ just ahm kusama || echo "Setup failed"
 - `just setup` to install dependencies
 - `just ahm [polkadot|kusama]` to run the Migration for a given runtime. No args prints the help menu.
 - `just zb [bite|spawn|perform-migration]` to run the Zombie-Bite commands. No args prints the help menu.
+- `just node [run-polkadot]` Run a Polkadot RC and AH node locally.
 - `just e2e-tests <kusama|polkadot>` to run E2E Polkadot Ecosystem Tests
     - see [E2E test section](#e2e-tests) below for more details
 <!-- TODO @donal: Monitoring here -->

@@ -6,6 +6,7 @@ set dotenv-load
 mod coverage
 mod zb "justfiles/zb.justfile"
 mod ahm "justfiles/ahm.justfile"
+mod node "justfiles/node.justfile"
 
 _default: help
 
