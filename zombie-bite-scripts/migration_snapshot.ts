@@ -243,8 +243,14 @@ async function main() {
   );
 
   if (snapshotType === "pre") {
-    // Pre-migration: Monitor RC only, find corresponding AH block when RC reaches AccountsMigrationInit
-    await monitorRCForPreMigration(api, basePath, network, rcPort, ahPort);
+    // Pre-migration: Monitor both RC and AH for their respective migration stages
+    await monitorBothChainsForPreMigration(
+      api,
+      basePath,
+      network,
+      rcPort,
+      ahPort,
+    );
   } else {
     // Post-migration: Monitor both RC and AH simultaneously
     await monitorBothChainsForPostMigration(
@@ -257,8 +263,8 @@ async function main() {
   }
 }
 
-// Monitor RC for pre-migration (AccountsMigrationInit)
-async function monitorRCForPreMigration(
+// Monitor both RC and AH for pre-migration (RC: AccountsMigrationInit, AH: DataMigrationOngoing + 1)
+async function monitorBothChainsForPreMigration(
   api: ApiPromise,
   basePath: string,
   network: string,
@@ -279,12 +285,6 @@ async function monitorRCForPreMigration(
     },
     10 * 60 * 1000,
   );
-
-  // Connect to AH for monitoring
-  const ahProvider = new WsProvider(`ws://127.0.0.1:${ahPort}`);
-  const ahApi = await ApiPromise.create({ provider: ahProvider });
-
-  let ahDataMigrationOngoingDetected = false;
 
   // Monitor RC for AccountsMigrationInit
   const rcUnsub = await api.rpc.chain.subscribeFinalizedHeads(
@@ -325,6 +325,12 @@ async function monitorRCForPreMigration(
       }
     },
   );
+
+  // Connect to AH for monitoring
+  const ahProvider = new WsProvider(`ws://127.0.0.1:${ahPort}`);
+  const ahApi = await ApiPromise.create({ provider: ahProvider });
+
+  let ahDataMigrationOngoingDetected = false;
 
   // Monitor AH for DataMigrationOngoing, then take snapshot at next block
   const ahUnsub = await ahApi.rpc.chain.subscribeFinalizedHeads(
