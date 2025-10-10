@@ -59,15 +59,16 @@ async function getRCPort(basePath: string): Promise<number> {
 }
 
 function isAccountsMigrationInit(stage: any): boolean {
-  return stage === "AccountsMigrationInit";
+  return JSON.stringify(stage) === '"AccountsMigrationInit"';
 }
 
 function isDataMigrationOngoing(stage: any): boolean {
-  return stage === "DataMigrationOngoing";
+  return JSON.stringify(stage) === '"DataMigrationOngoing"';
 }
 
 function isCoolOff(stage: any): boolean {
-  return typeof stage === "object" && stage !== null && "CoolOff" in stage;
+  const stageStr = JSON.stringify(stage);
+  return stageStr !== null && stageStr.includes('"CoolOff"');
 }
 
 // Find the AH block that corresponds to a given RC block by looking at parachain backing
