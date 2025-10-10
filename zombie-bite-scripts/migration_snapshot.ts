@@ -165,7 +165,7 @@ async function monitorBothChainsForPreMigration(
   const ahProvider = new WsProvider(`ws://127.0.0.1:${ahPort}`);
   const ahApi = await ApiPromise.create({ provider: ahProvider });
 
-  let ahDataMigrationOngoingDetected = false;
+  let ahDataMigrationOngoingBlockNumber: number | null = null;
 
   // Monitor AH for DataMigrationOngoing, then take snapshot at next block
   const ahUnsub = await ahApi.rpc.chain.subscribeFinalizedHeads(
@@ -181,76 +181,86 @@ async function monitorBothChainsForPreMigration(
           `AH Block #${header.number}: Migration stage = ${JSON.stringify(stage)}`,
         );
 
-        if (isDataMigrationOngoing(stage)) {
-          if (!ahDataMigrationOngoingDetected) {
-            logger.info(
-              `🎯 AH DataMigrationOngoing detected at block ${header.number}!`,
-            );
-            logger.info(
-              `Will take AH snapshot at next block (DataMigrationOngoing + 1)...`,
-            );
-            ahDataMigrationOngoingDetected = true;
-          }
-        } else if (ahDataMigrationOngoingDetected && !ahSnapshotTaken) {
-          // This is the block after DataMigrationOngoing
+        if (
+          isDataMigrationOngoing(stage) &&
+          ahDataMigrationOngoingBlockNumber === null
+        ) {
           logger.info(
-            `Taking AH pre-migration snapshot at block ${header.number} (DataMigrationOngoing + 1)...`,
+            `🎯 AH DataMigrationOngoing detected at block ${header.number}!`,
           );
+          logger.info(
+            `Will take AH snapshot at next block (DataMigrationOngoing + 1)...`,
+          );
+          ahDataMigrationOngoingBlockNumber = header.number.toNumber();
+        } else if (
+          ahDataMigrationOngoingBlockNumber !== null &&
+          !ahSnapshotTaken
+        ) {
+          const currentBlockNumber = header.number.toNumber();
+          if (currentBlockNumber > ahDataMigrationOngoingBlockNumber) {
+            // This is a block after DataMigrationOngoing was detected
+            logger.info(
+              `Taking AH pre-migration snapshot at block ${header.number} (DataMigrationOngoing + 1)...`,
+            );
 
-          ahSnapshotTaken = true;
-          const ahBlockHash = header.hash.toString();
+            ahSnapshotTaken = true;
+            const ahBlockHash = header.hash.toString();
 
-          try {
-            const ahSnapshotPath = `${basePath}/${network}-ah-pre.snap`;
-            const ahCommand = `try-runtime create-snapshot --uri ws://127.0.0.1:${ahPort} --at ${ahBlockHash} "${ahSnapshotPath}"`;
-            logger.info(`Executing: ${ahCommand}`);
-            await execAsync(ahCommand);
-            logger.info(`✅ AH pre-migration snapshot completed!`);
+            try {
+              const ahSnapshotPath = `${basePath}/${network}-ah-pre.snap`;
+              const ahCommand = `try-runtime create-snapshot --uri ws://127.0.0.1:${ahPort} --at ${ahBlockHash} "${ahSnapshotPath}"`;
+              logger.info(`Executing: ${ahCommand}`);
+              await execAsync(ahCommand);
+              logger.info(`✅ AH pre-migration snapshot completed!`);
 
-            // Write snapshot info once both snapshots are taken
-            if (rcSnapshotTaken && rcBlockHash) {
-              const snapshotInfo = {
-                rc_pre_snapshot_path: `${basePath}/${network}-rc-pre.snap`,
-                ah_pre_snapshot_path: ahSnapshotPath,
-                rc_block_hash: rcBlockHash,
-                ah_block_hash: ahBlockHash,
-                ah_migration_stage: stage,
-                network: network,
-                timestamp: new Date().toISOString(),
-                trigger:
-                  "RC AccountsMigrationInit, AH DataMigrationOngoing + 1",
-              };
+              // Write snapshot info once both snapshots are taken
+              if (rcSnapshotTaken && rcBlockHash) {
+                const snapshotInfo = {
+                  rc_pre_snapshot_path: `${basePath}/${network}-rc-pre.snap`,
+                  ah_pre_snapshot_path: ahSnapshotPath,
+                  rc_block_hash: rcBlockHash,
+                  ah_block_hash: ahBlockHash,
+                  ah_migration_stage: stage,
+                  network: network,
+                  timestamp: new Date().toISOString(),
+                  trigger:
+                    "RC AccountsMigrationInit, AH DataMigrationOngoing + 1",
+                };
 
-              const infoPath = join(
-                basePath,
-                "pre_migration_snapshot_info.json",
+                const infoPath = join(
+                  basePath,
+                  "pre_migration_snapshot_info.json",
+                );
+                writeFileSync(infoPath, JSON.stringify(snapshotInfo, null, 2));
+
+                const markerFile = join(
+                  basePath,
+                  "pre_migration_snapshot_done.txt",
+                );
+                writeFileSync(
+                  markerFile,
+                  `Pre-migration snapshots completed\nTimestamp: ${new Date().toISOString()}`,
+                );
+
+                logger.info(
+                  `✅ pre-migration snapshot process completed successfully!`,
+                );
+                logger.info(`Info written to: ${infoPath}`);
+
+                clearTimeout(timeout);
+                rcUnsub();
+                ahUnsub();
+                await api.disconnect();
+                await ahApi.disconnect();
+                process.exit(0);
+              }
+            } catch (error) {
+              logger.error(
+                `❌ Failed to take AH pre-migration snapshot:`,
+                error,
               );
-              writeFileSync(infoPath, JSON.stringify(snapshotInfo, null, 2));
-
-              const markerFile = join(
-                basePath,
-                "pre_migration_snapshot_done.txt",
-              );
-              writeFileSync(
-                markerFile,
-                `Pre-migration snapshots completed\nTimestamp: ${new Date().toISOString()}`,
-              );
-
-              logger.info(
-                `✅ pre-migration snapshot process completed successfully!`,
-              );
-              logger.info(`Info written to: ${infoPath}`);
-
-              clearTimeout(timeout);
-              rcUnsub();
-              ahUnsub();
-              await api.disconnect();
-              await ahApi.disconnect();
-              process.exit(0);
+              process.exit(1);
             }
-          } catch (error) {
-            logger.error(`❌ Failed to take AH pre-migration snapshot:`, error);
-            process.exit(1);
           }
         }
       } catch (error) {
