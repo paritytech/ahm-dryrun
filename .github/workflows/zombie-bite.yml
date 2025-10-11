@@ -8,7 +8,7 @@ on:
         required: false
       network:
         description: "Network to use (ALL means Polkadot and Kusama)"
-        default: "ALL"
+        default: "polkadot"
         type: choice
         options:
           - ALL
@@ -25,8 +25,7 @@ on:
         type: string
         default: ""
   schedule:
-    - cron: "0 0 * * *" # Every Day for Kusama
-    - cron: "0 0 * * 0" # Only on Sundays for Polkadot
+    - cron: "0 0 * * *" # Every Day for Polkadot
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -36,8 +35,8 @@ permissions: {}
 
 jobs:
   zombie_bite_polkadot:
-    # run by schedule only in Sundays or by demand
-    if: ${{ inputs.network == 'ALL' || inputs.network == 'polkadot' || github.event.schedule == '0 0 * * 0' }}
+    # run by schedule or by demand
+    if: ${{ inputs.network == 'ALL' || inputs.network == 'polkadot' || github.event.schedule == '0 0 * * *' }}
     uses: ./.github/workflows/zombie-bite-common.yml
     with:
       network: polkadot
@@ -45,10 +44,11 @@ jobs:
       rc_runtime_override_url: ${{ inputs.rc_runtime_override_url }}
       ah_runtime_override_url: ${{ inputs.ah_runtime_override_url }}
       runner: parity-large-persistent-test
+      doppelganger_version: doppelganger-stable2509 # use latest release of polkadot
 
   zombie_bite_kusama:
-    # run by schedule everyday or by demand
-    if: ${{ inputs.network == 'ALL' || inputs.network == 'kusama' || github.event.schedule == '0 0 * * *' }}
+    # run by demand
+    if: ${{ inputs.network == 'ALL' || inputs.network == 'kusama' }}
     uses: ./.github/workflows/zombie-bite-common.yml
     with:
       network: kusama
