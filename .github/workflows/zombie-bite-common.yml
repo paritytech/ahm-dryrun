@@ -104,6 +104,7 @@ jobs:
       - name: zombie_bite_step_bite
         id: zombie_bite_step_bite
         shell: bash
+        timeout-minutes: 45
         env:
           NETWORK: ${{ inputs.network }}
           SUDO: ${{ inputs.sudo-key }}
