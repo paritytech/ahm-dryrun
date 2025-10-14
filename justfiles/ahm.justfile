@@ -146,3 +146,10 @@ rust-test runtime base_path:
       --features {{ runtime }}-ahm \
       --features try-runtime \
       post_migration_checks_only -- --include-ignored --nocapture --test-threads 1
+
+# Run era events test with archive mode databases from zombie-bite
+# Requires: zombie-bite databases in <network>/db/full structure
+# Example: just ahm era-events-test ./polkadot-era-test polkadot
+era-events-test base_path network="polkadot":
+    just ahm _npm-build
+    node dist/zombie-bite-scripts/run_era_events_test.js {{ base_path }} {{ network }}
