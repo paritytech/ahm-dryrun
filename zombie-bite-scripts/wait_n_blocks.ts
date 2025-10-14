@@ -22,6 +22,7 @@ export async function waitNBlocks(endpoint: string, blockCount: number) {
 
   return new Promise<void>((resolve) => {
     const unsub = api.rpc.chain.subscribeFinalizedHeads((header) => {
+      console.log(`new block: ${header.number.toNumber()} from endpoint ${endpoint}`);
       blocksReceived++;
 
       if (blocksReceived >= blockCount) {
@@ -59,8 +60,16 @@ async function main() {
       process.exit(1);
     }
 
-    await waitNBlocks(endpoint, blockCount);
+
+    const timeout = new Promise((_, reject) => {
+      setTimeout(() => {
+        reject();
+      }, 60 * 1000); // 1min timeout
+    });
+
+    await Promise.race([waitNBlocks(endpoint, blockCount), timeout]);
   } catch (error) {
+    console.error(JSON.stringify(error));
     process.exit(1);
   }
 }
