@@ -197,6 +197,33 @@ jobs:
       - name: wait_for_network
         uses: ./.github/actions/wait-zb-network-ready
 
+      - name: wait_for_nodes
+        id: wait_for_nodes
+        shell: bash
+        env:
+          NETWORK: ${{ inputs.network }}
+          TS_LOG_CONSOLE: true
+          TS_LOG_LEVEL: debug
+        run: |
+          # Wait for nodes to come online
+          just zb wait-for-nodes $ZOMBIE_BITE_BASE_PATH
+        continue-on-error: true
+
+      - name: upload_logs_on_failure
+        if: steps.wait_for_nodes.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.network }}-spawn-failure-logs-${{ github.sha }}${{ inputs.args }}
+          path: |
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn/collator/collator.log
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn/alice/alice.log
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn/bob/bob.log
+
+      - name: early_exit_if_spawn_fail
+        if: steps.wait_for_nodes.outcome == 'failure'
+        shell: bash
+        run: exit 1
+
       - name: run_migration
         id: zombie_bite_step_spawn_and_run_migration
         shell: bash
@@ -209,11 +236,6 @@ jobs:
 
           ALICE_PORT=$(jq -r .alice_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
           COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
-
-          # Wait for nodes to come online
-          echo "::group::wait-for-nodes"
-          just zb wait-for-nodes $ZOMBIE_BITE_BASE_PATH
-          echo "::endgroup::"
 
           echo "::group::run-migration"
           # Start both pre and post-migration snapshot monitoring before scheduling migration

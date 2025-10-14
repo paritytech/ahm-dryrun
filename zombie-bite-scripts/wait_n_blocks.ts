@@ -37,7 +37,7 @@ export async function waitNBlocks(endpoint: string, blockCount: number) {
 
         unsub.then(unsubFn => unsubFn());
         api.disconnect();
-        resolve();
+        return resolve();
       }
     });
   });
@@ -68,6 +68,7 @@ async function main() {
     });
 
     await Promise.race([waitNBlocks(endpoint, blockCount), timeout]);
+    process.exit(0);
   } catch (error) {
     console.error(JSON.stringify(error));
     process.exit(1);

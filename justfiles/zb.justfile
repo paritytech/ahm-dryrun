@@ -150,9 +150,18 @@ wait-for-nodes base_path:
 
     # Wait for both to complete
     wait $RC_PID
+    RC_READY_ECODE=$?
     wait $AH_PID
+    AH_READY_ECODE=$?
 
-    echo "Both nodes are ready"
+    EXIT_CODE=$((RC_READY_ECODE + AH_READY_ECODE))
+    if [[ $EXIT_CODE -eq 0 ]];then
+        echo "Both nodes are ready";
+    else
+        echo "Node/s are not ready";
+    fi;
+
+    exit $EXIT_CODE;
 
 # Monitor for AccountsMigrationInit and take pre-migration snapshot
 monitor-pre-snapshot base_path network:
