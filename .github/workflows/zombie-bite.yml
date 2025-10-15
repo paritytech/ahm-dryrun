@@ -43,7 +43,7 @@ jobs:
       sudo-key: ${{ inputs.sudo-key }}
       rc_runtime_override_url: ${{ inputs.rc_runtime_override_url }}
       ah_runtime_override_url: ${{ inputs.ah_runtime_override_url }}
-      runner: parity-large-persistent-test
+      runner: parity-large-persistent
       doppelganger_version: v0.1.6
       #doppelganger_version: doppelganger-stable2509 # use latest release of polkadot
 
@@ -56,5 +56,5 @@ jobs:
       sudo-key: ${{ inputs.sudo-key }}
       rc_runtime_override_url: ${{ inputs.rc_runtime_override_url }}
       ah_runtime_override_url: ${{ inputs.ah_runtime_override_url }}
-      runner: parity-large-persistent-test
+      runner: parity-large-persistent
 
