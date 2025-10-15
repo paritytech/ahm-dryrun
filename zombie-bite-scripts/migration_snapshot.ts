@@ -292,10 +292,10 @@ async function monitorBothChainsForPostMigration(
   let snapshotTaken = false;
 
   // Set a timeout to prevent hanging indefinitely.
-  // If MIGRATION_TIMEOUT_HOURS is not set, default to 2h.
+  // If MIGRATION_TIMEOUT_HOURS is not set, default to 12h.
   const timeoutHours = process.env.MIGRATION_TIMEOUT_HOURS
     ? parseInt(process.env.MIGRATION_TIMEOUT_HOURS)
-    : 2;
+    : 12;
   const timeoutMs = timeoutHours * 60 * 60 * 1000;
 
   const timeout = setTimeout(() => {
