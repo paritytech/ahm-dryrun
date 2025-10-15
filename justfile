@@ -52,7 +52,7 @@ build runtime:
 
     if [ "{{ runtime }}" = "polkadot" ]; then
         # only enable `metadata-hash`, but not `on-chain-release-build` to still have logs enabled.
-        cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --profile production --features metadata-hash,polkadot-ahm -p asset-hub-polkadot-runtime -p polkadot-runtime && cd ..
+        cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --profile production --features on-chain-release-build,polkadot-ahm -p asset-hub-polkadot-runtime -p polkadot-runtime && cd ..
         cp ${RUNTIMES_PATH}/target/production/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
     elif [ "{{ runtime }}" = "kusama" ]; then
         # only enable `metadata-hash`, but not `on-chain-release-build` to still have logs enabled.
@@ -84,42 +84,42 @@ make-new-snapshot base_path:
 e2e-tests NETWORK:
     #!/usr/bin/env bash
     set -e
-    
+
     # Validate NETWORK argument
     if [[ "{{ NETWORK }}" != "kusama" && "{{ NETWORK }}" != "polkadot" ]]; then
         echo "Error: NETWORK must be one of: kusama, polkadot"
         exit 1
     fi
-    
+
     # Check required environment variables in PET's .env file
     NETWORK_UPPER="{{ NETWORK }}"
     NETWORK_UPPER=${NETWORK_UPPER^^}
     ENDPOINT_VAR="ASSETHUB${NETWORK_UPPER}_ENDPOINT"
     BLOCK_VAR="ASSETHUB${NETWORK_UPPER}_BLOCK_NUMBER"
-    
+
     # Load PET's .env file if it exists.
     # If not, log that, and run with PET's default. Will cause meaningless test failures if run on an umigrated network
     # due to absence of required pallets.
     if [[ -f "${PET_PATH}/.env" ]]; then
         source "${PET_PATH}/.env"
     fi
-    
+
     if [[ -z "${!ENDPOINT_VAR}" ]]; then
         echo "Warning: ${ENDPOINT_VAR} environment variable is not set in ${PET_PATH}/.env"
         echo "Running with default PET endpoint for network {{ NETWORK }} (check PET source code)"
     fi
-    
+
     if [[ -z "${!BLOCK_VAR}" ]]; then
         echo "Warning: ${BLOCK_VAR} environment variable is not set in ${PET_PATH}/.env"
         echo "Running with default block number for network {{ NETWORK }} (check PET source code)"
     fi
-    
+
     echo "Running tests with:"
     echo "  ${ENDPOINT_VAR}=${!ENDPOINT_VAR}"
     echo "  ${BLOCK_VAR}=${!BLOCK_VAR}"
-    
+
     cd polkadot-ecosystem-tests
-    
+
     # Install dependencies
     yarn install
 
@@ -129,13 +129,13 @@ e2e-tests NETWORK:
     NETWORK_CAPITALIZED="{{ NETWORK }}"
     NETWORK_CAPITALIZED=${NETWORK_CAPITALIZED^}
     find packages -name "*assetHub${NETWORK_CAPITALIZED}*e2e*.test.ts" -type f > /tmp/test_list.txt
-    
+
     # Set up interrupt handler to exit on `CTRL^C` without starting the next set of tests
     # `pkill -P $$` kills all descendant processes which were spawned by the current process, to avoid leaving
     # orphaned processes running.
     # `exit 130` is the standard signal for `SIGINT` in bash.
     trap 'echo -e "\nInterrupted. Killing yarn processes and exiting..."; pkill -P $$; exit 130' INT
-    
+
     while read -r test; do
         echo "Running E2E test: $test"
         if ! yarn test "$test" -u; then
@@ -145,10 +145,10 @@ e2e-tests NETWORK:
             test_results="${test_results}✅ Test passed: $test\n"
         fi
     done < /tmp/test_list.txt
-    
+
     # Print results and failure count
     echo -e "$test_results"
     echo "Total failed tests: $failed_count"
-    
+
     # Exit with failed count as exit code
     exit $failed_count
