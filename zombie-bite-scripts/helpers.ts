@@ -93,7 +93,7 @@ export function isDataMigrationOngoing(stage: any): boolean {
 
 export function isCoolOff(stage: any): boolean {
   const stageStr = JSON.stringify(stage);
-  return stageStr && stageStr.includes('"CoolOff"');
+  return stageStr ? stageStr.includes('"CoolOff"') : false;
 }
 async function rc_check(uri: string) {
   return new Promise(async (resolve) => {
