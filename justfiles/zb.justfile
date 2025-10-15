@@ -129,15 +129,15 @@ wait-for-nodes base_path:
     wait_for_node() {
         local port=$1
         local name=$2
-        for i in {1..10}; do
+        for i in {1..20}; do
             if node dist/zombie-bite-scripts/wait_n_blocks.js ws://localhost:${port} 2 2>/dev/null; then
                 echo "${name} node ready"
                 return 0
             fi
-            echo "Attempt $i/10: ${name} node not ready, waiting 5s..."
-            sleep 5
+            echo "Attempt $i/20: ${name} node not ready, waiting 30s..."
+            sleep 30
         done
-        echo "ERROR: ${name} node failed to become ready after 10 attempts"
+        echo "ERROR: ${name} node failed to become ready after 20 attempts"
         return 1
     }
 
