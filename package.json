@@ -16,6 +16,7 @@
     "find-rc-block-bite": "node dist/zombie-bite-scripts/find_rc_block_bite.js",
     "make-new-snapshot": "node dist/zombie-bite-scripts/make_new_snapshot.js",
     "ahm": "node dist/zombie-bite-scripts/orchestrator.js",
+    "era-events-test": "node dist/zombie-bite-scripts/run_era_events_test.js",
     "prettier": "prettier --write .",
     "clean": "rm -rf dist",
     "postinstall": "papi"
