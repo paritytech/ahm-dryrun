@@ -236,6 +236,7 @@ jobs:
           nohup zombie-bite spawn -d $ZOMBIE_BITE_BASE_PATH > nohup.out 2>&1 &
 
       - name: wait_for_network
+        id: wait_for_network
         uses: ./.github/actions/wait-zb-network-ready
 
       - name: wait_for_nodes
@@ -251,7 +252,7 @@ jobs:
         continue-on-error: true
 
       - name: upload_logs_on_failure
-        if: steps.wait_for_nodes.outcome == 'failure'
+        if: steps.wait_for_nodes.outcome == 'failure' || steps.wait_for_network.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.network }}-spawn-failure-logs-${{ github.sha }}${{ inputs.args }}
@@ -259,6 +260,7 @@ jobs:
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn/collator/collator.log
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn/alice/alice.log
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn/bob/bob.log
+            nohup.out
 
       - name: early_exit_if_spawn_fail
         if: steps.wait_for_nodes.outcome == 'failure'
