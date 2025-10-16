@@ -214,12 +214,16 @@ jobs:
         shell: bash
         env:
           RUN_ID: ${{ inputs.pre_db_run_id }}
+          RUNNER: ${{ inputs.runner }}
         run: |
           echo "::group::debug"
-          ls /tmp/*
           ls ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite
           if [[ $RUN_ID == "" ]];then
             ls ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite-debug
+          fi;
+
+          if [[ $RUNNER =~ "parity" ]];then
+            ls /tmp/*
           fi;
           echo "::endgroup::"
 
