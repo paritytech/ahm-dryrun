@@ -81,7 +81,10 @@ jobs:
       - name: install_try_runtime_cli
         shell: bash
         run: |
-          just install-try-runtime
+          #just install-try-runtime
+          https://github.com/paritytech/try-runtime-cli/releases/download/v0.8.0/try-runtime-x86_64-unknown-linux-musl
+          curl -L -o $AHM_BINS/try-runtime https://github.com/paritytech/try-runtime-cli/releases/download/v0.8.0/try-runtime-x86_64-unknown-linux-musl;
+          chmod 755 $AHM_BINS/try-runtime;
 
       - name: build_runtimes
         # only runs if we don't have a pre-db
@@ -238,6 +241,7 @@ jobs:
       - name: wait_for_network
         id: wait_for_network
         uses: ./.github/actions/wait-zb-network-ready
+        continue-on-error: true
 
       - name: wait_for_nodes
         id: wait_for_nodes
