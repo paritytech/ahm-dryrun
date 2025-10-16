@@ -45,7 +45,7 @@ jobs:
   run_zombie_bite:
     runs-on: ${{ inputs.runner }}
     container:
-      image: ${{ inputs.runner != 'ubuntu' && 'docker.io/paritytech/ci-unified:bullseye-1.88.0-2025-06-27-v202507221446' || null }}
+      image: ${{ fromJSON(contains(inputs.runner, 'parity') && 'docker.io/paritytech/ci-unified:bullseye-1.88.0-2025-06-27-v202507221446' || null )}}
     timeout-minutes: ${{ inputs.network == 'kusama' && 180 || 720  }}
 
     steps:
