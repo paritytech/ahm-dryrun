@@ -25,7 +25,7 @@ on:
         type: string
         default: ""
       pre_db_run_id:
-        description: "Start the process from a pre-db"
+        description: "Run ID to Start the process from a pre-db from a previous run"
         required: false
         type: string
         default: ""

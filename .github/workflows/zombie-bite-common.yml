@@ -214,7 +214,7 @@ jobs:
           ls ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite
           if [[ $RUN_ID == "" ]];then
             ls ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite-debug
-          fil
+          fi;
           echo "::endgroup::"
 
       - name: run_zombie_bite_spawn
