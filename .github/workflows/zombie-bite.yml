@@ -38,7 +38,7 @@ on:
     - cron: "0 0 * * *" # Every Day for Polkadot
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ inputs.runner }}
   cancel-in-progress: true
 
 permissions: {}
