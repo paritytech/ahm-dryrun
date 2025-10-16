@@ -66,6 +66,12 @@ jobs:
           destination-path: ${{ env.AHM_BINS }}
           tag-version: ${{ inputs.doppelganger_version }}
 
+      - name: install_deps_if_ubuntu
+        if: ${{ contains(inputs.runner, 'ubuntu') }}
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install protobuf-compiler
 
       - name: install_zombie_bite
         shell: bash
