@@ -66,6 +66,22 @@ jobs:
       - name: wait_for_network
         uses: ./.github/actions/wait-zb-network-ready
 
+      - name: debug
+        timeout-minutes: 30
+        shell: bash
+        env:
+          BASE_PATH: ${{ env.ZOMBIE_BITE_BASE_PATH }}
+        run: |
+          while true; do
+            echo "outout";
+            tail nohup.out
+            echo "\n\n alice logs"
+            tail $BASE_PATH/spawn/alice/alice.log
+            echo "\n\n collator logs"
+            tail $BASE_PATH/spawn/collator/collator.log
+
+            sleep 60
+          done;
       - name: schedule_migration_call_test
         shell: bash
         timeout-minutes: 10
