@@ -22,6 +22,8 @@ import {
   isCoolOff,
 } from "./helpers.js";
 
+// Suppress try-runtime verbose output (e.g. progress spinner) by redirecting stderr
+// to /dev/null to avoid to hit node.js child_process exec maxBuffer (default 1MB).
 const execAsync = promisify(exec);
 
 // Get base path, network, and snapshot type from command line args
@@ -146,7 +148,7 @@ async function monitorBothChainsForPreMigration(
 
           try {
             const rcSnapshotPath = `${basePath}/${network}-rc-pre.snap`;
-            const rcCommand = `try-runtime create-snapshot --uri ws://127.0.0.1:${rcPort} --at ${rcBlockHash} "${rcSnapshotPath}"`;
+            const rcCommand = `try-runtime create-snapshot --uri ws://127.0.0.1:${rcPort} --at ${rcBlockHash} "${rcSnapshotPath}" 2>/dev/null`;
             logger.info(`Executing: ${rcCommand}`);
             await execAsync(rcCommand);
             logger.info(`✅ RC pre-migration snapshot completed!`);
@@ -208,7 +210,7 @@ async function monitorBothChainsForPreMigration(
 
             try {
               const ahSnapshotPath = `${basePath}/${network}-ah-pre.snap`;
-              const ahCommand = `try-runtime create-snapshot --uri ws://127.0.0.1:${ahPort} --at ${ahBlockHash} "${ahSnapshotPath}"`;
+              const ahCommand = `try-runtime create-snapshot --uri ws://127.0.0.1:${ahPort} --at ${ahBlockHash} "${ahSnapshotPath}" 2>/dev/null`;
               logger.info(`Executing: ${ahCommand}`);
               await execAsync(ahCommand);
               logger.info(`✅ AH pre-migration snapshot completed!`);
@@ -379,11 +381,11 @@ async function monitorBothChainsForPostMigration(
       const ahSnapshotPath = `${basePath}/${network}-ah-post.snap`;
 
       // Take snapshots at the blocks where each chain reached MigrationDone
-      const rcCommand = `try-runtime create-snapshot --uri ws://127.0.0.1:${rcPort} --at ${rcDoneBlock} "${rcSnapshotPath}"`;
+      const rcCommand = `try-runtime create-snapshot --uri ws://127.0.0.1:${rcPort} --at ${rcDoneBlock} "${rcSnapshotPath}" 2>/dev/null`;
       logger.info(`Executing: ${rcCommand}`);
       await execAsync(rcCommand);
 
-      const ahCommand = `try-runtime create-snapshot --uri ws://127.0.0.1:${ahPort} --at ${ahDoneBlock} "${ahSnapshotPath}"`;
+      const ahCommand = `try-runtime create-snapshot --uri ws://127.0.0.1:${ahPort} --at ${ahDoneBlock} "${ahSnapshotPath}" 2>/dev/null`;
       logger.info(`Executing: ${ahCommand}`);
       await execAsync(ahCommand);
 
