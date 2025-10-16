@@ -82,7 +82,6 @@ jobs:
         shell: bash
         run: |
           #just install-try-runtime
-          https://github.com/paritytech/try-runtime-cli/releases/download/v0.8.0/try-runtime-x86_64-unknown-linux-musl
           curl -L -o $AHM_BINS/try-runtime https://github.com/paritytech/try-runtime-cli/releases/download/v0.8.0/try-runtime-x86_64-unknown-linux-musl;
           chmod 755 $AHM_BINS/try-runtime;
 
