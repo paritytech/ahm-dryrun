@@ -34,6 +34,7 @@ on:
 
 env:
   ZOMBIE_BITE_BASE_PATH: "/tmp/ci"
+  ZOMBIE_BITE_STATE_PRUNING: "archive"
   AHM_BINS: "/tmp"
 
 jobs:
