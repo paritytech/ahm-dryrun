@@ -35,7 +35,7 @@ runs:
         echo "downloading artifacts from https://github.com/paritytech/ahm-dryrun/actions/runs/${RUN_ID}"
 
         if [[ $NAME_PATTERN == "" ]]; then
-          gh run download $RUN_ID -p "${NAME_PATTERN}" -D $TMP_DIR
+          gh run download $RUN_ID  -D $TMP_DIR
         else
           gh run download $RUN_ID -p "${NAME_PATTERN}" -D $TMP_DIR
         fi;
