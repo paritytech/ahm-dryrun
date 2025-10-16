@@ -24,6 +24,16 @@ on:
         required: false
         type: string
         default: ""
+      pre_db_run_id:
+        description: "Start the process from a pre-db"
+        required: false
+        type: string
+        default: ""
+      runner:
+        description: "Runner to run the jobs"
+        required: false
+        type: string
+        default: "parity-large-persistent"
   schedule:
     - cron: "0 0 * * *" # Every Day for Polkadot
 
@@ -43,8 +53,9 @@ jobs:
       sudo-key: ${{ inputs.sudo-key }}
       rc_runtime_override_url: ${{ inputs.rc_runtime_override_url }}
       ah_runtime_override_url: ${{ inputs.ah_runtime_override_url }}
-      runner: parity-large-persistent
+      runner: ${{ inputs.runner }}
       doppelganger_version: doppelganger-stable2509 # use latest release of polkadot
+      pre_db_run_id: ${{ inputs.pre_db_run_id }}
 
   zombie_bite_kusama:
     # run by demand

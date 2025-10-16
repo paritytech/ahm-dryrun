@@ -30,6 +30,11 @@ on:
         required: false
         type: string
         default: "latest"
+      pre_db_run_id:
+        description: "start the process from a pre-db"
+        required: false
+        type: string
+        default: ""
 
 
 env:
@@ -73,6 +78,8 @@ jobs:
           just install-try-runtime
 
       - name: build_runtimes
+        # only runs if we don't have a pre-db
+        if: ${{ inputs.pre_db_run_id == '' }}
         shell: bash
         env:
           RUSTFLAGS: "-A warnings"
@@ -103,6 +110,8 @@ jobs:
 
       - name: zombie_bite_step_bite
         id: zombie_bite_step_bite
+        # only runs if we don't have a pre-db
+        if: ${{ inputs.pre_db_run_id == '' }}
         shell: bash
         timeout-minutes: 45
         env:
@@ -169,6 +178,8 @@ jobs:
         continue-on-error: true
 
       - name: zombie_bite_upload_step
+        # only runs if we don't have a pre-db
+        if: ${{ inputs.pre_db_run_id == '' }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.network }}-pre-migration-db-${{ github.sha }}${{ inputs.args }}
@@ -176,14 +187,34 @@ jobs:
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ports.json
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ready.json
+            nohup.out
+
+
+      - name: download_pre_migration_db
+        # only runs if we have a pre-db
+        if: ${{ inputs.pre_db_run_id != '' }}
+        uses: ./.github/actions/download-artifact
+        env:
+          RUN_ID: ${{ inputs.pre_db_run_id }}
+          GH_TOKEN: ${{ github.token }}
+          NETWORK: ${{ inputs.network }}
+        with:
+          gh-token: ${{ env.GH_TOKEN }}
+          destination-path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
+          run-id: ${{ env.RUN_ID }}
+          name-pattern: "${{ env.NETWORK }}-pre-migration-db-*"
 
       - name: checkpoint_bite
         shell: bash
+        env:
+          RUN_ID: ${{ inputs.pre_db_run_id }}
         run: |
           echo "::group::debug"
           ls /tmp/*
           ls ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite
-          ls ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite-debug
+          if [[ $RUN_ID == "" ]];then
+            ls ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite-debug
+          fil
           echo "::endgroup::"
 
       - name: run_zombie_bite_spawn
