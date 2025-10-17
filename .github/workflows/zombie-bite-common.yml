@@ -284,7 +284,7 @@ jobs:
           echo "::group::run-migration"
           # Start migration snapshot monitoring (polls for completion and takes all 4 snapshots)
           echo "Starting migration snapshot monitoring in background..."
-          nohup node dist/zombie-bite-scripts/migration_snapshot.js $ZOMBIE_BITE_BASE_PATH $NETWORK > migration_snapshot.log 2>&1 &
+          nohup node dist/zombie-bite-scripts/migration_snapshot.js $ZOMBIE_BITE_BASE_PATH $NETWORK 2>&1 | tee -a migration_snapshot.log &
           SNAPSHOT_PID=$!
 
           # Schedule the migration
