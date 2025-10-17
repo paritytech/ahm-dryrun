@@ -207,19 +207,16 @@ jobs:
           echo "::endgroup::"
 
           echo "::group::run-migration"
-          # Start migration snapshot monitoring (monitors migration and takes all 4 snapshots after completion)
-          echo "Starting migration snapshot monitoring..."
+          # Start migration snapshot monitoring (polls for completion and takes all 4 snapshots)
+          echo "Starting migration snapshot monitoring in background..."
           nohup node dist/zombie-bite-scripts/migration_snapshot.js $ZOMBIE_BITE_BASE_PATH $NETWORK > migration_snapshot.log 2>&1 &
           SNAPSHOT_PID=$!
 
           # Schedule the migration
           node dist/zombie-bite-scripts/migration_shedule_migration.js $ALICE_PORT
 
-          # Monitor migration completion (this waits until both chains reach MigrationDone)
-          node dist/zombie-bite-scripts/migration_finished_monitor.js $ZOMBIE_BITE_BASE_PATH $ALICE_PORT $COL_PORT
-
-          # Wait for snapshot process to complete (takes all 4 snapshots after migration)
-          echo "Waiting for all snapshots to complete..."
+          # Wait for snapshot process to complete (polls for MigrationDone, scans blocks, takes snapshots)
+          echo "Waiting for migration to complete and snapshots to finish..."
           wait $SNAPSHOT_PID || echo "Snapshot process already completed"
 
           echo "::endgroup::"

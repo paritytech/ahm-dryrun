@@ -1,21 +1,16 @@
-// Monitor RC and AH migration stages and take pre/post-migration snapshots
+// Take migration snapshots by scanning blocks after migration completes
 //
-// Monitor for key migration blocks, and take ALL snapshots AFTER migration completes
-// This avoids RPC overload during active migration.
-//
-// Pre-migration blocks to capture:
-//   - RC: block with state transition to AccountsMigrationInit
-//   - AH: block with state transition to DataMigrationOngoing + 1
-// Post-migration blocks to capture:
-//   - RC: block with state transition to CoolOff
-//   - AH: block with state transition to CoolOff
-//
-// All 4 snapshots are taken after both chains reach CoolOff
+// Strategy:
+// 1. Poll (via RPC) until both chains reach MigrationDone
+// 2. Scan BACKWARDS from current block to find post-migration blocks (CoolOff)
+// 3. Scan FORWARDS from migration start to find pre-migration blocks
+//    - RC: AccountsMigrationInit
+//    - AH: DataMigrationOngoing + 1
+// 4. Take all 4 snapshots when nodes are idle
 //
 // Usage: node dist/zombie-bite-scripts/migration_snapshot.js <base_path> <network>
 
 import { ApiPromise, WsProvider } from "@polkadot/api";
-import type { Header } from "@polkadot/types/interfaces";
 import { readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import { exec } from "child_process";
@@ -29,7 +24,6 @@ import {
 
 const execAsync = promisify(exec);
 
-// Get base path and network from command line args
 const basePath = process.argv[2];
 const network = process.argv[3];
 
@@ -61,170 +55,291 @@ async function getRCPort(basePath: string): Promise<number> {
 }
 
 interface SnapshotBlocks {
-  rcPreBlock: string | null;
-  ahPreBlock: string | null;
-  rcPostBlock: string | null;
-  ahPostBlock: string | null;
+  rcPreBlock: string;
+  rcPreBlockNumber: number;
+  ahPreBlock: string;
+  ahPreBlockNumber: number;
+  rcPostBlock: string;
+  rcPostBlockNumber: number;
+  ahPostBlock: string;
+  ahPostBlockNumber: number;
 }
 
-async function main() {
-  const ahPort = await getAHPort(basePath);
-  const rcPort = await getRCPort(basePath);
-
-  logger.info(`Using ports - RC: ${rcPort}, AH: ${ahPort}`);
-
-  const blocks: SnapshotBlocks = {
-    rcPreBlock: null,
-    ahPreBlock: null,
-    rcPostBlock: null,
-    ahPostBlock: null,
-  };
-
-  // Monitor both chains and collect block hashes
-  await monitorMigrationAndCollectBlocks(rcPort, ahPort, blocks);
-
-  // Once migration is complete, take all 4 snapshots
-  await takeAllSnapshots(rcPort, ahPort, blocks);
+// Create a fresh API connection for a single query, then disconnect
+async function queryOnce<T>(
+  port: number,
+  query: (api: ApiPromise) => Promise<T>,
+): Promise<T> {
+  const provider = new WsProvider(`ws://127.0.0.1:${port}`, 1000, {}, 5000);
+  const api = await ApiPromise.create({ provider });
+  try {
+    return await query(api);
+  } finally {
+    await api.disconnect();
+  }
 }
 
-async function monitorMigrationAndCollectBlocks(
+// Poll until both chains reach MigrationDone
+async function waitForMigrationDone(
   rcPort: number,
   ahPort: number,
-  blocks: SnapshotBlocks,
 ): Promise<void> {
-  logger.info("Starting migration monitoring to collect snapshot blocks...");
+  logger.info("Polling for migration completion...");
 
-  const rcProvider = new WsProvider(`ws://127.0.0.1:${rcPort}`);
-  const rcApi = await ApiPromise.create({ provider: rcProvider });
-
-  const ahProvider = new WsProvider(`ws://127.0.0.1:${ahPort}`);
-  const ahApi = await ApiPromise.create({ provider: ahProvider });
+  const pollInterval = 5 * 60 * 1000; // 5 minutes
+  const maxWaitTime = 12 * 60 * 60 * 1000; // 12 hours
+  const startTime = Date.now();
 
   let rcDone = false;
   let ahDone = false;
-  let ahDataMigrationOngoingBlockNumber: number | null = null;
 
-  const timeoutHours = process.env.MIGRATION_TIMEOUT_HOURS
-    ? parseInt(process.env.MIGRATION_TIMEOUT_HOURS)
-    : 12;
-  const timeoutMs = timeoutHours * 60 * 60 * 1000;
+  while (!rcDone || !ahDone) {
+    if (Date.now() - startTime > maxWaitTime) {
+      throw new Error("Timeout waiting for migration to complete (12 hours)");
+    }
 
-  const timeout = setTimeout(() => {
-    logger.error(
-      `⏰ Timeout waiting for migration to complete (${timeoutHours} hours)`,
-    );
-    process.exit(1);
-  }, timeoutMs);
+    try {
+      // Check RC migration stage
+      if (!rcDone) {
+        const rcStage = await queryOnce(rcPort, async (api) => {
+          const stage = await api.query.rcMigrator.rcMigrationStage();
+          return stage.toHuman();
+        });
+        logger.info(`RC migration stage: ${JSON.stringify(rcStage)}`);
 
-  // Monitor RC
-  const rcUnsub = await rcApi.rpc.chain.subscribeFinalizedHeads(
-    async (header: Header) => {
-      if (rcDone) return;
-
-      try {
-        const apiAt = await rcApi.at(header.hash);
-        const raw = await apiAt.query.rcMigrator.rcMigrationStage();
-        const stage = raw.toHuman();
-
-        logger.info(
-          `RC Block #${header.number}: Migration stage = ${JSON.stringify(stage)}`,
-        );
-
-        // Capture pre-migration block
-        if (!blocks.rcPreBlock && isAccountsMigrationInit(stage)) {
-          blocks.rcPreBlock = header.hash.toString();
-          logger.info(
-            `📌 RC pre-migration block captured: ${header.number} (${blocks.rcPreBlock})`,
-          );
-        }
-
-        // Capture post-migration block
-        if (isCoolOff(stage)) {
-          if (!blocks.rcPostBlock) {
-            blocks.rcPostBlock = header.hash.toString();
-            logger.info(
-              `📌 RC post-migration block captured: ${header.number} (${blocks.rcPostBlock})`,
-            );
-          }
+        if (JSON.stringify(rcStage) === '"MigrationDone"') {
+          logger.info("✅ RC migration complete!");
           rcDone = true;
         }
-      } catch (error) {
-        logger.error("Error checking RC migration stage:", error);
       }
-    },
-  );
 
-  // Monitor AH
-  const ahUnsub = await ahApi.rpc.chain.subscribeFinalizedHeads(
-    async (header: Header) => {
-      if (ahDone) return;
+      // Check AH migration stage
+      if (!ahDone) {
+        const ahStage = await queryOnce(ahPort, async (api) => {
+          const stage = await api.query.ahMigrator.ahMigrationStage();
+          return stage.toHuman();
+        });
+        logger.info(`AH migration stage: ${JSON.stringify(ahStage)}`);
 
-      try {
-        const apiAt = await ahApi.at(header.hash);
-        const raw = await apiAt.query.ahMigrator.ahMigrationStage();
-        const stage = raw.toHuman();
-
-        logger.info(
-          `AH Block #${header.number}: Migration stage = ${JSON.stringify(stage)}`,
-        );
-
-        // Capture pre-migration block (DataMigrationOngoing + 1)
-        if (!blocks.ahPreBlock) {
-          if (
-            isDataMigrationOngoing(stage) &&
-            ahDataMigrationOngoingBlockNumber === null
-          ) {
-            ahDataMigrationOngoingBlockNumber = header.number.toNumber();
-            logger.info(
-              `🎯 AH DataMigrationOngoing detected at block ${header.number}`,
-            );
-          } else if (ahDataMigrationOngoingBlockNumber !== null) {
-            const currentBlockNumber = header.number.toNumber();
-            if (currentBlockNumber > ahDataMigrationOngoingBlockNumber) {
-              blocks.ahPreBlock = header.hash.toString();
-              logger.info(
-                `📌 AH pre-migration block captured: ${header.number} (${blocks.ahPreBlock})`,
-              );
-            }
-          }
-        }
-
-        // Capture post-migration block
-        if (isCoolOff(stage)) {
-          if (!blocks.ahPostBlock) {
-            blocks.ahPostBlock = header.hash.toString();
-            logger.info(
-              `📌 AH post-migration block captured: ${header.number} (${blocks.ahPostBlock})`,
-            );
-          }
+        if (JSON.stringify(ahStage) === '"MigrationDone"') {
+          logger.info("✅ AH migration complete!");
           ahDone = true;
         }
-      } catch (error) {
-        logger.error("Error checking AH migration stage:", error);
       }
-    },
+
+      if (!rcDone || !ahDone) {
+        logger.info(`Waiting ${pollInterval / 1000}s before next poll...`);
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+      }
+    } catch (error) {
+      logger.warn("Error polling migration status:", error);
+      logger.info(`Retrying in ${pollInterval / 1000}s...`);
+      await new Promise((resolve) => setTimeout(resolve, pollInterval));
+    }
+  }
+
+  logger.info("🎉 Both chains reached MigrationDone!");
+}
+
+// Scan backwards from endBlock to startBlock to find first block matching predicate
+async function scanBackwards(
+  port: number,
+  endBlock: number,
+  startBlock: number,
+  predicate: (stage: any) => boolean,
+  chainName: string,
+  targetName: string,
+): Promise<{ blockNumber: number; blockHash: string }> {
+  logger.info(
+    `Scanning ${chainName} backwards from block ${endBlock} to ${startBlock} for ${targetName}...`,
   );
 
-  // Wait for both chains to complete
-  return new Promise((resolve) => {
-    const checkInterval = setInterval(() => {
-      if (rcDone && ahDone) {
-        clearInterval(checkInterval);
-        clearTimeout(timeout);
-        rcUnsub();
-        ahUnsub();
-        rcApi.disconnect();
-        ahApi.disconnect();
+  for (let blockNum = endBlock; blockNum >= startBlock; blockNum--) {
+    if (blockNum % 100 === 0) {
+      logger.debug(`${chainName} scanning block ${blockNum}...`);
+    }
 
-        logger.info("✅ Migration complete on both chains!");
+    try {
+      const result = await queryOnce(port, async (api) => {
+        const hash = await api.rpc.chain.getBlockHash(blockNum);
+        const apiAt = await api.at(hash);
+        const stage =
+          chainName === "RC"
+            ? await apiAt.query.rcMigrator.rcMigrationStage()
+            : await apiAt.query.ahMigrator.ahMigrationStage();
+
+        return {
+          hash: hash.toString(),
+          stage: stage.toHuman(),
+        };
+      });
+
+      if (predicate(result.stage)) {
         logger.info(
-          `Collected blocks - RC pre: ${blocks.rcPreBlock}, AH pre: ${blocks.ahPreBlock}, RC post: ${blocks.rcPostBlock}, AH post: ${blocks.ahPostBlock}`,
+          `✅ Found ${chainName} ${targetName} at block ${blockNum} (${result.hash})`,
         );
-
-        resolve();
+        return { blockNumber: blockNum, blockHash: result.hash };
       }
-    }, 1000);
+    } catch (error) {
+      logger.warn(`Error scanning block ${blockNum}:`, error);
+      // Continue scanning
+    }
+  }
+
+  throw new Error(
+    `Could not find ${chainName} ${targetName} between blocks ${startBlock}-${endBlock}`,
+  );
+}
+
+// Scan forwards from startBlock to endBlock to find first block matching predicate
+async function scanForwards(
+  port: number,
+  startBlock: number,
+  endBlock: number,
+  predicate: (stage: any) => boolean,
+  chainName: string,
+  targetName: string,
+): Promise<{ blockNumber: number; blockHash: string }> {
+  logger.info(
+    `Scanning ${chainName} forwards from block ${startBlock} to ${endBlock} for ${targetName}...`,
+  );
+
+  for (let blockNum = startBlock; blockNum <= endBlock; blockNum++) {
+    if (blockNum % 100 === 0) {
+      logger.debug(`${chainName} scanning block ${blockNum}...`);
+    }
+
+    try {
+      const result = await queryOnce(port, async (api) => {
+        const hash = await api.rpc.chain.getBlockHash(blockNum);
+        const apiAt = await api.at(hash);
+        const stage =
+          chainName === "RC"
+            ? await apiAt.query.rcMigrator.rcMigrationStage()
+            : await apiAt.query.ahMigrator.ahMigrationStage();
+
+        return {
+          hash: hash.toString(),
+          stage: stage.toHuman(),
+        };
+      });
+
+      if (predicate(result.stage)) {
+        logger.info(
+          `✅ Found ${chainName} ${targetName} at block ${blockNum} (${result.hash})`,
+        );
+        return { blockNumber: blockNum, blockHash: result.hash };
+      }
+    } catch (error) {
+      logger.warn(`Error scanning block ${blockNum}:`, error);
+      // Continue scanning
+    }
+  }
+
+  throw new Error(
+    `Could not find ${chainName} ${targetName} between blocks ${startBlock}-${endBlock}`,
+  );
+}
+
+async function findSnapshotBlocks(
+  rcPort: number,
+  ahPort: number,
+): Promise<SnapshotBlocks> {
+  logger.info("Finding snapshot blocks via RPC queries...");
+
+  // Get current block numbers (after migration is done)
+  const rcCurrentBlock = await queryOnce(rcPort, async (api) => {
+    const header = await api.rpc.chain.getHeader();
+    return header.number.toNumber();
   });
+  logger.info(`RC current block: ${rcCurrentBlock}`);
+
+  const ahCurrentBlock = await queryOnce(ahPort, async (api) => {
+    const header = await api.rpc.chain.getHeader();
+    return header.number.toNumber();
+  });
+  logger.info(`AH current block: ${ahCurrentBlock}`);
+
+  // Get migration start blocks
+  const rcStartBlockNum = await queryOnce(rcPort, async (api) => {
+    const startBlock = await api.query.rcMigrator.migrationStartBlock();
+    if (startBlock.isEmpty) {
+      throw new Error("RC migration start block not found");
+    }
+    return (startBlock as any).toNumber();
+  });
+  logger.info(`RC migration started at block: ${rcStartBlockNum}`);
+
+  const ahStartBlockNum = await queryOnce(ahPort, async (api) => {
+    const startBlock = await api.query.ahMigrator.migrationStartBlock();
+    if (startBlock.isEmpty) {
+      throw new Error("AH migration start block not found");
+    }
+    return (startBlock as any).toNumber();
+  });
+  logger.info(`AH migration started at block: ${ahStartBlockNum}`);
+
+  // 1. Scan backwards from current to find post-migration blocks (CoolOff)
+  logger.info("=== Finding post-migration blocks (CoolOff) ===");
+  const rcPost = await scanBackwards(
+    rcPort,
+    rcCurrentBlock,
+    rcStartBlockNum,
+    isCoolOff,
+    "RC",
+    "CoolOff (post-migration)",
+  );
+
+  const ahPost = await scanBackwards(
+    ahPort,
+    ahCurrentBlock,
+    ahStartBlockNum,
+    isCoolOff,
+    "AH",
+    "CoolOff (post-migration)",
+  );
+
+  // 2. Scan forwards from start to find pre-migration blocks
+  logger.info("=== Finding pre-migration blocks ===");
+  const rcPre = await scanForwards(
+    rcPort,
+    rcStartBlockNum,
+    rcCurrentBlock,
+    isAccountsMigrationInit,
+    "RC",
+    "AccountsMigrationInit (pre-migration)",
+  );
+
+  // For AH, find DataMigrationOngoing first, then use next block
+  const ahDataMigrationOngoing = await scanForwards(
+    ahPort,
+    ahStartBlockNum,
+    ahCurrentBlock,
+    isDataMigrationOngoing,
+    "AH",
+    "DataMigrationOngoing",
+  );
+
+  // Get the block after DataMigrationOngoing
+  const ahPreBlockNum = ahDataMigrationOngoing.blockNumber + 1;
+  const ahPreHash = await queryOnce(ahPort, async (api) => {
+    const hash = await api.rpc.chain.getBlockHash(ahPreBlockNum);
+    return hash.toString();
+  });
+  logger.info(
+    `✅ Found AH pre-migration block (DataMigrationOngoing + 1) at block ${ahPreBlockNum} (${ahPreHash})`,
+  );
+
+  return {
+    rcPreBlock: rcPre.blockHash,
+    rcPreBlockNumber: rcPre.blockNumber,
+    ahPreBlock: ahPreHash,
+    ahPreBlockNumber: ahPreBlockNum,
+    rcPostBlock: rcPost.blockHash,
+    rcPostBlockNumber: rcPost.blockNumber,
+    ahPostBlock: ahPost.blockHash,
+    ahPostBlockNumber: ahPost.blockNumber,
+  };
 }
 
 async function takeAllSnapshots(
@@ -232,87 +347,115 @@ async function takeAllSnapshots(
   ahPort: number,
   blocks: SnapshotBlocks,
 ): Promise<void> {
+  logger.info("🎯 Taking all 4 snapshots...");
+
+  // Take RC pre-migration snapshot
+  const rcPrePath = `${basePath}/${network}-rc-pre.snap`;
   logger.info(
-    "🎯 Taking all 4 snapshots now that migration is complete and nodes are idle...",
+    `Taking RC pre-migration snapshot at block ${blocks.rcPreBlockNumber} (${blocks.rcPreBlock})...`,
+  );
+  await execAsync(
+    `try-runtime create-snapshot --uri ws://127.0.0.1:${rcPort} --at ${blocks.rcPreBlock} "${rcPrePath}" 2>/dev/null`,
+  );
+  logger.info(`✅ RC pre-migration snapshot completed: ${rcPrePath}`);
+
+  // Take AH pre-migration snapshot
+  const ahPrePath = `${basePath}/${network}-ah-pre.snap`;
+  logger.info(
+    `Taking AH pre-migration snapshot at block ${blocks.ahPreBlockNumber} (${blocks.ahPreBlock})...`,
+  );
+  await execAsync(
+    `try-runtime create-snapshot --uri ws://127.0.0.1:${ahPort} --at ${blocks.ahPreBlock} "${ahPrePath}" 2>/dev/null`,
+  );
+  logger.info(`✅ AH pre-migration snapshot completed: ${ahPrePath}`);
+
+  // Take RC post-migration snapshot
+  const rcPostPath = `${basePath}/${network}-rc-post.snap`;
+  logger.info(
+    `Taking RC post-migration snapshot at block ${blocks.rcPostBlockNumber} (${blocks.rcPostBlock})...`,
+  );
+  await execAsync(
+    `try-runtime create-snapshot --uri ws://127.0.0.1:${rcPort} --at ${blocks.rcPostBlock} "${rcPostPath}" 2>/dev/null`,
+  );
+  logger.info(`✅ RC post-migration snapshot completed: ${rcPostPath}`);
+
+  // Take AH post-migration snapshot
+  const ahPostPath = `${basePath}/${network}-ah-post.snap`;
+  logger.info(
+    `Taking AH post-migration snapshot at block ${blocks.ahPostBlockNumber} (${blocks.ahPostBlock})...`,
+  );
+  await execAsync(
+    `try-runtime create-snapshot --uri ws://127.0.0.1:${ahPort} --at ${blocks.ahPostBlock} "${ahPostPath}" 2>/dev/null`,
+  );
+  logger.info(`✅ AH post-migration snapshot completed: ${ahPostPath}`);
+
+  // Write snapshot info
+  const snapshotInfo = {
+    rc_pre_snapshot_path: rcPrePath,
+    rc_pre_block_hash: blocks.rcPreBlock,
+    rc_pre_block_number: blocks.rcPreBlockNumber,
+    ah_pre_snapshot_path: ahPrePath,
+    ah_pre_block_hash: blocks.ahPreBlock,
+    ah_pre_block_number: blocks.ahPreBlockNumber,
+    rc_post_snapshot_path: rcPostPath,
+    rc_post_block_hash: blocks.rcPostBlock,
+    rc_post_block_number: blocks.rcPostBlockNumber,
+    ah_post_snapshot_path: ahPostPath,
+    ah_post_block_hash: blocks.ahPostBlock,
+    ah_post_block_number: blocks.ahPostBlockNumber,
+    network: network,
+    timestamp: new Date().toISOString(),
+  };
+
+  const infoPath = join(basePath, "migration_snapshot_info.json");
+  writeFileSync(infoPath, JSON.stringify(snapshotInfo, null, 2));
+
+  const markerFile = join(basePath, "migration_snapshot_done.txt");
+  writeFileSync(
+    markerFile,
+    `All migration snapshots completed\nTimestamp: ${new Date().toISOString()}`,
   );
 
-  // Verify we have all blocks
-  if (
-    !blocks.rcPreBlock ||
-    !blocks.ahPreBlock ||
-    !blocks.rcPostBlock ||
-    !blocks.ahPostBlock
-  ) {
-    logger.error("❌ Missing one or more snapshot blocks!");
-    logger.error(JSON.stringify(blocks, null, 2));
-    process.exit(1);
-  }
+  logger.info("🎉 All snapshots completed successfully!");
+  logger.info(`Info written to: ${infoPath}`);
+}
+
+async function main() {
+  const ahPort = await getAHPort(basePath);
+  const rcPort = await getRCPort(basePath);
+
+  logger.info(`Using ports - RC: ${rcPort}, AH: ${ahPort}`);
+  logger.info(
+    "Strategy: Poll for MigrationDone, then scan for snapshot blocks",
+  );
 
   try {
-    // Take RC pre-migration snapshot
-    const rcPrePath = `${basePath}/${network}-rc-pre.snap`;
-    logger.info(`Taking RC pre-migration snapshot at ${blocks.rcPreBlock}...`);
-    await execAsync(
-      `try-runtime create-snapshot --uri ws://127.0.0.1:${rcPort} --at ${blocks.rcPreBlock} "${rcPrePath}" 2>/dev/null`,
-    );
-    logger.info(`✅ RC pre-migration snapshot completed: ${rcPrePath}`);
+    // 1. Poll until migration is done (no WebSocket subscriptions!)
+    await waitForMigrationDone(rcPort, ahPort);
 
-    // Take AH pre-migration snapshot
-    const ahPrePath = `${basePath}/${network}-ah-pre.snap`;
-    logger.info(`Taking AH pre-migration snapshot at ${blocks.ahPreBlock}...`);
-    await execAsync(
-      `try-runtime create-snapshot --uri ws://127.0.0.1:${ahPort} --at ${blocks.ahPreBlock} "${ahPrePath}" 2>/dev/null`,
-    );
-    logger.info(`✅ AH pre-migration snapshot completed: ${ahPrePath}`);
+    // 2. Find all snapshot blocks by scanning
+    const blocks = await findSnapshotBlocks(rcPort, ahPort);
 
-    // Take RC post-migration snapshot
-    const rcPostPath = `${basePath}/${network}-rc-post.snap`;
+    logger.info("=== Snapshot blocks found ===");
     logger.info(
-      `Taking RC post-migration snapshot at ${blocks.rcPostBlock}...`,
+      `RC pre:  block ${blocks.rcPreBlockNumber} (${blocks.rcPreBlock})`,
     );
-    await execAsync(
-      `try-runtime create-snapshot --uri ws://127.0.0.1:${rcPort} --at ${blocks.rcPostBlock} "${rcPostPath}" 2>/dev/null`,
-    );
-    logger.info(`✅ RC post-migration snapshot completed: ${rcPostPath}`);
-
-    // Take AH post-migration snapshot
-    const ahPostPath = `${basePath}/${network}-ah-post.snap`;
     logger.info(
-      `Taking AH post-migration snapshot at ${blocks.ahPostBlock}...`,
+      `AH pre:  block ${blocks.ahPreBlockNumber} (${blocks.ahPreBlock})`,
     );
-    await execAsync(
-      `try-runtime create-snapshot --uri ws://127.0.0.1:${ahPort} --at ${blocks.ahPostBlock} "${ahPostPath}" 2>/dev/null`,
+    logger.info(
+      `RC post: block ${blocks.rcPostBlockNumber} (${blocks.rcPostBlock})`,
     );
-    logger.info(`✅ AH post-migration snapshot completed: ${ahPostPath}`);
-
-    // Write snapshot info
-    const snapshotInfo = {
-      rc_pre_snapshot_path: rcPrePath,
-      ah_pre_snapshot_path: ahPrePath,
-      rc_post_snapshot_path: rcPostPath,
-      ah_post_snapshot_path: ahPostPath,
-      rc_pre_block_hash: blocks.rcPreBlock,
-      ah_pre_block_hash: blocks.ahPreBlock,
-      rc_post_block_hash: blocks.rcPostBlock,
-      ah_post_block_hash: blocks.ahPostBlock,
-      network: network,
-      timestamp: new Date().toISOString(),
-    };
-
-    const infoPath = join(basePath, "migration_snapshot_info.json");
-    writeFileSync(infoPath, JSON.stringify(snapshotInfo, null, 2));
-
-    const markerFile = join(basePath, "migration_snapshot_done.txt");
-    writeFileSync(
-      markerFile,
-      `All migration snapshots completed\nTimestamp: ${new Date().toISOString()}`,
+    logger.info(
+      `AH post: block ${blocks.ahPostBlockNumber} (${blocks.ahPostBlock})`,
     );
 
-    logger.info("🎉 All snapshots completed successfully!");
-    logger.info(`Info written to: ${infoPath}`);
+    // 3. Take all snapshots
+    await takeAllSnapshots(rcPort, ahPort, blocks);
+
     process.exit(0);
   } catch (error) {
-    logger.error("❌ Failed to take snapshots:", error);
+    logger.error("❌ Failed to create snapshots:", error);
     process.exit(1);
   }
 }
