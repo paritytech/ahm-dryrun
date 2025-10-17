@@ -8,7 +8,7 @@ on:
         required: false
       network:
         description: "Network to use (ALL means Polkadot and Kusama)"
-        default: "ALL"
+        default: "polkadot"
         type: choice
         options:
           - ALL
@@ -24,31 +24,42 @@ on:
         required: false
         type: string
         default: ""
+      pre_db_run_id:
+        description: "Run ID to Start the process from a pre-db from a previous run"
+        required: false
+        type: string
+        default: ""
+      runner:
+        description: "Runner to run the jobs"
+        required: false
+        type: string
+        default: "parity-large-persistent-test"
   schedule:
-    - cron: "0 0 * * *" # Every Day for Kusama
-    - cron: "0 0 * * 0" # Only on Sundays for Polkadot
+    - cron: "0 0 * * *" # Every Day for Polkadot
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ inputs.runner }}
   cancel-in-progress: true
 
 permissions: {}
 
 jobs:
   zombie_bite_polkadot:
-    # run by schedule only in Sundays or by demand
-    if: ${{ inputs.network == 'ALL' || inputs.network == 'polkadot' || github.event.schedule == '0 0 * * 0' }}
+    # run by schedule or by demand
+    if: ${{ inputs.network == 'ALL' || inputs.network == 'polkadot' || github.event.schedule == '0 0 * * *' }}
     uses: ./.github/workflows/zombie-bite-common.yml
     with:
       network: polkadot
       sudo-key: ${{ inputs.sudo-key }}
       rc_runtime_override_url: ${{ inputs.rc_runtime_override_url }}
       ah_runtime_override_url: ${{ inputs.ah_runtime_override_url }}
-      runner: parity-large-persistent-test
+      runner: ${{ inputs.runner }}
+      doppelganger_version: doppelganger-stable2509 # use latest release of polkadot
+      pre_db_run_id: ${{ inputs.pre_db_run_id }}
 
   zombie_bite_kusama:
-    # run by schedule everyday or by demand
-    if: ${{ inputs.network == 'ALL' || inputs.network == 'kusama' || github.event.schedule == '0 0 * * *' }}
+    # run by demand
+    if: ${{ inputs.network == 'ALL' || inputs.network == 'kusama' }}
     uses: ./.github/workflows/zombie-bite-common.yml
     with:
       network: kusama
@@ -56,4 +67,3 @@ jobs:
       rc_runtime_override_url: ${{ inputs.rc_runtime_override_url }}
       ah_runtime_override_url: ${{ inputs.ah_runtime_override_url }}
       runner: parity-large-persistent-test
-

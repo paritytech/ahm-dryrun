@@ -25,6 +25,17 @@ on:
         required: false
         type: string
         default: ""
+      doppelganger_version:
+        description: "Tag of the release to use"
+        required: false
+        type: string
+        default: "latest"
+      pre_db_run_id:
+        description: "start the process from a pre-db"
+        required: false
+        type: string
+        default: ""
+
 
 env:
   ZOMBIE_BITE_BASE_PATH: "/tmp/ci"
@@ -34,8 +45,8 @@ jobs:
   run_zombie_bite:
     runs-on: ${{ inputs.runner }}
     container:
-      image: docker.io/paritytech/ci-unified:bullseye-1.88.0-2025-06-27-v202507221446
-    timeout-minutes: ${{ inputs.runner == 'kusama' && 180 || 720  }}
+      image: ${{ fromJSON(contains(inputs.runner, 'parity') && '"docker.io/paritytech/ci-unified:bullseye-1.88.0-2025-06-27-v202507221446"' || 'null' )}}
+    timeout-minutes: ${{ inputs.network == 'kusama' && 180 || 720  }}
 
     steps:
       - uses: actions/checkout@v4
@@ -53,6 +64,14 @@ jobs:
         uses: ./.github/actions/download-doppelganger-binaries
         with:
           destination-path: ${{ env.AHM_BINS }}
+          tag-version: ${{ inputs.doppelganger_version }}
+
+      - name: install_deps_if_ubuntu
+        if: ${{ contains(inputs.runner, 'ubuntu') }}
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install protobuf-compiler
 
       - name: install_zombie_bite
         shell: bash
@@ -62,10 +81,13 @@ jobs:
       - name: install_try_runtime_cli
         shell: bash
         run: |
-          just install-try-runtime
+          curl -L -o $AHM_BINS/try-runtime https://github.com/paritytech/try-runtime-cli/releases/download/v0.8.0/try-runtime-x86_64-unknown-linux-musl;
+          chmod 755 $AHM_BINS/try-runtime;
 
       - name: build_runtimes
         shell: bash
+        # only runs if we don't have a pre-db
+        if: ${{ inputs.pre_db_run_id == '' }}
         env:
           RUSTFLAGS: "-A warnings"
           NETWORK: ${{ inputs.network }}
@@ -95,7 +117,10 @@ jobs:
 
       - name: zombie_bite_step_bite
         id: zombie_bite_step_bite
+        # only runs if we don't have a pre-db
+        if: ${{ inputs.pre_db_run_id == '' }}
         shell: bash
+        timeout-minutes: 45
         env:
           NETWORK: ${{ inputs.network }}
           SUDO: ${{ inputs.sudo-key }}
@@ -160,6 +185,8 @@ jobs:
         continue-on-error: true
 
       - name: zombie_bite_upload_step
+        # only runs if we don't have a pre-db
+        if: ${{ inputs.pre_db_run_id == '' }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.network }}-pre-migration-db-${{ github.sha }}${{ inputs.args }}
@@ -167,14 +194,37 @@ jobs:
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ports.json
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ready.json
+            nohup.out
+
+
+      - name: download_pre_migration_db
+        # only runs if we have a pre-db
+        if: ${{ inputs.pre_db_run_id != '' }}
+        uses: ./.github/actions/download-artifact
+        env:
+          RUN_ID: ${{ inputs.pre_db_run_id }}
+          GH_TOKEN: ${{ github.token }}
+          NETWORK: ${{ inputs.network }}
+        with:
+          gh-token: ${{ env.GH_TOKEN }}
+          destination-path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
+          run-id: ${{ env.RUN_ID }}
+          name-pattern: "${{ env.NETWORK }}-pre-migration-db-*"
 
       - name: checkpoint_bite
         shell: bash
+        env:
+          RUN_ID: ${{ inputs.pre_db_run_id }}
+          RUNNER: ${{ inputs.runner }}
         run: |
           echo "::group::debug"
-          ls /tmp/*
           ls ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite
-          ls ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite-debug
+          if [[ $RUN_ID == "" ]];then
+            ls ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite-debug
+          fi;
+          if [[ $RUNNER =~ "parity" ]];then
+            ls /tmp/*
+          fi;
           echo "::endgroup::"
 
       - name: run_zombie_bite_spawn
@@ -186,7 +236,37 @@ jobs:
           nohup zombie-bite spawn -d $ZOMBIE_BITE_BASE_PATH > nohup.out 2>&1 &
 
       - name: wait_for_network
+        id: wait_for_network
         uses: ./.github/actions/wait-zb-network-ready
+        continue-on-error: true
+
+      - name: wait_for_nodes
+        id: wait_for_nodes
+        shell: bash
+        env:
+          NETWORK: ${{ inputs.network }}
+          TS_LOG_CONSOLE: true
+          TS_LOG_LEVEL: debug
+        run: |
+          # Wait for nodes to come online
+          just zb wait-for-nodes $ZOMBIE_BITE_BASE_PATH
+        continue-on-error: true
+
+      - name: upload_logs_on_failure
+        if: steps.wait_for_nodes.outcome == 'failure' || steps.wait_for_network.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.network }}-spawn-failure-logs-${{ github.sha }}${{ inputs.args }}
+          path: |
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn/collator/collator.log
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn/alice/alice.log
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn/bob/bob.log
+            nohup.out
+
+      - name: early_exit_if_spawn_fail
+        if: steps.wait_for_nodes.outcome == 'failure'
+        shell: bash
+        run: exit 1
 
       - name: run_migration
         id: zombie_bite_step_spawn_and_run_migration
@@ -200,11 +280,6 @@ jobs:
 
           ALICE_PORT=$(jq -r .alice_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
           COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
-
-          # Wait for nodes to come online
-          echo "::group::wait-for-nodes"
-          just zb wait-for-nodes $ZOMBIE_BITE_BASE_PATH
-          echo "::endgroup::"
 
           echo "::group::run-migration"
           # Start migration snapshot monitoring (polls for completion and takes all 4 snapshots)

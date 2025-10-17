@@ -135,8 +135,8 @@ wait-for-nodes base_path:
                 echo "${name} node ready"
                 return 0
             fi
-            echo "Attempt $i/10: ${name} node not ready, waiting 5s..."
-            sleep 5
+            echo "Attempt $i/10: ${name} node not ready, waiting 10s..."
+            sleep 10
         done
         echo "ERROR: ${name} node failed to become ready after 10 attempts"
         return 1
@@ -151,9 +151,18 @@ wait-for-nodes base_path:
 
     # Wait for both to complete
     wait $RC_PID
+    RC_READY_ECODE=$?
     wait $AH_PID
+    AH_READY_ECODE=$?
 
-    echo "Both nodes are ready"
+    EXIT_CODE=$((RC_READY_ECODE + AH_READY_ECODE))
+    if [[ $EXIT_CODE -eq 0 ]];then
+        echo "Both nodes are ready";
+    else
+        echo "Node/s are not ready";
+    fi;
+
+    exit $EXIT_CODE;
 
 # Monitor migration and take all 4 snapshots (pre/post for RC and AH) after migration completes
 monitor-snapshots base_path network:
