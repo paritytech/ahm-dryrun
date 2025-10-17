@@ -1,4 +1,5 @@
 # Run in the project root
+
 set working-directory := ".."
 
 _default: help
@@ -17,8 +18,8 @@ bite base_path runtime:
     PATH=$(pwd)/${DOPPELGANGER_PATH}/bin:$PATH \
     zombie-bite bite -d {{ base_path }} \
         -r {{ runtime }} \
-        --rc-override "${RUNTIME_WASM}/{{runtime}}_runtime.compact.compressed.wasm" \
-        --ah-override "${RUNTIME_WASM}/asset_hub_{{runtime}}_runtime.compact.compressed.wasm"
+        --rc-override "${RUNTIME_WASM}/{{ runtime }}_runtime.compact.compressed.wasm" \
+        --ah-override "${RUNTIME_WASM}/asset_hub_{{ runtime }}_runtime.compact.compressed.wasm"
 
 # Second part of the Zombie-Bite flow. This "spawns" the network with the forked state.
 spawn base_path *step:
@@ -154,16 +155,9 @@ wait-for-nodes base_path:
 
     echo "Both nodes are ready"
 
-# Monitor for AccountsMigrationInit and take pre-migration snapshot
-monitor-pre-snapshot base_path network:
+# Monitor migration and take all 4 snapshots (pre/post for RC and AH) after migration completes
+monitor-snapshots base_path network:
     #!/usr/bin/env bash
     set -xe
     just ahm _npm-build
-    node dist/zombie-bite-scripts/migration_snapshot.js {{ base_path }} {{ network }} pre
-
-# Monitor for MigrationDone and take post-migration snapshot
-monitor-post-snapshot base_path network:
-    #!/usr/bin/env bash
-    set -xe
-    just ahm _npm-build
-    node dist/zombie-bite-scripts/migration_snapshot.js {{ base_path }} {{ network }} post
+    node dist/zombie-bite-scripts/migration_snapshot.js {{ base_path }} {{ network }}

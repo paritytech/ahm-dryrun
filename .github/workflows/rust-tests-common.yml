@@ -56,37 +56,27 @@ jobs:
           echo "downloading artifacts from https://github.com/paritytech/ahm-dryrun/actions/runs/${RUN_ID}"
           gh run download $RUN_ID -p "${NETWORK}-try-runtime*" -D $SNAPS_PATH
           ls -ltr $SNAPS_PATH
-          ARTIFACTS_DIR_PRE=$(ls -t $SNAPS_PATH|grep try-runtime-snaps-pre)
-          ARTIFACTS_DIR_POST=$(ls -t $SNAPS_PATH|grep try-runtime-snaps-post)
-          echo "ARTIFACTS_DIR_PRE=$SNAPS_PATH/$ARTIFACTS_DIR_PRE" >> $GITHUB_OUTPUT
-          echo "ARTIFACTS_DIR_POST=$SNAPS_PATH/$ARTIFACTS_DIR_POST" >> $GITHUB_OUTPUT
+          # Single artifact contains all 4 snapshots
+          ARTIFACTS_DIR=$(ls -t $SNAPS_PATH|grep try-runtime-snaps|grep -v pre|grep -v post|head -1)
+          echo "ARTIFACTS_DIR=$SNAPS_PATH/$ARTIFACTS_DIR" >> $GITHUB_OUTPUT
 
       - name: verify_and_move_snaps
         shell: bash
         env:
           NETWORK: ${{ inputs.network }}
         run: |
-          for i in rc-pre.snap ah-pre.snap;do
-            if [ ! -f "${{ steps.download_artifacts.outputs.ARTIFACTS_DIR_PRE }}/${NETWORK}-${i}" ]; then
+          # All 4 snapshots are in a single artifact directory
+          for i in rc-pre.snap ah-pre.snap rc-post.snap ah-post.snap;do
+            if [ ! -f "${{ steps.download_artifacts.outputs.ARTIFACTS_DIR }}/${NETWORK}-${i}" ]; then
               echo "ERROR: Could not find ${NETWORK}-${i}"
               exit 1
             else
-              mv "${{ steps.download_artifacts.outputs.ARTIFACTS_DIR_PRE }}/${NETWORK}-${i}" $SNAPS_PATH
-            fi
-          done;
-
-          for i in rc-post.snap ah-post.snap;do
-            if [ ! -f "${{ steps.download_artifacts.outputs.ARTIFACTS_DIR_POST }}/${NETWORK}-${i}" ]; then
-              echo "ERROR: Could not find ${NETWORK}-${i}"
-              exit 1
-            else
-              mv "${{ steps.download_artifacts.outputs.ARTIFACTS_DIR_POST }}/${NETWORK}-${i}" $SNAPS_PATH
+              mv "${{ steps.download_artifacts.outputs.ARTIFACTS_DIR }}/${NETWORK}-${i}" $SNAPS_PATH
             fi
           done;
 
           echo "final files in ${SNAPS_PATH}"
           ls -ltr $SNAPS_PATH
-
 
       - name: run_rust_tests
         shell: bash
