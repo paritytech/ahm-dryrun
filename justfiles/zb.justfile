@@ -1,4 +1,5 @@
 # Run in the project root
+
 set working-directory := ".."
 
 _default: help
@@ -17,8 +18,8 @@ bite base_path runtime:
     PATH=$(pwd)/${DOPPELGANGER_PATH}/bin:$PATH \
     zombie-bite bite -d {{ base_path }} \
         -r {{ runtime }} \
-        --rc-override "${RUNTIME_WASM}/{{runtime}}_runtime.compact.compressed.wasm" \
-        --ah-override "${RUNTIME_WASM}/asset_hub_{{runtime}}_runtime.compact.compressed.wasm"
+        --rc-override "${RUNTIME_WASM}/{{ runtime }}_runtime.compact.compressed.wasm" \
+        --ah-override "${RUNTIME_WASM}/asset_hub_{{ runtime }}_runtime.compact.compressed.wasm"
 
 # Second part of the Zombie-Bite flow. This "spawns" the network with the forked state.
 spawn base_path *step:
@@ -134,8 +135,8 @@ wait-for-nodes base_path:
                 echo "${name} node ready"
                 return 0
             fi
-            echo "Attempt $i/10: ${name} node not ready, waiting 5s..."
-            sleep 5
+            echo "Attempt $i/10: ${name} node not ready, waiting 10s..."
+            sleep 10
         done
         echo "ERROR: ${name} node failed to become ready after 10 attempts"
         return 1
@@ -150,20 +151,22 @@ wait-for-nodes base_path:
 
     # Wait for both to complete
     wait $RC_PID
+    RC_READY_ECODE=$?
     wait $AH_PID
+    AH_READY_ECODE=$?
 
-    echo "Both nodes are ready"
+    EXIT_CODE=$((RC_READY_ECODE + AH_READY_ECODE))
+    if [[ $EXIT_CODE -eq 0 ]];then
+        echo "Both nodes are ready";
+    else
+        echo "Node/s are not ready";
+    fi;
 
-# Monitor for AccountsMigrationInit and take pre-migration snapshot
-monitor-pre-snapshot base_path network:
+    exit $EXIT_CODE;
+
+# Monitor migration and take all 4 snapshots (pre/post for RC and AH) after migration completes
+monitor-snapshots base_path network:
     #!/usr/bin/env bash
     set -xe
     just ahm _npm-build
-    node dist/zombie-bite-scripts/migration_snapshot.js {{ base_path }} {{ network }} pre
-
-# Monitor for MigrationDone and take post-migration snapshot
-monitor-post-snapshot base_path network:
-    #!/usr/bin/env bash
-    set -xe
-    just ahm _npm-build
-    node dist/zombie-bite-scripts/migration_snapshot.js {{ base_path }} {{ network }} post
+    node dist/zombie-bite-scripts/migration_snapshot.js {{ base_path }} {{ network }}
