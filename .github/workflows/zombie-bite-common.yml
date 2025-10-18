@@ -195,8 +195,6 @@ jobs:
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ports.json
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ready.json
-            nohup.out
-
 
       - name: download_pre_migration_db
         # only runs if we have a pre-db
@@ -234,7 +232,7 @@ jobs:
           export PATH=${AHM_BINS}:$PATH
           # remove previous nohup.out
           rm nohup.out || true
-          nohup zombie-bite spawn -d $ZOMBIE_BITE_BASE_PATH > nohup.out 2>&1 &
+          nohup zombie-bite spawn -d $ZOMBIE_BITE_BASE_PATH > $ZOMBIE_BITE_BASE_PATH/nohup.out 2>&1 &
 
       - name: wait_for_network
         id: wait_for_network
@@ -262,7 +260,7 @@ jobs:
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn/collator/collator.log
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn/alice/alice.log
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn/bob/bob.log
-            nohup.out
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/nohup.out
 
       - name: early_exit_if_spawn_fail
         if: steps.wait_for_nodes.outcome == 'failure'
