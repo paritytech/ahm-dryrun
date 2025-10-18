@@ -266,7 +266,7 @@ async function findSnapshotBlocks(
     if (startBlock.isEmpty) {
       throw new Error("RC migration start block not found");
     }
-    return (startBlock as any).toNumber();
+    return (startBlock as any).unwrap().toNumber();
   });
   logger.info(`RC migration started at block: ${rcStartBlockNum}`);
 
@@ -275,7 +275,7 @@ async function findSnapshotBlocks(
     if (startBlock.isEmpty) {
       throw new Error("AH migration start block not found");
     }
-    return (startBlock as any).toNumber();
+    return (startBlock as any).unwrap().toNumber();
   });
   logger.info(`AH migration started at block: ${ahStartBlockNum}`);
 
