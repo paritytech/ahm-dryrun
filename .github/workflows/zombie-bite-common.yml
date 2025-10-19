@@ -46,7 +46,7 @@ jobs:
     runs-on: ${{ inputs.runner }}
     container:
       image: ${{ fromJSON(contains(inputs.runner, 'parity') && '"docker.io/paritytech/ci-unified:bullseye-1.88.0-2025-06-27-v202507221446"' || 'null' )}}
-      options: ${{ fromJSON(contains(inputs.runner, 'parity') && '"--privileged"' || '--name pahm' )}}
+      options: ${{ fromJSON(contains(inputs.runner, 'parity') && '"--privileged"' || '"--name pahm"' )}}
     timeout-minutes: ${{ inputs.network == 'kusama' && 180 || 720  }}
 
     steps:
