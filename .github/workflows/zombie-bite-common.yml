@@ -237,6 +237,8 @@ jobs:
       - name: wait_for_network
         id: wait_for_network
         uses: ./.github/actions/wait-zb-network-ready
+        with:
+          log-file: ${{ env.ZOMBIE_BITE_BASE_PATH }}/nohup.out
         continue-on-error: true
 
       - name: wait_for_nodes
