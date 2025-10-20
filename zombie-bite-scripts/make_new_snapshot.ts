@@ -27,13 +27,10 @@ async function main() {
   const wsProvider = new WsProvider(`ws://127.0.0.1:${ahPort}`);
   const api = await ApiPromise.create({ provider: wsProvider });
 
-  // Get initial era
-  const currentEra = await api.query.staking.currentEra();
-  const startingEra = currentEra.unwrap().toNumber();
-
-  console.log(`⏳ Waiting until CurrentEra == ActiveEra + 1`);
 
   let wantActiveEra = -1;
+  console.log(`⏳ Waiting until CurrentEra == ActiveEra + 1`);
+
   // Subscribe to new blocks
   const unsub = await api.rpc.chain.subscribeNewHeads(async () => {
 
