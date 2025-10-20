@@ -46,10 +46,16 @@ jobs:
     runs-on: ${{ inputs.runner }}
     container:
       image: ${{ fromJSON(contains(inputs.runner, 'parity') && '"docker.io/paritytech/ci-unified:bullseye-1.88.0-2025-06-27-v202507221446"' || 'null' )}}
-      options: --privileged
+      options: ${{ fromJSON(contains(inputs.runner, 'parity') && '"--privileged"' || '"--name pahm"' )}}
     timeout-minutes: ${{ inputs.network == 'kusama' && 180 || 720  }}
 
     steps:
+      - name: Free Disk Space (Ubuntu)
+        if: ${{ runner.environment == 'github-hosted' }}
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
+        with:
+          tool-cache: false
+
       - uses: actions/checkout@v4
         with:
           submodules: recursive
@@ -195,8 +201,6 @@ jobs:
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ports.json
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ready.json
-            nohup.out
-
 
       - name: download_pre_migration_db
         # only runs if we have a pre-db
@@ -234,11 +238,13 @@ jobs:
           export PATH=${AHM_BINS}:$PATH
           # remove previous nohup.out
           rm nohup.out || true
-          nohup zombie-bite spawn -d $ZOMBIE_BITE_BASE_PATH > nohup.out 2>&1 &
+          nohup zombie-bite spawn -d $ZOMBIE_BITE_BASE_PATH > $ZOMBIE_BITE_BASE_PATH/nohup.out 2>&1 &
 
       - name: wait_for_network
         id: wait_for_network
         uses: ./.github/actions/wait-zb-network-ready
+        with:
+          log-file: ${{ env.ZOMBIE_BITE_BASE_PATH }}/nohup.out
         continue-on-error: true
 
       - name: wait_for_nodes
@@ -262,7 +268,7 @@ jobs:
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn/collator/collator.log
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn/alice/alice.log
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn/bob/bob.log
-            nohup.out
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/nohup.out
 
       - name: early_exit_if_spawn_fail
         if: steps.wait_for_nodes.outcome == 'failure'
