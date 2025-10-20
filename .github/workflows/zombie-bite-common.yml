@@ -44,9 +44,9 @@ env:
 jobs:
   run_zombie_bite:
     runs-on: ${{ inputs.runner }}
-    container:
-      image: ${{ fromJSON(contains(inputs.runner, 'parity') && '"docker.io/paritytech/ci-unified:bullseye-1.88.0-2025-06-27-v202507221446"' || 'null' )}}
-      options: ${{ fromJSON(contains(inputs.runner, 'parity') && '"--privileged"' || '"--name pahm"' )}}
+    # container:
+    #   image: ${{ fromJSON(contains(inputs.runner, 'parity') && '"docker.io/paritytech/ci-unified:bullseye-1.88.0-2025-06-27-v202507221446"' || 'null' )}}
+    #   options: ${{ fromJSON(contains(inputs.runner, 'parity') && '"--privileged"' || '"--name pahm"' )}}
     timeout-minutes: ${{ inputs.network == 'kusama' && 180 || 720  }}
 
     steps:
@@ -83,7 +83,9 @@ jobs:
       - name: install_zombie_bite
         shell: bash
         run: |
-          just install-zombie-bite
+          curl -L -o $AHM_BINS/zombie-bite https://github.com/pepoviola/zombie-bite/releases/download/v0.2.18/zombie-bite
+          chmod 755 $AHM_BINS/zombie-bite;
+
 
       - name: install_try_runtime_cli
         shell: bash
