@@ -31,27 +31,36 @@ async function main() {
   const currentEra = await api.query.staking.currentEra();
   const startingEra = currentEra.unwrap().toNumber();
 
-  console.log(`Starting era: ${startingEra}`);
+  console.log(`⏳ Waiting until CurrentEra == ActiveEra + 1`);
 
+  let wantActiveEra = -1;
   // Subscribe to new blocks
   const unsub = await api.rpc.chain.subscribeNewHeads(async () => {
 
     const era = await api.query.staking.currentEra();
     const currentEraNum = era.unwrap().toNumber();
     const currentBlock = await api.rpc.chain.getBlock();
-    const session = await api.query.session.currentIndex();
-    console.log(`Current block: ${currentBlock.block.header.number}, Era: ${currentEraNum}, Session: ${session.toNumber()}`);
-    
+    const activeEra = await api.query.staking.activeEra();
+    const activeEraNum = activeEra.unwrap().index;
 
-    if (currentEraNum > startingEra) {
-      console.log(`Era changed from ${startingEra} to ${currentEraNum}`);
+
+    if (currentEraNum === activeEraNum.toNumber() + 1) {
+      wantActiveEra = activeEraNum.toNumber() + 1;
       
-      const stopFile = join(basePath, "stop.txt"); 
-      writeFileSync(stopFile, "");
-      
-      await unsub();
-      await api.disconnect();
-      process.exit(0);
+
+      console.log(`🎯 CurrentEra == ActiveEra + 1`);
+      console.log(`🚀 Test starts on block: ${currentBlock.block.header.number}`);
+
+    } else if (wantActiveEra !== -1) {
+      if (activeEraNum.toNumber() === wantActiveEra) {
+        console.log(`🎯 ActiveEra == ${wantActiveEra}`);
+        console.log(`🚀 Test finished on block: ${currentBlock.block.header.number}`);
+        const stopFile = join(basePath, "stop.txt"); 
+        writeFileSync(stopFile, "");
+        await unsub();
+        await api.disconnect();
+        process.exit(0);
+      }
     }
   });
 }
