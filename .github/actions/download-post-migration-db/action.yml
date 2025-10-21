@@ -42,4 +42,5 @@ runs:
         fi;
 
         rm -rf "${TMP_DIR}"
+        mv "${DESTINATION_PATH}/pahm/*" ${DESTINATION_PATH}
         ls "${DESTINATION_PATH}"
