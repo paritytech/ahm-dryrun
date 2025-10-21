@@ -29,6 +29,11 @@ on:
         required: false
         type: string
         default: ""
+      post_db_url:
+        description: "Url for download a post-db and start from there"
+        required: false
+        type: string
+        default: ""
       runner:
         description: "Runner to run the jobs"
         required: false
