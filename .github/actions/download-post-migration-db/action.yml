@@ -42,5 +42,10 @@ runs:
         fi;
 
         rm -rf "${TMP_DIR}"
-        mv "${DESTINATION_PATH}/pahm/*" ${DESTINATION_PATH}
+        echo "ls dst path"
+        ls "${DESTINATION_PATH}"
+        mv ${DESTINATION_PATH}/pahm/spawn ${DESTINATION_PATH}/
+        mv ${DESTINATION_PATH}/pahm/ready.json ${DESTINATION_PATH}/
+        mv ${DESTINATION_PATH}/pahm/ports.json ${DESTINATION_PATH}/
+        echo "ls dst path"
         ls "${DESTINATION_PATH}"
