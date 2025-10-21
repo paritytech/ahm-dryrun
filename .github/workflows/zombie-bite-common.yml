@@ -89,9 +89,6 @@ jobs:
         shell: bash
         run: |
           just install-zombie-bite
-          #curl -L -o $AHM_BINS/zombie-bite https://github.com/pepoviola/zombie-bite/releases/download/v0.2.18/zombie-bite
-          #chmod 755 $AHM_BINS/zombie-bite;
-
 
       - name: install_try_runtime_cli
         shell: bash
