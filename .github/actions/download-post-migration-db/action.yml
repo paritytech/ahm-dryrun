@@ -24,8 +24,8 @@ runs:
 
         FILENAME=$(basename ${ARTIFACT_URL})
 
-        IS_GITHUB=$(echo ${ARTIFACT_URL}| grep -o github)
-        IS_ZIP=$(echo ${ARTIFACT_URL}| grep -o zip)
+        IS_GITHUB=$(echo ${ARTIFACT_URL}| grep -o github || true)
+        IS_ZIP=$(echo ${ARTIFACT_URL}| grep -o zip || true)
         if [[ $IS_GITHUB == "github" ]];then
           curl -sSLf -H "Authorization: Bearer ${GITHUB_TOKEN}" -o "${TMP_DIR}/${FILENAME}" "${ARTIFACT_URL}"
         else
