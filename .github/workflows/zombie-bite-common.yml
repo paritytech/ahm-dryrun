@@ -423,10 +423,22 @@ jobs:
           export PATH=${AHM_BINS}:$PATH
           # remove previous nohup.out
           rm nohup.out || true
-          nohup just zb spawn $ZOMBIE_BITE_BASE_PATH post > nohup.out 2>&1 &
+          nohup just zb spawn $ZOMBIE_BITE_BASE_PATH post > $ZOMBIE_BITE_BASE_PATH/nohup.out 2>&1 &
 
       - name: wait_for_network
+        id: wait_for_network_post
         uses: ./.github/actions/wait-zb-network-ready
+        with:
+          log-file: ${{ env.ZOMBIE_BITE_BASE_PATH }}/nohup.out
+        continue-on-error: true
+
+      - name: upload_on_fail
+        if: steps.wait_for_network_post.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.network }}-spawn-post-failure-logs-${{ github.sha }}
+          path: |
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/nohup.out
 
       - name: ts_comparison_tests
         id: ts_comparison_tests
