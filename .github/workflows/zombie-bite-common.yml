@@ -403,9 +403,7 @@ jobs:
         env:
           ARTIFACT_URL: ${{ inputs.post_db_url }}
           GH_TOKEN: ${{ github.token }}
-          NETWORK: ${{ inputs.network }}
         with:
-          gh-token: ${{ env.GH_TOKEN }}
           destination-path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
           artifact-url: ${{ env.ARTIFACT_URL }}
 
