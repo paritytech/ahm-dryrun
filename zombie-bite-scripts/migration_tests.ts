@@ -6,7 +6,7 @@ import { main as migrationTestMain } from "../migration-tests/lib.js";
  * Wrapper to call the `main` fn (defined in migration-tets directory)
  * accept 1 positional argument
  * maybe_network_or_path: The 'network' to use (at the moment only westend is supported) or the directoy used to spawn the network (e.g used by the orchestrator)
- * _NOTE_: This directory should contain 3 files (ports.json, ready.json)
+ * _NOTE_: This directory should contain 1 file -- ports.json which contains the ports for the RC and AH.
  *
  */
 
