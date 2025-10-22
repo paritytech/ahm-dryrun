@@ -105,7 +105,7 @@ export async function main(
   const { context, apis } = await setupTestContext(
     rc_endpoint,
     ah_endpoint,
-  );  
+  );
 
   // to correctly state assert, the best is to take Westend before 1st and WAH after 2nd,
   // though knowing that between 1st and 2nd migration in WAH, few users might have added few things
