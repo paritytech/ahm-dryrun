@@ -6,7 +6,7 @@ import { main as migrationTestMain } from "../migration-tests/lib.js";
  * Wrapper to call the `main` fn (defined in migration-tets directory)
  * accept 1 positional argument
  * maybe_network_or_path: The 'network' to use (at the moment only westend is supported) or the directoy used to spawn the network (e.g used by the orchestrator)
- * _NOTE_: This directory should contain 3 files (ports.json, ready.json, migration_done.json)
+ * _NOTE_: This directory should contain 3 files (ports.json, ready.json)
  *
  */
 
@@ -33,32 +33,18 @@ const kusama =  () => {
     }
 };
 
-const extractFromPath = (base_path: string) => {
+const getEndpoints = (base_path: string) => {
   let ports = JSON.parse(fs.readFileSync(`${base_path}/ports.json`, "utf-8"));
-  let start_blocks = JSON.parse(
-    fs.readFileSync(`${base_path}/ready.json`, "utf-8"),
-  );
-  let end_blocks = JSON.parse(
-    fs.readFileSync(`${base_path}/migration_done.json`, "utf-8"),
-  );
 
   let alice_port = parseInt(ports.alice_port, 10);
   const rc_endpoint = `ws://localhost:${alice_port}`;
-  const rc_before = parseInt(start_blocks.rc_start_block, 10) + 2;
-  const rc_after = parseInt(end_blocks.rc_finish_block, 10);
 
   let collator_port = parseInt(ports.collator_port, 10);
   const ah_endpoint = `ws://localhost:${collator_port}`;
-  const ah_before = parseInt(start_blocks.ah_start_block, 10) + 2;
-  const ah_after = parseInt(end_blocks.ah_finish_block, 10);
 
   return {
     rc_endpoint,
-    rc_before,
-    rc_after,
     ah_endpoint,
-    ah_before,
-    ah_after
   }
 }
 
@@ -83,25 +69,17 @@ const main = async () => {
     network = DEFAULT_NETWORK;
   }
 
-  const getInfoFn = NETWORKS[network] ? NETWORKS[network] : () => extractFromPath(maybe_network_or_path);
+  const getInfoFn = NETWORKS[network] ? NETWORKS[network] : () => getEndpoints(maybe_network_or_path);
 
   const {
     rc_endpoint,
-    rc_before,
-    rc_after,
     ah_endpoint,
-    ah_before,
-    ah_after
   } = getInfoFn();
 
   // TODO: add network (default is Westend) parameter to the main function
   let errs = await migrationTestMain(
     rc_endpoint,
-    rc_before,
-    rc_after,
     ah_endpoint,
-    ah_before,
-    ah_after,
     network as "Westend" | "Paseo" | "Kusama" | "Polkadot"
   );
 

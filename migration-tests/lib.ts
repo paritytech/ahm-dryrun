@@ -93,49 +93,19 @@ export async function runTests(context: TestContext, network: Network): Promise<
 
 export async function main(
   rc_endpoint: string,
-  rc_before: number,
-  rc_after: number,
   ah_endpoint: string,
-  ah_before: number,
-  ah_after: number,
   network: Network = "Westend",
 ): Promise<string[]> {
-  const relayChainConfig: ChainConfig = {
-    endpoint: rc_endpoint,
-    before_block: rc_before,
-    after_block: rc_after,
-  };
-
-  const assetHubConfig: ChainConfig = {
-    endpoint: ah_endpoint,
-    before_block: ah_before,
-    after_block: ah_after,
-  };
-
-  // HARDCODED test data
-  // {
-  //     endpoint: 'wss://westend-rpc.polkadot.io',
-  //     before_block: 26041702, // westend RC before first migration
-  //     // https://westend.subscan.io/event?page=1&time_dimension=date&module=rcmigrator&event_id=assethubmigrationfinished
-  //     after_block: 26071771, // westend RC after migration
-  // };
-
-  // const assetHubConfig: ChainConfig = ah_chain_config ? ah_chain_config :
-  // {
-  //     endpoint: 'wss://westend-asset-hub-rpc.polkadot.io',
-  //     before_block: 11716733, // wah before first migration started
-  //     after_block: 11736597, // wah after second migration ended
-  // };
 
   logger.info('Setup configuration:', {
-    rc_chain_config: relayChainConfig,
-    ah_chain_config: assetHubConfig
+    rc_endpoint,
+    ah_endpoint,
   });
 
   const { context, apis } = await setupTestContext(
-    relayChainConfig,
-    assetHubConfig,
-  );
+    rc_endpoint,
+    ah_endpoint,
+  );  
 
   // to correctly state assert, the best is to take Westend before 1st and WAH after 2nd,
   // though knowing that between 1st and 2nd migration in WAH, few users might have added few things
@@ -151,19 +121,13 @@ export async function main(
   return errs;
 }
 
-export interface ChainConfig {
-  endpoint: string;
-  before_block: number;
-  after_block: number;
-}
-
 async function setupTestContext(
-  relayChainConfig: ChainConfig,
-  assetHubConfig: ChainConfig,
+  relay_endpoint: string,
+  asset_hub_endpoint: string,
 ): Promise<{ context: TestContext; apis: ApiPromise[] }> {
   // Setup Relay Chain API
   const rc_api = await ApiPromise.create({
-    provider: new WsProvider(relayChainConfig.endpoint),
+    provider: new WsProvider(relay_endpoint),
   });
 
   const rc_migration_start_result = await rc_api.query.rcMigrator.migrationStartBlock();
@@ -184,7 +148,7 @@ async function setupTestContext(
 
   // Setup Asset Hub API
   const ah_api = await ApiPromise.create({
-    provider: new WsProvider(assetHubConfig.endpoint),
+    provider: new WsProvider(asset_hub_endpoint),
   });
 
   const ah_migration_start_result = await ah_api.query.ahMigrator.migrationStartBlock();
