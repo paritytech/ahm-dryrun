@@ -63,7 +63,16 @@ jobs:
 
       - name: check_network
         shell: bash
-        run: ip a s
+        run: |
+          python3 <<IP_INFO
+          import netifaces as ni
+          import pprint
+          interfaces = ni.interfaces()
+          print("\n", "Interfaces:", interfaces)
+          for iface in interfaces:
+              ifconfig = ni.ifaddresses(iface)
+              pprint.pprint(ifconfig)
+          IP_INFO
 
       - uses: actions/checkout@v4
         with:
