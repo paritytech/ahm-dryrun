@@ -181,11 +181,7 @@ class Orchestrator {
 
       await migrationTestMain(
         rc_endpoint,
-        rc_before,
-        rc_after,
         ah_endpoint,
-        ah_before,
-        ah_after,
       );
 
       // TODO: wait for Alex.
