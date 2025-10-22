@@ -61,6 +61,10 @@ jobs:
         with:
           tool-cache: false
 
+      - name: check_network
+        shell: bash
+        run: ip a s
+
       - uses: actions/checkout@v4
         with:
           submodules: recursive
