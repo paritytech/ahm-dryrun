@@ -7,8 +7,8 @@ on:
         description: 'run-id to download the snaps, if not provided we will use the latest ones.'
         required: false
       network:
-        description: 'Network to use, default kusama'
-        default: 'kusama'
+        description: 'Network to use, default polkadot'
+        default: 'polkadot'
         type: choice
         options:
           - kusama

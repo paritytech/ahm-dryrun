@@ -21,12 +21,31 @@ runs:
       run: |
         set -euo pipefail
         TMP_DIR="$(mktemp -d)"
-        
-        curl -sSLf -H "Authorization: Bearer ${GITHUB_TOKEN}" -o "${TMP_DIR}/artifact.zip" "${ARTIFACT_URL}"
-        
+
+        FILENAME=$(basename ${ARTIFACT_URL})
+
+        IS_GITHUB=$(echo ${ARTIFACT_URL}| grep -o github || true)
+        IS_ZIP=$(echo ${ARTIFACT_URL}| grep -o zip || true)
+        if [[ $IS_GITHUB == "github" ]];then
+          curl -sSLf -H "Authorization: Bearer ${GITHUB_TOKEN}" -o "${TMP_DIR}/${FILENAME}" "${ARTIFACT_URL}"
+        else
+          curl -sSLf -o "${TMP_DIR}/${FILENAME}" "${ARTIFACT_URL}"
+        fi;
+
         rm -rf "${DESTINATION_PATH}"
         mkdir -p "${DESTINATION_PATH}"
-        unzip -q "${TMP_DIR}/artifact.zip" -d "${DESTINATION_PATH}"
+
+        if [[ $IS_ZIP == "zip" ]];then
+          unzip -q "${TMP_DIR}/${FILENAME}" -d "${DESTINATION_PATH}"
+        else
+          tar -xvf "${TMP_DIR}/${FILENAME}" -C "${DESTINATION_PATH}"
+        fi;
+
         rm -rf "${TMP_DIR}"
-        
+        echo "ls dst path"
+        ls "${DESTINATION_PATH}"
+        mv ${DESTINATION_PATH}/pahm/spawn ${DESTINATION_PATH}/
+        mv ${DESTINATION_PATH}/pahm/ready.json ${DESTINATION_PATH}/
+        mv ${DESTINATION_PATH}/pahm/ports.json ${DESTINATION_PATH}/
+        echo "ls dst path"
         ls "${DESTINATION_PATH}"

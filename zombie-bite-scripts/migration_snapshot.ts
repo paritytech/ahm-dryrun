@@ -20,6 +20,8 @@ import {
   isAccountsMigrationInit,
   isDataMigrationOngoing,
   isCoolOff,
+  getAHPort,
+  getRCPort,
 } from "./helpers.js";
 
 const execAsync = promisify(exec);
@@ -32,27 +34,7 @@ if (!basePath || !network) {
   process.exit(1);
 }
 
-async function getAHPort(basePath: string): Promise<number> {
-  try {
-    const portsFile = join(basePath, "ports.json");
-    const ports = JSON.parse(readFileSync(portsFile, "utf8"));
-    return ports.collator_port;
-  } catch (error) {
-    logger.error("Could not read ports.json, using default port 63170");
-    return 63170;
-  }
-}
 
-async function getRCPort(basePath: string): Promise<number> {
-  try {
-    const portsFile = join(basePath, "ports.json");
-    const ports = JSON.parse(readFileSync(portsFile, "utf8"));
-    return ports.alice_port;
-  } catch (error) {
-    logger.error("Could not read ports.json, using default port 63168");
-    return 63168;
-  }
-}
 
 interface SnapshotBlocks {
   rcPreBlock: string;

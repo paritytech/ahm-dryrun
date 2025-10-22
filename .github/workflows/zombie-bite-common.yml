@@ -35,6 +35,11 @@ on:
         required: false
         type: string
         default: ""
+      post_db_url:
+        description: "Url for download a post-db and start from there"
+        required: false
+        type: string
+        default: ""
 
 
 env:
@@ -93,8 +98,8 @@ jobs:
 
       - name: build_runtimes
         shell: bash
-        # only runs if we don't have a pre-db
-        if: ${{ inputs.pre_db_run_id == '' }}
+        # only runs if we don't have a pre-db or post-db
+        if: ${{ inputs.pre_db_run_id == '' && inputs.post_db_url == '' }}
         env:
           RUSTFLAGS: "-A warnings"
           NETWORK: ${{ inputs.network }}
@@ -124,8 +129,8 @@ jobs:
 
       - name: zombie_bite_step_bite
         id: zombie_bite_step_bite
-        # only runs if we don't have a pre-db
-        if: ${{ inputs.pre_db_run_id == '' }}
+        # only runs if we don't have a pre-db or post-db
+        if: ${{ inputs.pre_db_run_id == '' && inputs.post_db_url == '' }}
         shell: bash
         timeout-minutes: 45
         env:
@@ -192,8 +197,8 @@ jobs:
         continue-on-error: true
 
       - name: zombie_bite_upload_step
-        # only runs if we don't have a pre-db
-        if: ${{ inputs.pre_db_run_id == '' }}
+        # only runs if we don't have a pre-db or post-db
+        if: ${{ inputs.pre_db_run_id == '' && inputs.post_db_url == '' }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.network }}-pre-migration-db-${{ github.sha }}${{ inputs.args }}
@@ -217,6 +222,8 @@ jobs:
           name-pattern: "${{ env.NETWORK }}-pre-migration-db-*"
 
       - name: checkpoint_bite
+        # only runs if we don't have a post-db
+        if: ${{ inputs.post_db_url == '' }}
         shell: bash
         env:
           RUN_ID: ${{ inputs.pre_db_run_id }}
@@ -233,6 +240,8 @@ jobs:
           echo "::endgroup::"
 
       - name: run_zombie_bite_spawn
+        # only runs if we don't have a post-db
+        if: ${{ inputs.post_db_url == '' }}
         shell: bash
         run: |
           export PATH=${AHM_BINS}:$PATH
@@ -241,6 +250,8 @@ jobs:
           nohup zombie-bite spawn -d $ZOMBIE_BITE_BASE_PATH > $ZOMBIE_BITE_BASE_PATH/nohup.out 2>&1 &
 
       - name: wait_for_network
+        # only runs if we don't have a post-db
+        if: ${{ inputs.post_db_url == '' }}
         id: wait_for_network
         uses: ./.github/actions/wait-zb-network-ready
         with:
@@ -248,6 +259,8 @@ jobs:
         continue-on-error: true
 
       - name: wait_for_nodes
+        # only runs if we don't have a post-db
+        if: ${{ inputs.post_db_url == '' }}
         id: wait_for_nodes
         shell: bash
         env:
@@ -276,6 +289,8 @@ jobs:
         run: exit 1
 
       - name: run_migration
+        # only runs if we don't have a post-db
+        if: ${{ inputs.post_db_url == '' }}
         id: zombie_bite_step_spawn_and_run_migration
         shell: bash
         env:
@@ -331,6 +346,8 @@ jobs:
         continue-on-error: true
 
       - name: try_runtime_upload_step_snapshots
+        # only runs if we don't have a post-db
+        if: ${{ inputs.post_db_url == '' }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.network }}-try-runtime-snaps-${{ github.sha }}${{ inputs.args }}
@@ -344,6 +361,8 @@ jobs:
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/migration_snapshot.log
 
       - name: checkpoint_spawn
+        # only runs if we don't have a post-db
+        if: ${{ inputs.post_db_url == '' }}
         shell: bash
         run: |
           echo "::group::debug"
@@ -353,6 +372,8 @@ jobs:
           echo "::endgroup::"
 
       - name: zombie_bite_upload_step_logs
+        # only runs if we don't have a post-db
+        if: ${{ inputs.post_db_url == '' }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.network }}-post-migration-logs-${{ github.sha }}${{ inputs.args }}
@@ -362,6 +383,8 @@ jobs:
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn-debug/bob/bob.log
 
       - name: zombie_bite_upload_step
+        # only runs if we don't have a post-db
+        if: ${{ inputs.post_db_url == '' }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.network }}-post-migration-db-${{ github.sha }}${{ inputs.args }}
@@ -370,6 +393,17 @@ jobs:
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ports.json
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ready.json
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/migration_done.json
+
+      - name: download_post_migration_db
+        # only runs if we have a post-db
+        if: ${{ inputs.post_db_url != '' }}
+        uses: ./.github/actions/download-post-migration-db
+        env:
+          ARTIFACT_URL: ${{ inputs.post_db_url }}
+          GH_TOKEN: ${{ github.token }}
+        with:
+          destination-path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
+          artifact-url: ${{ env.ARTIFACT_URL }}
 
       - name: try_runtime_rust_test
         id: try_runtime_rust_test
@@ -387,10 +421,22 @@ jobs:
           export PATH=${AHM_BINS}:$PATH
           # remove previous nohup.out
           rm nohup.out || true
-          nohup just zb spawn $ZOMBIE_BITE_BASE_PATH post > nohup.out 2>&1 &
+          nohup just zb spawn $ZOMBIE_BITE_BASE_PATH post > $ZOMBIE_BITE_BASE_PATH/nohup.out 2>&1 &
 
       - name: wait_for_network
+        id: wait_for_network_post
         uses: ./.github/actions/wait-zb-network-ready
+        with:
+          log-file: ${{ env.ZOMBIE_BITE_BASE_PATH }}/nohup.out
+        continue-on-error: true
+
+      - name: upload_on_fail
+        if: steps.wait_for_network_post.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.network }}-spawn-post-failure-logs-${{ github.sha }}
+          path: |
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/nohup.out
 
       - name: ts_comparison_tests
         id: ts_comparison_tests

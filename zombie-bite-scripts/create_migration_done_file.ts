@@ -1,0 +1,21 @@
+/*
+ * Wrapper to call the `createMigrationDoneFile` fn (defined in helpers)
+ * accept 3 positional arguments
+ * base_path: the path where we will writing the migration end info (rc_block_end, ah_block_end) in a json file
+ * rc_port: The port to use to connect to alice
+ * ah_port: The port to use to connect to the collator
+ */
+
+import { createMigrationDoneFile } from "./helpers.js";
+import { logger } from "../shared/logger.js";
+
+const main = async () => {
+  let base_path = process.argv[2];
+  let rc_port = process.argv[3];
+  let ah_port = process.argv[4];
+  logger.info("🔎 Creating migration_done.json file...");
+  await createMigrationDoneFile(base_path, rc_port, ah_port);
+  process.exit(0);
+};
+
+main().catch(console.log);
