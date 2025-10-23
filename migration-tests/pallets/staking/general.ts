@@ -18,8 +18,9 @@ export const generalStakingTests: MigrationTest = {
     ): Promise<void> => {
         const { rc_api_after, ah_api_after } = context;
 
+        const wantMode = await detectNetwork(rc_api_after) === 'polkadot' ? 'Buffered' : 'Active';
         const mode = await rc_api_after.query.stakingAhClient.mode();
-        assert(mode.toHuman() === 'Active', 'Assert staking mode is Active');
+        assert(mode.toHuman() === wantMode, `Staking mode should be ${wantMode}`);
 
         const activeEra = await ah_api_after.query.staking.activeEra();
         assert(activeEra.isSome, 'Assert activeEra is Some');
@@ -43,3 +44,24 @@ export const generalStakingTests: MigrationTest = {
 
     }
 }; 
+
+type Network = "kusama" | "polkadot";
+async function detectNetwork(api: any): Promise<Network> {
+    const chainName = (await api.rpc.system.chain()).toString().toLowerCase();
+  
+    if (chainName.includes("kusama")) return "kusama";
+    if (chainName.includes("polkadot")) return "polkadot";
+  
+    // For Asset Hub chains
+    if (chainName.includes("asset-hub-kusama") || chainName.includes("statemine"))
+      return "kusama";
+    if (
+      chainName.includes("asset-hub-polkadot") ||
+      chainName.includes("statemint")
+    )
+      return "polkadot";
+  
+    throw new Error(
+      `Unsupported network: ${chainName}. Only kusama and polkadot are supported.`,
+    );
+  }
