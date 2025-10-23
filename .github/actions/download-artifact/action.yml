@@ -37,7 +37,11 @@ runs:
         if [[ $NAME_PATTERN == "" ]]; then
           gh run download $RUN_ID -D $TMP_DIR
         else
-          gh run download $RUN_ID -p "${NAME_PATTERN}" -D $TMP_DIR
+          PATTERNS=""
+          for p in $(echo $NAME_PATTERN| tr "," "\n");do
+            PATTERNS="$PATTERNS -p $p "
+          done
+          gh run download $RUN_ID $PATTERNS -D $TMP_DIR
         fi;
 
         ARTIFACTS_DIR=$(ls -t $TMP_DIR|head -1)

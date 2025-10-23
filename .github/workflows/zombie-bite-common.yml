@@ -213,7 +213,7 @@ jobs:
           gh-token: ${{ env.GH_TOKEN }}
           destination-path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
           run-id: ${{ env.RUN_ID }}
-          name-pattern: "${{ env.NETWORK }}-pre-migration-db-*"
+          name-pattern: "${{ env.NETWORK }}-pre-migration-db-*,${{env.NETWORK}}-zb-step-bite-*"
 
       - name: checkpoint_bite
         # only runs if we don't have a post-db
