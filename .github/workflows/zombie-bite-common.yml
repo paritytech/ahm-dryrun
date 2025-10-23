@@ -289,6 +289,7 @@ jobs:
         shell: bash
         env:
           NETWORK: ${{ inputs.network }}
+          PRE_DB_RUN_ID: ${{ inputs.pre_db_run_id }}
           TS_LOG_CONSOLE: true
           TS_LOG_LEVEL: debug
         run: |

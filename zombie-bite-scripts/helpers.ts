@@ -301,6 +301,7 @@ export async function checkScheduleMigrationCallStatus(atBlock: string, status: 
   }
 }
 
+
 export async function scheduleMigration(migration_args?: scheduleMigrationArgs) {
   logger.info('migration_args', migration_args);
   const rc_uri = `ws://localhost:${migration_args && migration_args.rc_port || rcPort}`;
@@ -321,10 +322,16 @@ export async function scheduleMigration(migration_args?: scheduleMigrationArgs) 
 
   finalization = migration_args && migration_args.finalization ? true : false;
 
+  // use current as default
+  let migration_final_args = [start, warm_up_end, cool_off_end, ignore_staking_check];
+  // if is an old pre-db use the old call
+  if( process.env["PRE_DB_RUN_ID"] && process.env["PRE_DB_RUN_ID"] <= "16895620428")  migration_final_args = [start, cool_off_end];
+
   logger.info('Scheduling migration', { start, warm_up_end, cool_off_end,ignore_staking_check, nonce, finalization });
+  logger.info('Final args to passo to scheduleMigration call', migration_final_args);
 
   return new Promise(async (resolve, reject) => {
-    const unsub: any = await api.tx.rcMigrator.scheduleMigration(start, warm_up_end, cool_off_end, ignore_staking_check)
+    const unsub: any = await api.tx.rcMigrator.scheduleMigration(...migration_final_args)
       .signAndSend(alice, { nonce: nonce, era: 0 }, (result) => {
         logger.info('Migration transaction status', { status: result.status.toString() });
 
