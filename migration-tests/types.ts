@@ -28,6 +28,7 @@ export interface MigrationTest {
     
     post_check: (
         context: PostCheckContext,
-        pre_payload: PreCheckResult
+        pre_payload: PreCheckResult,
+        network?: string
     ) => Promise<void>;
 } 

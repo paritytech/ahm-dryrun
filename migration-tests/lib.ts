@@ -75,7 +75,7 @@ export async function runTests(context: TestContext, network: Network): Promise<
     try {
       const pre_payload = await test.pre_check(context.pre);
       stage = "post-check";
-      await test.post_check(context.post, pre_payload);
+      await test.post_check(context.post, pre_payload, network.toUpperCase());
 
       logger.info(`✅ Test ${test.name} test completed successfully`);
     } catch (error: unknown) {

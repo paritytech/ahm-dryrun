@@ -14,18 +14,20 @@ export const generalStakingTests: MigrationTest = {
     },
     post_check: async (
         context:    PostCheckContext,
-        pre_payload:    PreCheckResult
+        pre_payload:    PreCheckResult,
+        network?: string
     ): Promise<void> => {
         const { rc_api_after, ah_api_after } = context;
 
+        const wantMode = network?.toUpperCase() === 'POLKADOT' ? 'Buffered' : 'Active';
         const mode = await rc_api_after.query.stakingAhClient.mode();
-        assert(mode.toHuman() === 'Active', 'Assert staking mode is Active');
+        assert(mode.toHuman() === wantMode, `Assert staking mode is ${wantMode}`);
 
         const activeEra = await ah_api_after.query.staking.activeEra();
         assert(activeEra.isSome, 'Assert activeEra is Some');
 
         const currentEra = await ah_api_after.query.staking.currentEra();
-        assert(activeEra.isSome, 'Assert activeEra is Some');
+        assert(currentEra.isSome, 'Assert activeEra is Some');
 
         const forcing = await ah_api_after.query.staking.forceEra();
         assert(forcing.toHuman() === 'NotForcing', 'Assert forceEra is NotForcing');
