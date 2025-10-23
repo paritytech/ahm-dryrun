@@ -178,12 +178,6 @@ jobs:
           source .env
           set +a
 
-          # @x3c41a is this still needed?
-          # echo "::group::find-rc-block-bite"
-          # RC_BITE_BLOCK=$(just find-rc-block-bite $NETWORK)
-          # echo "Found RC block to bite: $RC_BITE_BLOCK"
-          # echo "::endgroup::"
-
           export RUST_LOG_RC=$ZOMBIE_BITE_RUST_LOG
           export RUST_LOG_COL=$ZOMBIE_BITE_RUST_LOG_COL
 
@@ -306,7 +300,7 @@ jobs:
           echo "::group::run-migration"
           # Start migration snapshot monitoring (polls for completion and takes all 4 snapshots)
           echo "Starting migration snapshot monitoring in background..."
-          nohup node dist/zombie-bite-scripts/migration_snapshot.js $ZOMBIE_BITE_BASE_PATH $NETWORK 2>&1 | tee -a migration_snapshot.log &
+          nohup node dist/zombie-bite-scripts/migration_snapshot.js $ZOMBIE_BITE_BASE_PATH $NETWORK monitOnly 2>&1 | tee -a migration_snapshot.log &
           SNAPSHOT_PID=$!
 
           # Schedule the migration
@@ -344,21 +338,6 @@ jobs:
           cat nohup.out
           echo "::endgroup::"
         continue-on-error: true
-
-      - name: try_runtime_upload_step_snapshots
-        # only runs if we don't have a post-db
-        if: ${{ inputs.post_db_url == '' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ inputs.network }}-try-runtime-snaps-${{ github.sha }}${{ inputs.args }}
-          path: |
-            ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-rc-pre.snap
-            ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-ah-pre.snap
-            ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-rc-post.snap
-            ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-ah-post.snap
-            ${{ env.ZOMBIE_BITE_BASE_PATH }}/migration_snapshot_info.json
-            ${{ env.ZOMBIE_BITE_BASE_PATH }}/migration_snapshot_done.txt
-            ${{ env.ZOMBIE_BITE_BASE_PATH }}/migration_snapshot.log
 
       - name: checkpoint_spawn
         # only runs if we don't have a post-db
@@ -405,16 +384,6 @@ jobs:
           destination-path: ${{ env.ZOMBIE_BITE_BASE_PATH }}
           artifact-url: ${{ env.ARTIFACT_URL }}
 
-      - name: try_runtime_rust_test
-        id: try_runtime_rust_test
-        shell: bash
-        env:
-          NETWORK: ${{ inputs.network }}
-        run: |
-          export PATH=${AHM_BINS}:$PATH
-          just ahm rust-test $NETWORK $ZOMBIE_BITE_BASE_PATH
-        continue-on-error: true
-
       - name: run_zombie_bite_post
         shell: bash
         run: |
@@ -437,6 +406,40 @@ jobs:
           name: ${{ inputs.network }}-spawn-post-failure-logs-${{ github.sha }}
           path: |
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/nohup.out
+
+      - name: take_try_runtime_snaps
+        shell: bash
+        env:
+          NETWORK: ${{ inputs.network }}
+          TS_LOG_CONSOLE: true
+          TS_LOG_LEVEL: debug
+        run: |
+          export PATH=${AHM_BINS}:$PATH
+          node dist/zombie-bite-scripts/migration_snapshot.js $ZOMBIE_BITE_BASE_PATH $NETWORK
+        continue-on-error: true
+
+      - name: try_runtime_upload_step_snapshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.network }}-try-runtime-snaps-${{ github.sha }}${{ inputs.args }}
+          path: |
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-rc-pre.snap
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-ah-pre.snap
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-rc-post.snap
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-ah-post.snap
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/migration_snapshot_info.json
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/migration_snapshot_done.txt
+            ${{ env.ZOMBIE_BITE_BASE_PATH }}/migration_snapshot.log
+
+      - name: try_runtime_rust_test
+        id: try_runtime_rust_test
+        shell: bash
+        env:
+          NETWORK: ${{ inputs.network }}
+        run: |
+          export PATH=${AHM_BINS}:$PATH
+          just ahm rust-test $NETWORK $ZOMBIE_BITE_BASE_PATH
+        continue-on-error: true
 
       - name: ts_comparison_tests
         id: ts_comparison_tests

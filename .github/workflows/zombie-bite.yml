@@ -34,6 +34,11 @@ on:
         required: false
         type: string
         default: ""
+      doppelganger_version:
+        description: "Tag of the release to use"
+        required: false
+        type: string
+        default: "latest"
       runner:
         description: "Runner to run the jobs"
         required: false
@@ -59,7 +64,7 @@ jobs:
       rc_runtime_override_url: ${{ inputs.rc_runtime_override_url }}
       ah_runtime_override_url: ${{ inputs.ah_runtime_override_url }}
       runner: ${{ inputs.runner }}
-      doppelganger_version: doppelganger-stable2509 # use latest release of polkadot
+      doppelganger_version: ${{ inputs.doppelganger_version }}
       pre_db_run_id: ${{ inputs.pre_db_run_id }}
       post_db_url: ${{ inputs.post_db_url }}
 

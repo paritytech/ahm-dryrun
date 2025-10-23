@@ -28,6 +28,8 @@ const execAsync = promisify(exec);
 
 const basePath = process.argv[2];
 const network = process.argv[3];
+// IFF is set will exit after the migration is done.
+const onlyMonit = process.argv[4];
 
 if (!basePath || !network) {
   logger.error("Usage: node migration_snapshot.js <base_path> <network>");
@@ -83,11 +85,12 @@ async function waitForMigrationDone(
     try {
       // Check RC migration stage
       if (!rcDone) {
-        const rcStage = await queryOnce(rcPort, async (api) => {
+        const [rcStage, atBlock] = await queryOnce(rcPort, async (api) => {
+          const block = await api.query.system.number();
           const stage = await api.query.rcMigrator.rcMigrationStage();
-          return stage.toHuman();
+          return [stage.toHuman(), block];
         });
-        logger.info(`RC migration stage: ${JSON.stringify(rcStage)}`);
+        logger.info(`RC[#${atBlock}] migration stage: ${JSON.stringify(rcStage)}`);
 
         if (JSON.stringify(rcStage) === '"MigrationDone"') {
           logger.info("✅ RC migration complete!");
@@ -97,11 +100,12 @@ async function waitForMigrationDone(
 
       // Check AH migration stage
       if (!ahDone) {
-        const ahStage = await queryOnce(ahPort, async (api) => {
+        const [ahStage, atBlock] = await queryOnce(ahPort, async (api) => {
+          const block = await api.query.system.number();
           const stage = await api.query.ahMigrator.ahMigrationStage();
-          return stage.toHuman();
+          return [stage.toHuman(), block];
         });
-        logger.info(`AH migration stage: ${JSON.stringify(ahStage)}`);
+        logger.info(`AH[#${atBlock}] migration stage: ${JSON.stringify(ahStage)}`);
 
         if (JSON.stringify(ahStage) === '"MigrationDone"') {
           logger.info("✅ AH migration complete!");
@@ -407,13 +411,21 @@ async function main() {
   const rcPort = await getRCPort(basePath);
 
   logger.info(`Using ports - RC: ${rcPort}, AH: ${ahPort}`);
-  logger.info(
-    "Strategy: Poll for MigrationDone, then scan for snapshot blocks",
-  );
+
+  let msg = "Strategy: Poll for MigrationDone";
+  if(onlyMonit == undefined) {
+    msg = `${msg}, then scan for snapshot blocks.`
+  }
+  logger.info(msg);
 
   try {
     // 1. Poll until migration is done (no WebSocket subscriptions!)
     await waitForMigrationDone(rcPort, ahPort);
+
+    // IF we are only monitoring, exit.
+    if(onlyMonit) {
+      process.exit(0);
+    }
 
     // 2. Find all snapshot blocks by scanning
     const blocks = await findSnapshotBlocks(rcPort, ahPort);
