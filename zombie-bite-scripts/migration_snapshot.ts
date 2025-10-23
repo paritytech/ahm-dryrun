@@ -70,7 +70,7 @@ async function waitForMigrationDone(
 ): Promise<void> {
   logger.info("Polling for migration completion...");
 
-  const pollInterval = 5 * 60 * 1000; // 5 minutes
+  const pollInterval = (process.env["AHM_BINS"] ? 1 : 5) * 60 * 1000; // 1m in ci / 5 by default
   const maxWaitTime = 12 * 60 * 60 * 1000; // 12 hours
   const startTime = Date.now();
 

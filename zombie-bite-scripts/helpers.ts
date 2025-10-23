@@ -328,7 +328,7 @@ export async function scheduleMigration(migration_args?: scheduleMigrationArgs) 
   if( process.env["PRE_DB_RUN_ID"] && process.env["PRE_DB_RUN_ID"] <= "16895620428")  migration_final_args = [start, cool_off_end];
 
   logger.info('Scheduling migration', { start, warm_up_end, cool_off_end,ignore_staking_check, nonce, finalization });
-  logger.info('Final args to passo to scheduleMigration call', migration_final_args);
+  logger.info('Final args to pass to scheduleMigration call', migration_final_args);
 
   return new Promise(async (resolve, reject) => {
     const unsub: any = await api.tx.rcMigrator.scheduleMigration(...migration_final_args)
