@@ -1,7 +1,8 @@
 import { ApiPromise, WsProvider, Keyring } from "@polkadot/api";
 import { cryptoWaitReady } from "@polkadot/util-crypto";
-import { promises as fs_promises } from "fs";
+import { promises as fs_promises, readFileSync } from "fs";
 import { logger } from "../shared/logger.js";
+import { join } from "path";
 
 const rcPort = process.env.ZOMBIE_BITE_ALICE_PORT || 63168;
 const ahPort = process.env.ZOMBIE_BITE_AH_PORT || 63170;
@@ -44,6 +45,55 @@ export async function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+export async function getAHPort(basePath: string): Promise<number> {
+  try {
+    const portsFile = join(basePath, "ports.json");
+    const ports = JSON.parse(readFileSync(portsFile, "utf8"));
+    return ports.collator_port;
+  } catch (error) {
+    logger.error("Could not read ports.json, using default port 63170");
+    return 63170;
+  }
+}
+
+export async function getRCPort(basePath: string): Promise<number> {
+  try {
+    const portsFile = join(basePath, "ports.json");
+    const ports = JSON.parse(readFileSync(portsFile, "utf8"));
+    return ports.alice_port;
+  } catch (error) {
+    logger.error("Could not read ports.json, using default port 63168");
+    return 63168;
+  }
+}
+
+export async function createMigrationDoneFile(
+  base_path?: string,
+  rc_port?: string | number,
+  ah_port?: string | number,
+) {
+  const base_path_to_use = base_path || ".";
+  const rc_uri = `ws://localhost:${rc_port || rcPort}`;
+  const ah_uri = `ws://localhost:${ah_port || ahPort}`;
+
+  const rc_api = await connect(rc_uri);
+  const ah_api = await connect(ah_uri);
+
+  const rc_end_block = await rc_api.query.rcMigrator.migrationEndBlock();
+  const ah_end_block = await ah_api.query.ahMigrator.migrationEndBlock();
+
+  const content = {
+    rc_finish_block: rc_end_block.toJSON(),
+    ah_finish_block: ah_end_block.toJSON(),
+  };
+
+  await fs_promises.writeFile(
+    `${base_path_to_use}/migration_done.json`,
+    JSON.stringify(content),
+  );
+  return content;
+}
+
 export async function monitMigrationFinish(
   base_path?: string,
   rc_port?: string | number,
@@ -81,6 +131,19 @@ async function mock_finish(delay_ms: number, is_mocked: boolean) {
 
 function migration_done(stage: any) {
   return JSON.stringify(stage) == '"MigrationDone"';
+}
+
+export function isAccountsMigrationInit(stage: any): boolean {
+  return JSON.stringify(stage) === '"AccountsMigrationInit"';
+}
+
+export function isDataMigrationOngoing(stage: any): boolean {
+  return JSON.stringify(stage) === '"DataMigrationOngoing"';
+}
+
+export function isCoolOff(stage: any): boolean {
+  const stageStr = JSON.stringify(stage);
+  return stageStr ? stageStr.includes('"CoolOff"') : false;
 }
 
 async function rc_check(uri: string) {
@@ -238,6 +301,7 @@ export async function checkScheduleMigrationCallStatus(atBlock: string, status: 
   }
 }
 
+
 export async function scheduleMigration(migration_args?: scheduleMigrationArgs) {
   logger.info('migration_args', migration_args);
   const rc_uri = `ws://localhost:${migration_args && migration_args.rc_port || rcPort}`;
@@ -258,10 +322,16 @@ export async function scheduleMigration(migration_args?: scheduleMigrationArgs) 
 
   finalization = migration_args && migration_args.finalization ? true : false;
 
+  // use current as default
+  let migration_final_args = [start, warm_up_end, cool_off_end, ignore_staking_check];
+  // if is an old pre-db use the old call
+  if( process.env["PRE_DB_RUN_ID"] && process.env["PRE_DB_RUN_ID"] <= "16895620428")  migration_final_args = [start, cool_off_end];
+
   logger.info('Scheduling migration', { start, warm_up_end, cool_off_end,ignore_staking_check, nonce, finalization });
+  logger.info('Final args to pass to scheduleMigration call', migration_final_args);
 
   return new Promise(async (resolve, reject) => {
-    const unsub: any = await api.tx.rcMigrator.scheduleMigration(start, warm_up_end, cool_off_end, ignore_staking_check)
+    const unsub: any = await api.tx.rcMigrator.scheduleMigration(...migration_final_args)
       .signAndSend(alice, { nonce: nonce, era: 0 }, (result) => {
         logger.info('Migration transaction status', { status: result.status.toString() });
 
