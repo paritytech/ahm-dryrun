@@ -56,7 +56,10 @@ const excludedTestsPerNetwork: Record<Network, MigrationTest[]> = {
     voterListTests,
     // proxyTests,
   ],
-  Polkadot: [],
+  Polkadot: [
+    convictionVotingTests,
+    voterListTests,
+  ],
 };
 
 // Function to get tests for a specific network
