@@ -44,6 +44,11 @@ on:
         required: false
         type: string
         default: "parity-large-persistent-test"
+      concurrency-prefix:
+        description: "Extra suffix for the concurrency group"
+        type: string
+        required: false
+        default: "-mygroup"
   schedule:
     - cron: "0 0 * * *" # Every Day for Polkadot
 
