@@ -12,3 +12,4 @@ zombie-bite/doppelganger/bin/
 # for local testing, it is conventional in this repo to use `migration-run-{id}` as the name of the folder; ignore it
 migration-run-*
 .DS_Store
+new-bite*

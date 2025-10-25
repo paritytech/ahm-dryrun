@@ -32,7 +32,7 @@ install-doppelganger:
         --bin doppelganger-parachain \
         --bin polkadot-execute-worker \
         --bin polkadot-prepare-worker  \
-        --locked --root ${DOPPELGANGER_PATH} --force
+        --locked --root ${DOPPELGANGER_PATH} --tag v0.1.4
 
 # Install the `zombie-bite` binary on your system.
 install-zombie-bite:
@@ -52,7 +52,7 @@ build runtime:
 
     if [ "{{ runtime }}" = "polkadot" ]; then
         # only enable `metadata-hash`, but not `on-chain-release-build` to still have logs enabled.
-        cd ${RUNTIMES_PATH} && ${CARGO_CMD} build --profile production --features metadata-hash,polkadot-ahm -p asset-hub-polkadot-runtime -p polkadot-runtime && cd ..
+        cd ${RUNTIMES_PATH} && WASM_BUILD_TYPE=production WASM_BUILD_RUSTFLAGS="-C debuginfo=2" ${CARGO_CMD} build --profile production --features metadata-hash,polkadot-ahm -p asset-hub-polkadot-runtime -p polkadot-runtime && cd ..
         cp ${RUNTIMES_PATH}/target/production/wbuild/**/**.compact.compressed.wasm ./runtime_wasm/
     elif [ "{{ runtime }}" = "kusama" ]; then
         # only enable `metadata-hash`, but not `on-chain-release-build` to still have logs enabled.
