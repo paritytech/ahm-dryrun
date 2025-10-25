@@ -7,7 +7,7 @@ on:
         required: false
       network:
         description: "network to use, default kusama"
-        default: 'kusama'
+        default: "kusama"
         type: choice
         options:
           - kusama
@@ -60,3 +60,22 @@ jobs:
       run-id: ${{ inputs.run-id }}
       network: ${{ inputs.network }}
 
+  # TODO: Create dedicated CI job that spawns post-migration network, lets it run for a
+  # complete era (e.g., 2*14400 blocks), then saves the database as an artifact.
+  # This ensures we always have databases with full era history for testing.
+  # For now, using hardcoded run-id from a known good run with full era data.
+  era-events-test-kusama:
+    if: ${{ inputs.network == 'kusama' }}
+    uses: ./.github/workflows/era-events-test-common.yml
+    with:
+      # TODO: Replace with run-id from dedicated long-running CI job
+      run-id: "TBD"
+      network: kusama
+
+  era-events-test-polkadot:
+    if: ${{ inputs.network == 'polkadot' }}
+    uses: ./.github/workflows/era-events-test-common.yml
+    with:
+      # TODO: Replace with run-id from dedicated long-running CI job
+      run-id: "TBD"
+      network: polkadot
