@@ -336,7 +336,7 @@ jobs:
           echo "::endgroup::"
 
           echo "::group::zombie-bite-output-post"
-          cat nohup.out
+          cat migration_snapshot.log
           echo "::endgroup::"
         continue-on-error: true
 
