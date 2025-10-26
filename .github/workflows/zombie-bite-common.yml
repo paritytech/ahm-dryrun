@@ -551,3 +551,39 @@ jobs:
           echo "**Network:** ${{ inputs.network }}" >> $GITHUB_STEP_SUMMARY
           echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "**Run:** ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
+
+          # Migration stats (AH side)
+          if [[ "${{ steps.zombie_bite_step_spawn_and_run_migration.outcome }}" == "success" ]]; then
+            COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
+            ENDPOINT="http://localhost:${COL_PORT}"
+
+            # ahMigrator MigrationStartBlock -> 0x05c2e33bcfb87e4551d7473580732778b81f4b5a48505b6253fef1a49a0fd981
+            START_BLOCK_ENCODED=$(curl -s -H "Content-Type: application/json" -d '{"id":1,"jsonrpc":"2.0","method":"state_getStorage","params":["0x05c2e33bcfb87e4551d7473580732778b81f4b5a48505b6253fef1a49a0fd981"]}' $ENDPOINT | jq -r .result)
+            # ahMigrator MigrationEndBlock -> 0x05c2e33bcfb87e4551d747358073277895d4b7aef7ef7b293e9e54e565c2e2d6
+            END_BLOCK_ENCODED=$(curl -s -H "Content-Type: application/json" -d '{"id":1,"jsonrpc":"2.0","method":"state_getStorage","params":["0x05c2e33bcfb87e4551d747358073277895d4b7aef7ef7b293e9e54e565c2e2d6"]}' $ENDPOINT | jq -r .result)
+
+            # decode
+            START_BLOCK=$(echo $((0x$(echo $START_BLOCK_ENCODED | cut -c 3- | tac -rs .. | tr -d '\n'))))
+            END_BLOCK=$(echo $((0x$(echo $END_BLOCK_ENCODED | cut -c 3- | tac -rs .. | tr -d '\n'))))
+
+            # get block hash
+            START_BLOCK_HASH=$(curl -s -H "Content-Type: application/json" -d '{"id":1,"jsonrpc":"2.0","method":"chain_getBlockHash","params":['$START_BLOCK']}' $ENDPOINT | jq -r .result)
+            END_BLOCK_HASH=$(curl -s -H "Content-Type: application/json" -d '{"id":1,"jsonrpc":"2.0","method":"chain_getBlockHash","params":['$END_BLOCK']}' $ENDPOINT | jq -r .result)
+
+            # extract ts from the blocks
+            TS_NOW_WELL_KNOW_KEY="0xf0c365c3cf59d671eb72da0e7a4113c49f1f0515f462cdcf84e0f1d6045dfcbb"
+            TS_START_BLOCK_ENCODED=$(curl -s -H "Content-Type: application/json" -d '{"id":1,"jsonrpc":"2.0","method":"state_getStorage","params":["'$TS_NOW_WELL_KNOW_KEY'","'$START_BLOCK_HASH'"]}' $ENDPOINT | jq -r '.result')
+            TS_END_BLOCK_ENCODED=$(curl -s -H "Content-Type: application/json" -d '{"id":1,"jsonrpc":"2.0","method":"state_getStorage","params":["'$TS_NOW_WELL_KNOW_KEY'","'$END_BLOCK_HASH'"]}' $ENDPOINT | jq -r '.result')
+
+            # decode
+            TS_START_BLOCK=$(echo $((0x$(echo $TS_START_BLOCK_ENCODED | cut -c 3- | tac -rs .. | tr -d '\n'))))
+            TS_END_BLOCK=$(echo $((0x$(echo $TS_END_BLOCK_ENCODED | cut -c 3- | tac -rs .. | tr -d '\n'))))
+
+            TOTAL_BLOCKS=$((END_BLOCK-START_BLOCK))
+            TOTAL_TIME_MS=$((TS_END_BLOCK-TS_START_BLOCK))
+            BLOCK_MS=$((TOTAL_TIME_MS/TOTAL_BLOCKS))
+            echo "📋 AH migration stats:" >> $GITHUB_STEP_SUMMARY
+            echo "\t 🧱 Blocks: [$START_BLOCK..$END_BLOCK ] $TOTAL_BLOCKS blocks" >> $GITHUB_STEP_SUMMARY
+            echo "\t ⏱  Total time (ms): [$TS_START_BLOCK..$TS_END_BLOCK ] ${TOTAL_TIME_MS} ms" >> $GITHUB_STEP_SUMMARY
+            echo "\t 📌 Block/ms: ${BLOCK_MS} b/ms" >> $GITHUB_STEP_SUMMARY
+          fi
