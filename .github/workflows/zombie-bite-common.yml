@@ -90,6 +90,11 @@ jobs:
         run: |
           just install-zombie-bite
 
+      - name: install_pdu
+        shell: bash
+        run: |
+          just install-pdu
+
       - name: install_try_runtime_cli
         shell: bash
         run: |
@@ -432,6 +437,32 @@ jobs:
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/migration_snapshot_done.txt
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/migration_snapshot.log
 
+      - name: pdu_run
+        id: pdu_run
+        shell: bash
+        env:
+          NETWORK: ${{ inputs.network }}
+        run: |
+          ALICE_PORT=$(jq -r .alice_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
+          COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
+
+          echo "::group::pdu-pre-rc"
+          pdu info --snap ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-rc-pre.snap --rpc ws://localhost:${ALICE_PORT}
+          echo "::endgroup::"
+
+          echo "::group::pdu-pre-ah"
+          pdu info --snap ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-ah-pre.snap --rpc ws://localhost:${COL_PORT}
+          echo "::endgroup::"
+
+          echo "::group::pdu-post-rc"
+          pdu info --snap ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-rc-post.snap --rpc ws://localhost:${ALICE_PORT}
+          echo "::endgroup::"
+
+          echo "::group::pdu-post-ah"
+          pdu info --snap ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-ah-post.snap --rpc ws://localhost:${COL_PORT}
+          echo "::endgroup::"
+        continue-on-error: true
+
       - name: try_runtime_rust_test
         id: try_runtime_rust_test
         shell: bash
@@ -554,6 +585,11 @@ jobs:
 
           # Migration stats (AH side)
           if [[ "${{ steps.zombie_bite_step_spawn_and_run_migration.outcome }}" == "success" ]]; then
+            # read env
+            set -a
+            source .env
+            set +a
+
             COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
             ENDPOINT="http://localhost:${COL_PORT}"
 
@@ -582,8 +618,9 @@ jobs:
             TOTAL_BLOCKS=$((END_BLOCK-START_BLOCK))
             TOTAL_TIME_MS=$((TS_END_BLOCK-TS_START_BLOCK))
             BLOCK_MS=$((TOTAL_TIME_MS/TOTAL_BLOCKS))
-            echo "📋 AH migration stats:" >> $GITHUB_STEP_SUMMARY
-            echo "\t 🧱 Blocks: [$START_BLOCK..$END_BLOCK ] $TOTAL_BLOCKS blocks" >> $GITHUB_STEP_SUMMARY
-            echo "\t ⏱  Total time (ms): [$TS_START_BLOCK..$TS_END_BLOCK ] ${TOTAL_TIME_MS} ms" >> $GITHUB_STEP_SUMMARY
-            echo "\t 📌 Block/ms: ${BLOCK_MS} b/ms" >> $GITHUB_STEP_SUMMARY
+            echo "📋 **AH migration stats**:" >> $GITHUB_STEP_SUMMARY
+            echo " ⚙️ **Args**: $ZOMBIE_BITE_AH_EXTRA_ARGS" >> $GITHUB_STEP_SUMMARY
+            echo " 🧱 **Blocks**: [$START_BLOCK..$END_BLOCK ] $TOTAL_BLOCKS blocks" >> $GITHUB_STEP_SUMMARY
+            echo " ⏱  **Total time (ms)**: [$TS_START_BLOCK..$TS_END_BLOCK ] ${TOTAL_TIME_MS} ms" >> $GITHUB_STEP_SUMMARY
+            echo " 📌 **Block/ms**: ${BLOCK_MS} b/ms" >> $GITHUB_STEP_SUMMARY
           fi
