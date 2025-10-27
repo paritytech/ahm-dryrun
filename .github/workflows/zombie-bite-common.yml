@@ -564,6 +564,8 @@ jobs:
         shell: bash
         env:
           NETWORK: ${{ inputs.network }}
+          AH_EXTRA_ARGS_OVERRIDE: ${{ inputs.ah_extra_args }}
+          RC_EXTRA_ARGS_OVERRIDE: ${{ inputs.rc_extra_args }}
         run: |
           echo "## 🧟 Zombie Bite Summary for ${{ inputs.network }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
