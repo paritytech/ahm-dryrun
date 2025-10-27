@@ -622,5 +622,5 @@ jobs:
             echo " ⚙️ **Args**: $ZOMBIE_BITE_AH_EXTRA_ARGS" >> $GITHUB_STEP_SUMMARY
             echo " 🧱 **Blocks**: [$START_BLOCK..$END_BLOCK ] $TOTAL_BLOCKS blocks" >> $GITHUB_STEP_SUMMARY
             echo " ⏱  **Total time (ms)**: [$TS_START_BLOCK..$TS_END_BLOCK ] ${TOTAL_TIME_MS} ms" >> $GITHUB_STEP_SUMMARY
-            echo " 📌 **Block/ms**: ${BLOCK_MS} b/ms" >> $GITHUB_STEP_SUMMARY
+            echo " 📌 **Ms per block**: ${BLOCK_MS} ms/b" >> $GITHUB_STEP_SUMMARY
           fi
