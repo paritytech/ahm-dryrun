@@ -13,6 +13,7 @@ export interface PreCheckContext {
 export interface PostCheckContext {
     rc_api_after: ApiDecoration<'promise'>;
     ah_api_after: ApiDecoration<'promise'>;
+    network?: string;
 }
 
 export interface TestContext {
