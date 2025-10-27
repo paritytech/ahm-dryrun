@@ -3,9 +3,9 @@ name: AHM flow (all steps)
 on:
   workflow_dispatch:
     inputs:
-      sudo-key:
-        description: "Sudo key to use as override (optional, default is //Alice)"
-        required: false
+      # sudo-key:
+      #   description: "Sudo key to use as override (optional, default is //Alice)"
+      #   required: false
       network:
         description: "Network to use (ALL means Polkadot and Kusama)"
         default: "polkadot"

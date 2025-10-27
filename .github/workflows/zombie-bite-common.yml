@@ -13,10 +13,6 @@ on:
         required: false
         type: string
         default: parity-large-persistent
-      args:
-        required: false
-        type: string
-        default: ""
       rc_runtime_override_url:
         required: false
         type: string
@@ -220,7 +216,7 @@ jobs:
         if: ${{ inputs.pre_db_run_id == '' && inputs.post_db_url == '' }}
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.network }}-pre-migration-db-${{ github.sha }}${{ inputs.args }}
+          name: ${{ inputs.network }}-pre-migration-db-${{ github.sha }}
           path: |
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/bite
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ports.json
@@ -295,7 +291,7 @@ jobs:
         if: steps.wait_for_nodes.outcome == 'failure' || steps.wait_for_network.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.network }}-spawn-failure-logs-${{ github.sha }}${{ inputs.args }}
+          name: ${{ inputs.network }}-spawn-failure-logs-${{ github.sha }}
           path: |
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn/collator/collator.log
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn/alice/alice.log
@@ -381,7 +377,7 @@ jobs:
         if: ${{ inputs.post_db_url == '' }}
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.network }}-post-migration-logs-${{ github.sha }}${{ inputs.args }}
+          name: ${{ inputs.network }}-post-migration-logs-${{ github.sha }}
           path: |
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn-debug/collator/collator.log
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn-debug/alice/alice.log
@@ -392,7 +388,7 @@ jobs:
         if: ${{ inputs.post_db_url == '' }}
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.network }}-post-migration-db-${{ github.sha }}${{ inputs.args }}
+          name: ${{ inputs.network }}-post-migration-db-${{ github.sha }}
           path: |
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/spawn
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/ports.json
@@ -447,7 +443,7 @@ jobs:
       - name: try_runtime_upload_step_snapshots
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.network }}-try-runtime-snaps-${{ github.sha }}${{ inputs.args }}
+          name: ${{ inputs.network }}-try-runtime-snaps-${{ github.sha }}
           path: |
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-rc-pre.snap
             ${{ env.ZOMBIE_BITE_BASE_PATH }}/${{ inputs.network }}-ah-pre.snap
