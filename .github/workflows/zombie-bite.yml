@@ -82,8 +82,8 @@ jobs:
       doppelganger_version: ${{ inputs.doppelganger_version }}
       pre_db_run_id: ${{ inputs.pre_db_run_id }}
       post_db_url: ${{ inputs.post_db_url }}
-      ah_extra_args: ${{ inputs.extra-args }}
-      rc_extra_args: ${{ inputs.extra-args }}
+      ah_extra_args: ${{ inputs.ah-extra-args }}
+      rc_extra_args: ${{ inputs.rc-extra-args }}
 
   zombie_bite_kusama:
     # run by demand
