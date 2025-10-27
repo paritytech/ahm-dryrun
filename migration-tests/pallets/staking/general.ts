@@ -1,8 +1,7 @@
 import '@polkadot/api-augment';
 import { MigrationTest, PostCheckContext, PreCheckContext, PreCheckResult } from '../../types.js';
 import assert from 'assert';
-import type { StorageKey } from '@polkadot/types/primitive';
-import type { Codec } from '@polkadot/types/types';
+import type { ApiDecoration } from '@polkadot/api/types';
 
 export const generalStakingTests: MigrationTest = {
     name: 'general_staking_pallet',
@@ -16,9 +15,9 @@ export const generalStakingTests: MigrationTest = {
         context:    PostCheckContext,
         pre_payload:    PreCheckResult
     ): Promise<void> => {
-        const { rc_api_after, ah_api_after } = context;
+        const { rc_api_after, ah_api_after, network } = context;
 
-        const wantMode = await detectNetwork(rc_api_after) === 'polkadot' ? 'Buffered' : 'Active';
+        const wantMode = network?.toUpperCase() === 'POLKADOT' ? 'Buffered' : 'Active';
         const mode = await rc_api_after.query.stakingAhClient.mode();
         assert(mode.toHuman() === wantMode, `Staking mode should be ${wantMode}`);
 
@@ -44,24 +43,3 @@ export const generalStakingTests: MigrationTest = {
 
     }
 }; 
-
-type Network = "kusama" | "polkadot";
-async function detectNetwork(api: any): Promise<Network> {
-    const chainName = (await api.rpc.system.chain()).toString().toLowerCase();
-
-    // For Asset Hub chains
-    if (chainName.includes("asset-hub-kusama") || chainName.includes("statemine"))
-        return "kusama";
-      if (
-        chainName.includes("asset-hub-polkadot") ||
-        chainName.includes("statemint")
-      )
-        return "polkadot";
-  
-    if (chainName.includes("kusama")) return "kusama";
-    if (chainName.includes("polkadot")) return "polkadot";
-  
-    throw new Error(
-      `Unsupported network: ${chainName}. Only kusama and polkadot are supported.`,
-    );
-  }

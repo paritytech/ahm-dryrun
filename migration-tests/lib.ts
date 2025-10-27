@@ -132,6 +132,7 @@ async function setupTestContext(
   const rc_api = await ApiPromise.create({
     provider: new WsProvider(relay_endpoint),
   });
+  const network = await rc_api.rpc.system.chain();
 
   const rc_migration_start_result = await rc_api.query.rcMigrator.migrationStartBlock();
   const rc_migration_finish_result = await rc_api.query.rcMigrator.migrationEndBlock();  
@@ -178,6 +179,7 @@ async function setupTestContext(
     post: {
       rc_api_after,
       ah_api_after,
+      network: network.toString(),
     },
   };
 
