@@ -192,11 +192,13 @@ jobs:
           set +a
 
           if [[ $AH_EXTRA_ARGS_OVERRIDE != "" ]];then
-            export ZOMBIE_BITE_AH_EXTRA_ARGS=$AH_EXTRA_ARGS_OVERRIDE
+            export ZOMBIE_BITE_AH_EXTRA_ARGS=${AH_EXTRA_ARGS_OVERRIDE}
           fi;
 
           if [[ $RC_EXTRA_ARGS_OVERRIDE != "" ]];then
-            export ZOMBIE_BITE_RC_EXTRA_ARGS=$RC_EXTRA_ARGS_OVERRIDE
+            export ZOMBIE_BITE_RC_EXTRA_ARGS=${RC_EXTRA_ARGS_OVERRIDE}
+          else
+            export ZOMBIE_BITE_RC_EXTRA_ARGS=""
           fi;
 
           export RUST_LOG_RC=$ZOMBIE_BITE_RUST_LOG
@@ -204,6 +206,8 @@ jobs:
 
           echo "RUST_LOG_RC: $RUST_LOG_RC"
           echo "RUST_LOG_COL: $RUST_LOG_COL"
+          echo "ZOMBIE_BITE_RC_EXTRA_ARGS: ${ZOMBIE_BITE_RC_EXTRA_ARGS}"
+          echo "ZOMBIE_BITE_AH_EXTRA_ARGS: ${ZOMBIE_BITE_AH_EXTRA_ARGS}"
 
           # TODO: add ones we support this in zombie-bite
           # --rc-bite-block $RC_BITE_BLOCK
