@@ -40,6 +40,16 @@ on:
         required: false
         type: string
         default: ""
+      ah_extra_args:
+        description: "Override ZOMBIE_BITE_AH_EXTRA_ARGS"
+        type: string
+        required: false
+        default: ""
+      rc_extra_args:
+        description: "Override ZOMBIE_BITE_AH_EXTRA_ARGS"
+        type: string
+        required: false
+        default: ""
 
 
 env:
@@ -143,6 +153,8 @@ jobs:
           SUDO: ${{ inputs.sudo-key }}
           RC_OVERRIDE_URL: ${{ inputs.rc_runtime_override_url }}
           AH_OVERRIDE_URL: ${{ inputs.ah_runtime_override_url }}
+          AH_EXTRA_ARGS_OVERRIDE: ${{ inputs.ah_extra_args }}
+          RC_EXTRA_ARGS_OVERRIDE: ${{ inputs.rc_extra_args }}
         run: |
           export PATH=${AHM_BINS}:$PATH
 
@@ -182,6 +194,14 @@ jobs:
           set -a
           source .env
           set +a
+
+          if [[ $AH_EXTRA_ARGS_OVERRIDE != "" ]];then
+            export ZOMBIE_BITE_AH_EXTRA_ARGS=$AH_EXTRA_ARGS_OVERRIDE
+          fi;
+
+          if [[ $RC_EXTRA_ARGS_OVERRIDE != "" ]];then
+            export ZOMBIE_BITE_RC_EXTRA_ARGS=$RC_EXTRA_ARGS_OVERRIDE
+          fi;
 
           export RUST_LOG_RC=$ZOMBIE_BITE_RUST_LOG
           export RUST_LOG_COL=$ZOMBIE_BITE_RUST_LOG_COL
@@ -590,6 +610,16 @@ jobs:
             source .env
             set +a
 
+            if [[ $AH_EXTRA_ARGS_OVERRIDE != "" ]];then
+              export ZOMBIE_BITE_AH_EXTRA_ARGS=$AH_EXTRA_ARGS_OVERRIDE
+            fi;
+
+            if [[ $RC_EXTRA_ARGS_OVERRIDE != "" ]];then
+              export ZOMBIE_BITE_RC_EXTRA_ARGS=$RC_EXTRA_ARGS_OVERRIDE
+            else
+              export ZOMBIE_BITE_RC_EXTRA_ARGS=""
+            fi;
+
             COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
             ENDPOINT="http://localhost:${COL_PORT}"
 
@@ -619,8 +649,9 @@ jobs:
             TOTAL_TIME_MS=$((TS_END_BLOCK-TS_START_BLOCK))
             BLOCK_MS=$((TOTAL_TIME_MS/TOTAL_BLOCKS))
             echo "📋 **AH migration stats**:" >> $GITHUB_STEP_SUMMARY
-            echo " ⚙️ **Args**: $ZOMBIE_BITE_AH_EXTRA_ARGS" >> $GITHUB_STEP_SUMMARY
+            echo " ⚙️ **AH Args**: $ZOMBIE_BITE_AH_EXTRA_ARGS" >> $GITHUB_STEP_SUMMARY
+            echo " ⚙️ **RC Args**: $ZOMBIE_BITE_RC_EXTRA_ARGS" >> $GITHUB_STEP_SUMMARY
             echo " 🧱 **AH Blocks**: [$START_BLOCK..$END_BLOCK ] $TOTAL_BLOCKS blocks" >> $GITHUB_STEP_SUMMARY
-            echo " ⏱  **Total time (ms)**: [$TS_START_BLOCK..$TS_END_BLOCK ] ${TOTAL_TIME_MS} ms" >> $GITHUB_STEP_SUMMARY
-            echo " 📌 **AH Ms per block**: ${BLOCK_MS} ms/b" >> $GITHUB_STEP_SUMMARY
+            echo " ⏱  **AH Total time (ms)**: [$TS_START_BLOCK..$TS_END_BLOCK ] ${TOTAL_TIME_MS} ms" >> $GITHUB_STEP_SUMMARY
+            echo " 📌 **AH average time per block **: ${BLOCK_MS} ms/b" >> $GITHUB_STEP_SUMMARY
           fi
