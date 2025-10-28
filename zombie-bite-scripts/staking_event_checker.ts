@@ -3,10 +3,6 @@ import { ApiPromise, WsProvider } from "@polkadot/api";
 import fs from "fs";
 import { logger } from "../shared/logger.js";
 
-// ============================================================================
-// Type Definitions
-// ============================================================================
-
 type Network = "kusama" | "polkadot";
 
 type Phase = "Snapshot" | "Signed" | "SignedValidation" | "Unsigned" | "Done" | "Export" | "Off" | "Waiting";
@@ -145,14 +141,12 @@ function processAHEvent(state: EventProcessorState, event: EventRecord, network:
     }
   }
 
-  // PhaseTransition - phase changes
   if (event.section === "multiBlockElection" && event.method === "PhaseTransitioned") {
     const newPhase = extractPhaseName(event.data.to);
     
-    // Only transition if phase is in expected sequence
-    const phaseOrder = ["Snapshot", "Signed", "SignedValidation", "Unsigned", "Done", "Export", "Off"];
-    const currentIndex = phaseOrder.indexOf(ah.phase);
-    const newIndex = phaseOrder.indexOf(newPhase);
+    const expectedPhaseOrder = ["Snapshot", "Signed", "SignedValidation", "Unsigned", "Done", "Export", "Off"];
+    const currentIndex = expectedPhaseOrder.indexOf(ah.phase);
+    const newIndex = expectedPhaseOrder.indexOf(newPhase);
 
     if (newIndex > currentIndex) {
       ah.phase = newPhase as Phase;
@@ -160,7 +154,6 @@ function processAHEvent(state: EventProcessorState, event: EventRecord, network:
     }
   }
 
-  // Signed phase events
   if (event.section === "multiBlockElectionSigned" && event.method === "Registered") {
     ah.signedRegisteredCount++;
     logger.debug(`✓ Score registered (${ah.signedRegisteredCount}) at block ${event.blockNumber}`);
@@ -180,7 +173,6 @@ function processAHEvent(state: EventProcessorState, event: EventRecord, network:
     logger.info(`💰 Miner rewarded at block ${event.blockNumber}: ${event.data.field_2}`);
   }
 
-  // SignedValidation phase events
   if (event.section === "multiBlockElectionVerifier" && event.method === "Verified") {
     ah.verifierVerifiedCount++;
     logger.debug(`✓ Page verified (${ah.verifierVerifiedCount}/${ah.signedStoredPages.length}) at block ${event.blockNumber}`);
@@ -191,19 +183,16 @@ function processAHEvent(state: EventProcessorState, event: EventRecord, network:
     logger.info(`✓ Solution queued at block ${event.blockNumber}`);
   }
 
-  // Export phase events
   if (event.section === "staking" && event.method === "PagedElectionProceeded") {
     ah.pagedElectionProceededCount++;
     logger.debug(`✓ Page exported (${ah.pagedElectionProceededCount}) at block ${event.blockNumber}`);
   }
 
-  // EraPaid
   if (event.section === "staking" && event.method === "EraPaid") {
     ah.eraPaid = true;
     logger.info(`💰 Era paid: era ${event.data.eraIndex}, payout ${event.data.validatorPayout} at block ${event.blockNumber}`);
   }
 
-  // SessionReportReceived
   if (event.section === "stakingRcClient" && event.method === "SessionReportReceived") {
     if (event.data.activationTimestamp) {
       ah.sessionReportReceived = true;
@@ -217,14 +206,12 @@ function processAHEvent(state: EventProcessorState, event: EventRecord, network:
 function processRCEvent(state: EventProcessorState, event: EventRecord): void {
   const rc = state.rc;
 
-  // ValidatorSetReceived
   if (event.section === "stakingAhClient" && event.method === "ValidatorSetReceived") {
     rc.validatorSetReceived = true;
     rc.lastValidatorSetBlock = event.blockNumber;
     logger.info(`✓ Validator set received on RC at block ${event.blockNumber}`);
   }
 
-  // SessionNewSession
   if (event.section === "session" && event.method === "NewSession") {
     rc.sessionNewSessionCount++;
     
@@ -235,58 +222,6 @@ function processRCEvent(state: EventProcessorState, event: EventRecord): void {
 
   rc.lastBlockNumber = event.blockNumber;
 }
-
-// ============================================================================
-// Validation Functions
-// ============================================================================
-
-async function validateAndReport(state: EventProcessorState, network: Network): Promise<void> {
-  const ah = state.ah;
-  const rc = state.rc;
-
-  // Validate that era start was detected
-  if (!state.started) {
-    return; // Still waiting for era start
-  }
-
-  // Validate phase progression
-  const expectedPageCount = network === "kusama" ? 4 : 8;
-
-  // Log validation state every 100 blocks
-  const shouldLog = ah.lastBlockNumber % 100 === 0;
-  if (shouldLog) {
-    logger.info("📈 Current validation state:", {
-      phase: ah.phase,
-      signedScores: ah.signedRegisteredCount,
-      storedPages: ah.signedStoredPages.length,
-      verifiedPages: ah.verifierVerifiedCount,
-      exportedPages: ah.pagedElectionProceededCount,
-      validatorSetReceived: rc.validatorSetReceived,
-      newSessions: rc.sessionNewSessionCount,
-    });
-  }
-
-  // Check for completion - all phases reached and EraPaid
-  if (ah.phase === "Off" && ah.eraPaid && rc.validatorSetReceived) {
-    state.completed = true;
-    logger.info("✅ Era validation completed successfully!");
-    logger.info("Final summary:", {
-      activeEra: ah.activeEra,
-      plannedEra: ah.plannedEra,
-      phase: ah.phase,
-      signedScores: ah.signedRegisteredCount,
-      storedPages: ah.signedStoredPages,
-      verifiedPages: ah.verifierVerifiedCount,
-      exportedPages: ah.pagedElectionProceededCount,
-      validatorSetReceived: rc.validatorSetReceived,
-      newSessions: rc.sessionNewSessionCount,
-    });
-  }
-}
-
-// ============================================================================
-// Era Event Processor Class
-// ============================================================================
 
 class EraEventProcessor {
   private state: EventProcessorState;
@@ -332,7 +267,7 @@ class EraEventProcessor {
   }
 
   private subscribeToAH(api: ApiPromise): void {
-    const unsubPromise = api.rpc.chain.subscribeNewHeads(async (header) => {
+    const unsubPromise = api.rpc.chain.subscribeFinalizedHeads(async (header) => {
       const blockNumber = header.number.toNumber();
 
       if (blockNumber <= this.ahLastBlockNumber) return;
@@ -347,7 +282,7 @@ class EraEventProcessor {
   }
 
   private subscribeToRC(api: ApiPromise): void {
-    const unsubPromise = api.rpc.chain.subscribeNewHeads(async (header) => {
+    const unsubPromise = api.rpc.chain.subscribeFinalizedHeads(async (header) => {
       const blockNumber = header.number.toNumber();
 
       if (blockNumber <= this.rcLastBlockNumber) return;
@@ -489,6 +424,50 @@ const getEndpoints = (base_path: string) => {
       return keys.length > 0 ? keys[0] : "Unknown";
     }
     return "Unknown";
+  }
+
+  async function validateAndReport(state: EventProcessorState, network: Network): Promise<void> {
+    const ah = state.ah;
+    const rc = state.rc;
+  
+    // Validate that era start was detected
+    if (!state.started) {
+      return; // Still waiting for era start
+    }
+  
+    // Validate phase progression
+    const expectedPageCount = network === "kusama" ? 4 : 8;
+  
+    // Log validation state every 100 blocks
+    const shouldLog = ah.lastBlockNumber % 100 === 0;
+    if (shouldLog) {
+      logger.info("📈 Current validation state:", {
+        phase: ah.phase,
+        signedScores: ah.signedRegisteredCount,
+        storedPages: ah.signedStoredPages.length,
+        verifiedPages: ah.verifierVerifiedCount,
+        exportedPages: ah.pagedElectionProceededCount,
+        validatorSetReceived: rc.validatorSetReceived,
+        newSessions: rc.sessionNewSessionCount,
+      });
+    }
+  
+    // Check for completion - all phases reached and EraPaid
+    if (ah.phase === "Off" && ah.eraPaid && rc.validatorSetReceived) {
+      state.completed = true;
+      logger.info("✅ Era validation completed successfully!");
+      logger.info("Final summary:", {
+        activeEra: ah.activeEra,
+        plannedEra: ah.plannedEra,
+        phase: ah.phase,
+        signedScores: ah.signedRegisteredCount,
+        storedPages: ah.signedStoredPages,
+        verifiedPages: ah.verifierVerifiedCount,
+        exportedPages: ah.pagedElectionProceededCount,
+        validatorSetReceived: rc.validatorSetReceived,
+        newSessions: rc.sessionNewSessionCount,
+      });
+    }
   }
 
 main();
