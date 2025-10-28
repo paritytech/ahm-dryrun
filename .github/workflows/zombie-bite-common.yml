@@ -199,6 +199,15 @@ jobs:
             export ZOMBIE_BITE_RC_EXTRA_ARGS=${RC_EXTRA_ARGS_OVERRIDE}
           fi;
 
+          # ensure no empty extra-args
+          if [[ $ZOMBIE_BITE_RC_EXTRA_ARGS == "" ]]; then
+            unset ZOMBIE_BITE_RC_EXTRA_ARGS
+          fi;
+
+          if [[ $ZOMBIE_BITE_AH_EXTRA_ARGS == "" ]]; then
+            unset ZOMBIE_BITE_AH_EXTRA_ARGS
+          fi;
+
           export RUST_LOG_RC=$ZOMBIE_BITE_RUST_LOG
           export RUST_LOG_COL=$ZOMBIE_BITE_RUST_LOG_COL
 
