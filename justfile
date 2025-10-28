@@ -42,6 +42,10 @@ install-zombie-bite:
 install-try-runtime:
     cargo install --git https://github.com/paritytech/try-runtime-cli --locked
 
+# Install `pdu` binary in your system
+install-pdu:
+    cargo install polkadot-du --locked
+
 # ------------------------- BUILDING RUNTIMES -------------------
 
 # only run once, per the runtime that you want to test.
