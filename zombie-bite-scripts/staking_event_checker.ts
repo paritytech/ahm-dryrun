@@ -430,15 +430,13 @@ const getEndpoints = (base_path: string) => {
     const ah = state.ah;
     const rc = state.rc;
   
-    // Validate that era start was detected
     if (!state.started) {
-      return; // Still waiting for era start
+      return;
     }
   
-    // Validate phase progression
+    // TODO: Validate phase progression
     const expectedPageCount = network === "kusama" ? 4 : 8;
   
-    // Log validation state every 100 blocks
     const shouldLog = ah.lastBlockNumber % 100 === 0;
     if (shouldLog) {
       logger.info("📈 Current validation state:", {
