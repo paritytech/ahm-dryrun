@@ -197,8 +197,6 @@ jobs:
 
           if [[ $RC_EXTRA_ARGS_OVERRIDE != "" ]];then
             export ZOMBIE_BITE_RC_EXTRA_ARGS=${RC_EXTRA_ARGS_OVERRIDE}
-          else
-            export ZOMBIE_BITE_RC_EXTRA_ARGS=""
           fi;
 
           export RUST_LOG_RC=$ZOMBIE_BITE_RUST_LOG
