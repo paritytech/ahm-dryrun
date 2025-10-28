@@ -78,7 +78,7 @@ jobs:
       sudo-key: ${{ inputs.sudo-key }}
       rc_runtime_override_url: ${{ inputs.rc_runtime_override_url }}
       ah_runtime_override_url: ${{ inputs.ah_runtime_override_url }}
-      runner: ${{ inputs.runner }}
+      runner: ${{ inputs.runner || 'parity-large-persistent-test'}}
       doppelganger_version: ${{ inputs.doppelganger_version }}
       pre_db_run_id: ${{ inputs.pre_db_run_id }}
       post_db_url: ${{ inputs.post_db_url }}
