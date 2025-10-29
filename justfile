@@ -152,7 +152,7 @@ short-e2e-tests NETWORK:
     test_results=""
     
     echo "=========================================="
-    echo "🚀 Running critical tests for PAH"
+    echo "🚀 Running PET test shortlist for PAH"
     echo "=========================================="
 
     declare -A critical_tests
