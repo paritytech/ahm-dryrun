@@ -97,7 +97,7 @@ e2e-tests NETWORK:
     fi
 
     # Load shared E2E environment setup (loads .env, validates vars, installs deps)
-    source .setup-e2e-env.sh
+    source scripts/setup-e2e-env.sh
     setup_e2e_env "{{ NETWORK }}"
 
     # Run only Asset Hub E2E tests
@@ -139,7 +139,7 @@ short-e2e-tests NETWORK:
     fi
     
     # Load shared E2E environment setup (loads .env, validates vars, installs deps)
-    source .setup-e2e-env.sh
+    source scripts/setup-e2e-env.sh
     setup_e2e_env "{{ NETWORK }}"
     
     # Set up interrupt handler to exit on `CTRL^C` without starting the next set of tests
@@ -147,14 +147,14 @@ short-e2e-tests NETWORK:
     # orphaned processes running.
     # `exit 130` is the standard signal for `SIGINT` in bash.
     trap 'echo -e "\nInterrupted. Killing yarn processes and exiting..."; pkill -P $$; exit 130' INT
-    
+
     failed_count=0
     test_results=""
     
     echo "=========================================="
     echo "🚀 Running critical tests for PAH"
     echo "=========================================="
-    
+
     declare -A critical_tests
     critical_tests["assetHub${NETWORK_CAPITALIZED}.staking"]="lifecycle"
     critical_tests["assetHub${NETWORK_CAPITALIZED}.accounts"]="transfer_allow_death|transfer_keep_alive|transfer_all"
@@ -174,6 +174,79 @@ short-e2e-tests NETWORK:
     # Print results and failure count
     echo -e "$test_results"
     echo "Total failed tests: $failed_count"
-    
+
+    # Exit with failed count as exit code
+    exit $failed_count
+
+e2e-tests-staged NETWORK:
+    #!/usr/bin/env bash
+    set -e
+
+    # Validate NETWORK argument
+    if [[ "{{ NETWORK }}" != "polkadot" ]]; then
+        echo "Error: NETWORK must be polkadot"
+        exit 1
+    fi
+
+    # Load shared E2E environment setup (loads .env, validates vars, installs deps)
+    source scripts/setup-e2e-env.sh
+    setup_e2e_env "{{ NETWORK }}"
+
+    # Set up interrupt handler to exit on `CTRL^C` without starting the next set of tests
+    trap 'echo -e "\nInterrupted. Killing yarn processes and exiting..."; pkill -P $$; exit 130' INT
+
+    failed_count=0
+    test_results=""
+
+    # Define stages: name:::prefix:::modules:::pattern
+    stages=(
+        "Essential Tests:::assetHub${NETWORK_CAPITALIZED}:::staking accounts nominationPools scheduler:::lifecycle|transfer_allow_death|transfer_keep_alive|transfer_all|scheduling a call is possible"
+        "More Account Tests, Remainder of (Staking + Nomination Pools):::assetHub${NETWORK_CAPITALIZED}:::accounts staking nominationPools:::^(?!.*(transfer_allow_death|transfer_keep_alive|transfer_all|liquidity|lifecycle))"
+        "Governance, Vesting, Multisig, Proxy, Remaining Scheduler Tests, Bounties & Child Bounties:::assetHub${NETWORK_CAPITALIZED}:::governance vesting multisig proxy scheduler bounties childBounties:::^(?!.*(scheduling a call is possible))"
+        "Remaining PAH Accounts tests:::assetHub${NETWORK_CAPITALIZED}:::accounts:::liquidity"
+        "Polkadot Relay E2E Tests:::packages/polkadot/src/{{ NETWORK }}:::accounts proxy multisig:::"
+    )
+
+    # Run all stages, from first to last, beginning the next stage only after the last test of the previous stage has
+    # completed.
+    # Stages are done sequentially, but there is intra-stage concurrency.
+    stage_num=1
+    for stage_def in "${stages[@]}"; do
+        stage_name="${stage_def%%:::*}"
+        rest="${stage_def#*:::}"
+        prefix="${rest%%:::*}"
+        rest="${rest#*:::}"
+        modules="${rest%%:::*}"
+        pattern="${rest#*:::}"
+
+        echo "=========================================="
+        echo "🚀 STAGE ${stage_num}: ${stage_name}"
+        echo "=========================================="
+
+        # Build test command with all modules
+        modules_array=($modules)
+        test_args=""
+        for mod in "${modules_array[@]}"; do
+            test_args="${test_args} ${prefix}.${mod}"
+        done
+
+        echo "Running:${test_args} -t '$pattern'"
+        if ! yarn test ${test_args} -t "$pattern" --run -u; then
+            failed_count=$((failed_count + 1))
+            test_results="${test_results}❌ Stage ${stage_num}: ${stage_name}\n"
+        else
+            test_results="${test_results}✅ Stage ${stage_num}: ${stage_name}\n"
+        fi
+
+        stage_num=$((stage_num + 1))
+    done
+
+    # Print final results
+    echo "=========================================="
+    echo "🏁 ALL STAGES COMPLETE"
+    echo "=========================================="
+    echo -e "$test_results"
+    echo "Total failed tests: $failed_count"
+
     # Exit with failed count as exit code
     exit $failed_count
