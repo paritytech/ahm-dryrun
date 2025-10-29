@@ -42,7 +42,7 @@ on:
         required: false
         default: ""
       rc_extra_args:
-        description: "Override ZOMBIE_BITE_AH_EXTRA_ARGS"
+        description: "Override ZOMBIE_BITE_RC_EXTRA_ARGS"
         type: string
         required: false
         default: ""
