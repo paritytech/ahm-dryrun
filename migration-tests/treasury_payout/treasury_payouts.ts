@@ -39,8 +39,8 @@ async function testTreasuryPayouts(networkName: 'Kusama' | 'Polkadot', config: N
     });
 
     const relayChain = networkName === 'Kusama' 
-        ? (networks as any).kusama 
-        : (networks as any).polkadot;
+        ? (networks as any).Kusama 
+        : (networks as any).Polkadot;
     const assetHub = networkName === 'Kusama' 
         ? (networks as any).assetHubKusama 
         : (networks as any).assetHubPolkadot;
