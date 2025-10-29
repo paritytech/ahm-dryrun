@@ -96,43 +96,13 @@ e2e-tests NETWORK:
         exit 1
     fi
 
-    # Check required environment variables in PET's .env file
-    NETWORK_UPPER="{{ NETWORK }}"
-    NETWORK_UPPER=${NETWORK_UPPER^^}
-    ENDPOINT_VAR="ASSETHUB${NETWORK_UPPER}_ENDPOINT"
-    BLOCK_VAR="ASSETHUB${NETWORK_UPPER}_BLOCK_NUMBER"
-
-    # Load PET's .env file if it exists.
-    # If not, log that fact, and run with PET's default. This will cause meaningless test failures if run on an
-    # umigrated network, due to the absence of required pallets.
-    if [[ -f "${PET_PATH}/.env" ]]; then
-        source "${PET_PATH}/.env"
-    fi
-
-    if [[ -z "${!ENDPOINT_VAR}" ]]; then
-        echo "Warning: ${ENDPOINT_VAR} environment variable is not set in ${PET_PATH}/.env"
-        echo "Running with default PET endpoint for network {{ NETWORK }} (check PET source code)"
-    fi
-
-    if [[ -z "${!BLOCK_VAR}" ]]; then
-        echo "Warning: ${BLOCK_VAR} environment variable is not set in ${PET_PATH}/.env"
-        echo "Running with default block number for network {{ NETWORK }} (check PET source code)"
-    fi
-
-    echo "Running tests with:"
-    echo "  ${ENDPOINT_VAR}=${!ENDPOINT_VAR}"
-    echo "  ${BLOCK_VAR}=${!BLOCK_VAR}"
-
-    cd polkadot-ecosystem-tests
-
-    # Install dependencies
-    yarn install
+    # Load shared E2E environment setup (loads .env, validates vars, installs deps)
+    source .setup-e2e-env.sh
+    setup_e2e_env "{{ NETWORK }}"
 
     # Run only Asset Hub E2E tests
     failed_count=0
     test_results=""
-    NETWORK_CAPITALIZED="{{ NETWORK }}"
-    NETWORK_CAPITALIZED=${NETWORK_CAPITALIZED^}
     find packages -name "*assetHub${NETWORK_CAPITALIZED}*e2e*.test.ts" -type f > /tmp/test_list.txt
 
     # Set up interrupt handler to exit on `CTRL^C` without starting the next set of tests
@@ -168,37 +138,9 @@ short-e2e-tests NETWORK:
         exit 1
     fi
     
-    # Check required environment variables in PET's .env file
-    NETWORK_UPPER="{{ NETWORK }}"
-    NETWORK_UPPER=${NETWORK_UPPER^^}
-    ENDPOINT_VAR="ASSETHUB${NETWORK_UPPER}_ENDPOINT"
-    BLOCK_VAR="ASSETHUB${NETWORK_UPPER}_BLOCK_NUMBER"
-    
-    # Load PET's .env file if it exists.
-    # If not, log that fact, and run with PET's default. This will cause meaningless test failures if run on an
-    # umigrated network, due to the absence of required pallets.
-    if [[ -f "${PET_PATH}/.env" ]]; then
-        source "${PET_PATH}/.env"
-    fi
-    
-    if [[ -z "${!ENDPOINT_VAR}" ]]; then
-        echo "Warning: ${ENDPOINT_VAR} environment variable is not set in ${PET_PATH}/.env"
-        echo "Running with default PET endpoint for network {{ NETWORK }} (check PET source code)"
-    fi
-    
-    if [[ -z "${!BLOCK_VAR}" ]]; then
-        echo "Warning: ${BLOCK_VAR} environment variable is not set in ${PET_PATH}/.env"
-        echo "Running with default block number for network {{ NETWORK }} (check PET source code)"
-    fi
-    
-    echo "Running tests with:"
-    echo "  ${ENDPOINT_VAR}=${!ENDPOINT_VAR}"
-    echo "  ${BLOCK_VAR}=${!BLOCK_VAR}"
-    
-    cd polkadot-ecosystem-tests
-    
-    # Install dependencies
-    yarn install
+    # Load shared E2E environment setup (loads .env, validates vars, installs deps)
+    source .setup-e2e-env.sh
+    setup_e2e_env "{{ NETWORK }}"
     
     # Set up interrupt handler to exit on `CTRL^C` without starting the next set of tests
     # `pkill -P $$` kills all descendant processes which were spawned by the current process, to avoid leaving
@@ -206,19 +148,17 @@ short-e2e-tests NETWORK:
     # `exit 130` is the standard signal for `SIGINT` in bash.
     trap 'echo -e "\nInterrupted. Killing yarn processes and exiting..."; pkill -P $$; exit 130' INT
     
-    # Run critical tests first
     failed_count=0
     test_results=""
-    NETWORK_CAPITALIZED="{{ NETWORK }}"
-    NETWORK_CAPITALIZED=${NETWORK_CAPITALIZED^}
     
     echo "=========================================="
-    echo "🚀 Running critical tests first for PAH"
+    echo "🚀 Running critical tests for PAH"
     echo "=========================================="
     
     declare -A critical_tests
     critical_tests["assetHub${NETWORK_CAPITALIZED}.staking"]="lifecycle"
-    critical_tests["assetHub${NETWORK_CAPITALIZED}.nominationPools"]="lifecycle"
+    critical_tests["assetHub${NETWORK_CAPITALIZED}.accounts"]="transfer_allow_death|transfer_keep_alive|transfer_all"
+    critical_tests["assetHub${NETWORK_CAPITALIZED}.scheduler"]="scheduling a call is possible"
 
     for test in "${!critical_tests[@]}"; do
         pattern="${critical_tests[$test]}"
