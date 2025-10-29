@@ -148,12 +148,12 @@ rust-test runtime base_path:
       post_migration_checks_only -- --include-ignored --nocapture --test-threads 1
 
 # Run treasury payout tests for a given network
-treasury-payouts network="polkadot":
+treasury-payouts network="Polkadot":
     #!/usr/bin/env bash
     set -ex
 
-    if [[ "{{ network }}" != "kusama" && "{{ network }}" != "polkadot" ]]; then
-        echo "Error: network must be one of: kusama, polkadot"
+    if [[ "{{ network }}" != "Kusama" && "{{ network }}" != "Polkadot" ]]; then
+        echo "Error: network must be one of: Kusama, Polkadot"
         exit 1
     fi
 

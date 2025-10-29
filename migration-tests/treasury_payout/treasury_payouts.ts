@@ -20,10 +20,10 @@ export interface NetworkConfig {
 
 
 /**
- * @param networkName - 'kusama' or 'polkadot'
+ * @param networkName - 'Kusama' or 'Polkadot'
  * @param config - Network configuration with endpoints and ports
  */
-async function testTreasuryPayouts(networkName: 'kusama' | 'polkadot', config: NetworkConfig): Promise<void> {
+async function testTreasuryPayouts(networkName: 'Kusama' | 'Polkadot', config: NetworkConfig): Promise<void> {
     logger.debug(`Starting treasury payouts test on forked ${networkName} network`);
     
     // Setup networks based on configuration
@@ -32,16 +32,16 @@ async function testTreasuryPayouts(networkName: 'kusama' | 'polkadot', config: N
             endpoint: config.relayEndpoint,
             port: config.relayPort,
         },
-        [networkName === 'kusama' ? 'assetHubKusama' : 'assetHubPolkadot']: {
+        [networkName === 'Kusama' ? 'assetHubKusama' : 'assetHubPolkadot']: {
             endpoint: config.assetHubEndpoint,
             port: config.assetHubPort,
         },
     });
 
-    const relayChain = networkName === 'kusama' 
+    const relayChain = networkName === 'Kusama' 
         ? (networks as any).kusama 
         : (networks as any).polkadot;
-    const assetHub = networkName === 'kusama' 
+    const assetHub = networkName === 'Kusama' 
         ? (networks as any).assetHubKusama 
         : (networks as any).assetHubPolkadot;
 
@@ -169,14 +169,14 @@ const kusama = () => {
         assetHubPort: 8009,
     }
 }
-// Note: The test on polkadot will work only after treasury is migrated to asset hub on polkadot.
+// Note: The test on Polkadot will work only after treasury is migrated to asset hub on Polkadot.
 /**
  * Main function to run treasury payout tests
- * @param network - 'kusama' or 'polkadot'
+ * @param network - 'Kusama' or 'Polkadot'
  */
-export async function runTreasuryPayoutTests(network: 'kusama' | 'polkadot'): Promise<void> {
+export async function runTreasuryPayoutTests(network: 'Kusama' | 'Polkadot'): Promise<void> {
     try {
-        const config = network === 'kusama' ? kusama() : polkadot();
+        const config = network === 'Kusama' ? kusama() : polkadot();
         await testTreasuryPayouts(network, config);
         logger.info(`✅ Treasury payout tests completed successfully for ${network}`);
     } catch (error) {

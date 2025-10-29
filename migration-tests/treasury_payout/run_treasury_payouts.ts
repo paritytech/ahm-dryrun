@@ -2,15 +2,15 @@ import { runTreasuryPayoutTests } from './treasury_payouts.js';
 import { logger } from '../../shared/logger.js';
 
 const main = async () => {
-    const network = process.argv[2] || 'polkadot';
+    const network = process.argv[2] || 'Polkadot';
     
-    if (network !== 'kusama' && network !== 'polkadot') {
-        logger.error('Invalid network. Please specify "kusama" or "polkadot"');
+    if (network !== 'Kusama' && network !== 'Polkadot') {
+        logger.error('Invalid network. Please specify "Kusama" or "Polkadot"');
         process.exit(1);
     }
     
     try {
-        await runTreasuryPayoutTests(network as 'kusama' | 'polkadot');
+        await runTreasuryPayoutTests(network as 'Kusama' | 'Polkadot');
         process.exit(0);
     } catch (error) {
         logger.error('❌ Tests failed:', error);
