@@ -2,7 +2,7 @@ import { runTreasuryPayoutTests } from './treasury_payouts.js';
 import { logger } from '../../shared/logger.js';
 
 const main = async () => {
-    const network = process.argv[2] || 'kusama';
+    const network = process.argv[2] || 'polkadot';
     
     if (network !== 'kusama' && network !== 'polkadot') {
         logger.error('Invalid network. Please specify "kusama" or "polkadot"');
