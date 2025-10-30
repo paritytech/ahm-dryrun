@@ -1,4 +1,5 @@
 import { ApiDecoration } from '@polkadot/api/types';
+import { ApiPromise } from '@polkadot/api';
 
 export type PreCheckResult = {
     rc_pre_payload?: any;
@@ -8,6 +9,8 @@ export type PreCheckResult = {
 export interface PreCheckContext {
     rc_api_before: ApiDecoration<'promise'>;
     ah_api_before: ApiDecoration<'promise'>;
+    rc_api_full: ApiPromise;
+    ah_api_full: ApiPromise;
 }
 
 export interface PostCheckContext {

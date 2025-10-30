@@ -178,10 +178,14 @@ async function setupTestContext(
     pre: {
       rc_api_before,
       ah_api_before,
+      rc_api_full: rc_api,
+      ah_api_full: ah_api,
     },
     post: {
       rc_api_after,
       ah_api_after,
+      rc_api_full: rc_api,
+      ah_api_full: ah_api,
       network: network.toString(),
     },
   };
