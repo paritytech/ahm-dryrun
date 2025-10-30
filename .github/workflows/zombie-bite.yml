@@ -60,7 +60,7 @@ on:
         required: false
         default: ""
   schedule:
-    - cron: "0 0 * * *" # Every Day for Polkadot
+    - cron: "0 0,8,16 * * *" # Every 8 hrs for Polkadot
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ inputs.runner }}-${{ inputs.concurrency-suffix}}
