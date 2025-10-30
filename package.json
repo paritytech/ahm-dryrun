@@ -16,7 +16,7 @@
     "find-rc-block-bite": "node dist/zombie-bite-scripts/find_rc_block_bite.js",
     "make-new-snapshot": "node dist/zombie-bite-scripts/make_new_snapshot.js",
     "create-migration-done-file": "node dist/zombie-bite-scripts/create_migration_done_file.js",
-    "staking-event-checker": "node dist/zombie-bite-scripts/staking_event_checker.js",
+    "staking-events-backtest": "node dist/zombie-bite-scripts/staking_events_backtest.js",
     "ahm": "node dist/zombie-bite-scripts/orchestrator.js",
     "prettier": "prettier --write .",
     "clean": "rm -rf dist",

@@ -171,9 +171,8 @@ monitor-snapshots base_path network:
     just ahm _npm-build
     node dist/zombie-bite-scripts/migration_snapshot.js {{ base_path }} {{ network }}
 
-# Run real-time staking era event checker
-# Usage: just zb staking-event-checker base_path runtime
-# Example: just zb staking-event-checker ./pahm Polkadot
-staking-event-checker base_path runtime:
+# Run staking era events back-test
+# Example: `just zb staking-events-backtest Kusama`
+backtest-staking-events runtime:
     just ahm _npm-build
-    npm run staking-event-checker {{ base_path }} {{ runtime }}
+    npm run staking-events-backtest {{ runtime }}
