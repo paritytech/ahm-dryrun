@@ -46,42 +46,22 @@ interface EventProcessorState {
 }
 
 async function main() {
-  const base_path = process.argv[2];
-  const runtime = process.argv[3];
+  const runtime = process.argv[2].toLowerCase();
 
-  if (!base_path) {
-    logger.error("⚠️ No base_path provided. Usage: staking-event-checker <base_path> <runtime>");
+  if (runtime !== "kusama" && runtime !== "polkadot") {
+    logger.error("⚠️ Runtime must be either 'kusama' or 'polkadot', not '${runtime}'");
     process.exit(1);
   }
-
-  if (!runtime) {
-    logger.error("⚠️ No runtime provided. Runtime must be either 'Kusama' or 'Polkadot'. Usage: staking-event-checker <base_path> <runtime>");
-    process.exit(1);
-  }
-
-  if (runtime !== "Kusama" && runtime !== "Polkadot") {
-    logger.error("⚠️ Runtime must be either 'Kusama' or 'Polkadot'");
-    process.exit(1);
-  }
+  
+  const rc_endpoint = 'wss://kusama-rpc.n.dwellir.com';
+  const ah_endpoint = 'wss://kusama-asset-hub-rpc.polkadot.io';
 
   logger.info(`Starting real-time era event validation for ${runtime}...`, {
-    base_path,
     runtime,
   });
 
-  const { rc_endpoint, ah_endpoint } = getEndpoints(base_path);
-
-  logger.info(`Using endpoints:`, {
-    rc_endpoint,
-    ah_endpoint,
-  });
-
   try {
-    await runValidation(
-      rc_endpoint,
-      ah_endpoint,
-      runtime.toLowerCase() as Network
-    );
+    await iterateFromMigrationEnd(rc_endpoint, ah_endpoint, runtime.toLowerCase() as Network);
     logger.info("✅ Real-time era event validation completed successfully");
     process.exit(0);
   } catch (error) {
@@ -110,16 +90,23 @@ async function runValidation(
     network: Network
   ): Promise<void> {
     const processor = new EraEventProcessor(network);
-  
     try {
       await processor.connect(rcEndpoint, ahEndpoint);
       processor.start();
-  
       logger.info("🎯 Waiting for era validation to complete...");
       await processor.waitForCompletion();
     } finally {
       await processor.disconnect();
     }
+  }
+
+async function iterateFromMigrationEnd(
+    rcEndpoint: string,
+    ahEndpoint: string,
+    network: Network,
+  ): Promise<void> {
+    const processor = new EraEventProcessor(network);
+    await processor.iterateFromMigrationEnd(rcEndpoint, ahEndpoint);
   }
 
 class EraEventProcessor {
@@ -156,13 +143,40 @@ class EraEventProcessor {
     logger.info("✅ Connected to both chains");
   }
 
+  async disconnect(): Promise<void> {
+    logger.info("Disconnecting from chains...");
+
+    if (this.ahUnsub) await this.ahUnsub();
+    if (this.rcUnsub) await this.rcUnsub();
+
+    if (this.ahApi) await this.ahApi.disconnect();
+    if (this.rcApi) await this.rcApi.disconnect();
+
+    logger.info("✅ Disconnected from both chains");
+  }
+
   start(): void {
     if (!this.ahApi || !this.rcApi) {
       throw new Error("APIs not connected. Call connect() first.");
     }
 
-    this.subscribeToAH(this.ahApi);
     this.subscribeToRC(this.rcApi);
+    this.subscribeToAH(this.ahApi);
+  }
+
+  private subscribeToRC(api: ApiPromise): void {
+    const unsubPromise = api.rpc.chain.subscribeFinalizedHeads(async (header) => {
+      const blockNumber = header.number.toNumber();
+
+      if (blockNumber <= this.rcLastBlockNumber) return;
+      this.rcLastBlockNumber = blockNumber;
+
+      await this.processRCBlock(api, header.hash, blockNumber);
+    });
+
+    unsubPromise.then((unsub) => {
+      this.rcUnsub = async () => unsub();
+    });
   }
 
   private subscribeToAH(api: ApiPromise): void {
@@ -180,19 +194,61 @@ class EraEventProcessor {
     });
   }
 
-  private subscribeToRC(api: ApiPromise): void {
-    const unsubPromise = api.rpc.chain.subscribeFinalizedHeads(async (header) => {
-      const blockNumber = header.number.toNumber();
+  private async checkCompletion(): Promise<void> {
+    await validateAndReport(this.state, this.network);
+    
+    if (this.state.completed) {
+      this.completionResolve();
+    }
+  }
 
-      if (blockNumber <= this.rcLastBlockNumber) return;
-      this.rcLastBlockNumber = blockNumber;
+  async waitForCompletion(): Promise<void> {
+    await Promise.race([this.completionPromise]);
+  }
 
-      await this.processRCBlock(api, header.hash, blockNumber);
-    });
+  async iterateFromMigrationEnd(
+    rcEndpoint: string,
+    ahEndpoint: string,
+  ): Promise<void> {
+    logger.info(`rcEndPoint: ${rcEndpoint}, ahEndPoint: ${ahEndpoint}`);
 
-    unsubPromise.then((unsub) => {
-      this.rcUnsub = async () => unsub();
-    });
+    await this.connect(rcEndpoint, ahEndpoint);
+      
+    if (!this.ahApi || !this.rcApi) {
+      throw new Error("Failed to connect to APIs");
+    }
+
+    const rcStartBlock = await this.rcApi?.query.rcMigrator.migrationEndBlock();
+    const ahStartBlock = await this.ahApi?.query.ahMigrator.migrationEndBlock();
+    if (rcStartBlock.isEmpty) {
+        throw new Error('Migration end block not found in rcMigrator storage');
+    }
+    if (ahStartBlock.isEmpty) {
+        throw new Error('Migration end block not found in ahMigrator storage');
+    }
+
+    const rc_iteration_start_block = Number(rcStartBlock.toPrimitive());
+    const ah_iteration_start_block = Number(ahStartBlock.toPrimitive());
+    
+    const maxBlocks = 10 * 60 * 60 / 6 // 10 hours in blocks (6 seconds per block) -- should be enough for Kusama
+    const rc_iteration_end_block = rc_iteration_start_block + maxBlocks;
+    const ah_iteration_end_block = ah_iteration_start_block + maxBlocks;
+      
+
+    let i = rc_iteration_start_block;
+    let j = ah_iteration_start_block;
+    logger.info(`Iterating from ${rc_iteration_start_block} to ${rc_iteration_end_block} and ${ah_iteration_start_block} to ${ah_iteration_end_block}`);
+    while (i <= rc_iteration_end_block && j <= ah_iteration_end_block) {         
+      const rcHash = await this.rcApi?.rpc.chain.getBlockHash(i) ?? '';
+      const ahHash = await this.ahApi?.rpc.chain.getBlockHash(j) ?? '';
+      await this.processRCBlock(this.rcApi, rcHash, i);
+      await this.processAHBlock(this.ahApi, ahHash, j);
+      if (i % 200 === 0) {
+        logger.info(`Processed ${i} blocks`);
+      }
+      i++;
+      j++;
+    }
   }
 
   private async processAHBlock(api: ApiPromise, blockHash: any, blockNumber: number): Promise<void> {
@@ -245,30 +301,6 @@ class EraEventProcessor {
 
   private handleRCEvent(event: EventRecord): void {
     processRCEvent(this.state, event);
-  }
-
-  private async checkCompletion(): Promise<void> {
-    await validateAndReport(this.state, this.network);
-    
-    if (this.state.completed) {
-      this.completionResolve();
-    }
-  }
-
-  async waitForCompletion(): Promise<void> {
-    await Promise.race([this.completionPromise]);
-  }
-
-  async disconnect(): Promise<void> {
-    logger.info("Disconnecting from chains...");
-
-    if (this.ahUnsub) await this.ahUnsub();
-    if (this.rcUnsub) await this.rcUnsub();
-
-    if (this.ahApi) await this.ahApi.disconnect();
-    if (this.rcApi) await this.rcApi.disconnect();
-
-    logger.info("✅ Disconnected from both chains");
   }
 }
 
@@ -371,21 +403,6 @@ function processRCEvent(state: EventProcessorState, event: EventRecord): void {
   
     rc.lastBlockNumber = event.blockNumber;
   }
-
-const getEndpoints = (base_path: string) => {
-    let ports = JSON.parse(fs.readFileSync(`${base_path}/ports.json`, "utf-8"));
-  
-    let alice_port = parseInt(ports.alice_port, 10);
-    const rc_endpoint = `ws://localhost:${alice_port}`;
-  
-    let collator_port = parseInt(ports.collator_port, 10);
-    const ah_endpoint = `ws://localhost:${collator_port}`;
-  
-    return {
-      rc_endpoint,
-      ah_endpoint,
-    };
-  };
   
   function createInitialState(): EventProcessorState {
     return {
