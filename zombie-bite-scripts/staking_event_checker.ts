@@ -264,7 +264,7 @@ class EraEventProcessor {
           data: record.event.data.toJSON(),
         };
 
-        this.handleAHEvent(event);
+        processAHEvent(this.state, event, this.network);
       }
 
       await this.checkCompletion();
@@ -286,7 +286,7 @@ class EraEventProcessor {
           data: record.event.data.toJSON(),
         };
 
-        this.handleRCEvent(event);
+        processRCEvent(this.state, event);
       }
 
       await this.checkCompletion();
@@ -295,13 +295,6 @@ class EraEventProcessor {
     }
   }
 
-  private handleAHEvent(event: EventRecord): void {
-    processAHEvent(this.state, event, this.network);
-  }
-
-  private handleRCEvent(event: EventRecord): void {
-    processRCEvent(this.state, event);
-  }
 }
 
 function processAHEvent(state: EventProcessorState, event: EventRecord, network: Network): void {
