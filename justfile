@@ -178,7 +178,7 @@ short-e2e-tests NETWORK:
     # Exit with failed count as exit code
     exit $failed_count
 
-e2e-tests-staged NETWORK:
+staged-e2e-tests NETWORK:
     #!/usr/bin/env bash
     set -e
 
