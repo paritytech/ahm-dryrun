@@ -122,107 +122,6 @@ async function runValidation(
     }
   }
 
-
-function processAHEvent(state: EventProcessorState, event: EventRecord, network: Network): void {
-  const ah = state.ah;
-
-  // SessionRotated - marks era start
-  if (event.section === "staking" && event.method === "SessionRotated") {
-    ah.sessionRotatedCount++;
-    const activeEra = event.data.activeEra;
-    const plannedEra = event.data.plannedEra;
-
-    if (!state.started && activeEra !== undefined && plannedEra === activeEra + 1) {
-      state.started = true;
-      state.eraStartBlock = event.blockNumber;
-      ah.activeEra = activeEra;
-      ah.plannedEra = plannedEra;
-      logger.info(`🎯 Era start detected: active_era=${activeEra}, planned_era=${plannedEra} at block ${event.blockNumber}`);
-    }
-  }
-
-  if (event.section === "multiBlockElection" && event.method === "PhaseTransitioned") {
-    const newPhase = extractPhaseName(event.data.to);
-    
-    const expectedPhaseOrder = ["Snapshot", "Signed", "SignedValidation", "Unsigned", "Done", "Export", "Off"];
-    const currentIndex = expectedPhaseOrder.indexOf(ah.phase);
-    const newIndex = expectedPhaseOrder.indexOf(newPhase);
-
-    if (newIndex > currentIndex) {
-      ah.phase = newPhase as Phase;
-      logger.info(`📊 Phase transition: ${ah.phase} at block ${event.blockNumber}`);
-    }
-  }
-
-  if (event.section === "multiBlockElectionSigned" && event.method === "Registered") {
-    ah.signedRegisteredCount++;
-    logger.debug(`✓ Score registered (${ah.signedRegisteredCount}) at block ${event.blockNumber}`);
-  }
-
-  if (event.section === "multiBlockElectionSigned" && event.method === "Stored") {
-    const pageIndex = event.data.field_2;
-    if (!ah.signedStoredPages.includes(pageIndex)) {
-      ah.signedStoredPages.push(pageIndex);
-      ah.signedStoredPages.sort((a, b) => a - b);
-    }
-    logger.debug(`✓ Page ${pageIndex} stored at block ${event.blockNumber}`);
-  }
-
-  if (event.section === "multiBlockElectionSigned" && event.method === "Rewarded") {
-    ah.signedRewarded = true;
-    logger.info(`💰 Miner rewarded at block ${event.blockNumber}: ${event.data.field_2}`);
-  }
-
-  if (event.section === "multiBlockElectionVerifier" && event.method === "Verified") {
-    ah.verifierVerifiedCount++;
-    logger.debug(`✓ Page verified (${ah.verifierVerifiedCount}/${ah.signedStoredPages.length}) at block ${event.blockNumber}`);
-  }
-
-  if (event.section === "multiBlockElectionVerifier" && event.method === "Queued") {
-    ah.verifierQueued = true;
-    logger.info(`✓ Solution queued at block ${event.blockNumber}`);
-  }
-
-  if (event.section === "staking" && event.method === "PagedElectionProceeded") {
-    ah.pagedElectionProceededCount++;
-    logger.debug(`✓ Page exported (${ah.pagedElectionProceededCount}) at block ${event.blockNumber}`);
-  }
-
-  if (event.section === "staking" && event.method === "EraPaid") {
-    ah.eraPaid = true;
-    logger.info(`💰 Era paid: era ${event.data.eraIndex}, payout ${event.data.validatorPayout} at block ${event.blockNumber}`);
-  }
-
-  if (event.section === "stakingRcClient" && event.method === "SessionReportReceived") {
-    if (event.data.activationTimestamp) {
-      ah.sessionReportReceived = true;
-      logger.info(`✓ Session report with activation timestamp received at block ${event.blockNumber}`);
-    }
-  }
-
-  ah.lastBlockNumber = event.blockNumber;
-}
-
-function processRCEvent(state: EventProcessorState, event: EventRecord): void {
-  const rc = state.rc;
-
-  if (event.section === "stakingAhClient" && event.method === "ValidatorSetReceived") {
-    rc.validatorSetReceived = true;
-    rc.lastValidatorSetBlock = event.blockNumber;
-    logger.info(`✓ Validator set received on RC at block ${event.blockNumber}`);
-  }
-
-  if (event.section === "session" && event.method === "NewSession") {
-    rc.sessionNewSessionCount++;
-    
-    if (rc.validatorSetReceived) {
-      logger.debug(`✓ New session on RC (${rc.sessionNewSessionCount}) at block ${event.blockNumber}`);
-    }
-  }
-
-  rc.lastBlockNumber = event.blockNumber;
-}
-
 class EraEventProcessor {
   private state: EventProcessorState;
   private network: Network;
@@ -372,6 +271,106 @@ class EraEventProcessor {
     logger.info("✅ Disconnected from both chains");
   }
 }
+
+function processAHEvent(state: EventProcessorState, event: EventRecord, network: Network): void {
+    const ah = state.ah;
+  
+    // SessionRotated - marks era start
+    if (event.section === "staking" && event.method === "SessionRotated") {
+      ah.sessionRotatedCount++;
+      const activeEra = event.data.activeEra;
+      const plannedEra = event.data.plannedEra;
+  
+      if (!state.started && activeEra !== undefined && plannedEra === activeEra + 1) {
+        state.started = true;
+        state.eraStartBlock = event.blockNumber;
+        ah.activeEra = activeEra;
+        ah.plannedEra = plannedEra;
+        logger.info(`🎯 Era start detected: active_era=${activeEra}, planned_era=${plannedEra} at block ${event.blockNumber}`);
+      }
+    }
+  
+    if (event.section === "multiBlockElection" && event.method === "PhaseTransitioned") {
+      const newPhase = extractPhaseName(event.data.to);
+      
+      const expectedPhaseOrder = ["Snapshot", "Signed", "SignedValidation", "Unsigned", "Done", "Export", "Off"];
+      const currentIndex = expectedPhaseOrder.indexOf(ah.phase);
+      const newIndex = expectedPhaseOrder.indexOf(newPhase);
+  
+      if (newIndex > currentIndex) {
+        ah.phase = newPhase as Phase;
+        logger.info(`📊 Phase transition: ${ah.phase} at block ${event.blockNumber}`);
+      }
+    }
+  
+    if (event.section === "multiBlockElectionSigned" && event.method === "Registered") {
+      ah.signedRegisteredCount++;
+      logger.debug(`✓ Score registered (${ah.signedRegisteredCount}) at block ${event.blockNumber}`);
+    }
+  
+    if (event.section === "multiBlockElectionSigned" && event.method === "Stored") {
+      const pageIndex = event.data.field_2;
+      if (!ah.signedStoredPages.includes(pageIndex)) {
+        ah.signedStoredPages.push(pageIndex);
+        ah.signedStoredPages.sort((a, b) => a - b);
+      }
+      logger.debug(`✓ Page ${pageIndex} stored at block ${event.blockNumber}`);
+    }
+  
+    if (event.section === "multiBlockElectionSigned" && event.method === "Rewarded") {
+      ah.signedRewarded = true;
+      logger.info(`💰 Miner rewarded at block ${event.blockNumber}: ${event.data.field_2}`);
+    }
+  
+    if (event.section === "multiBlockElectionVerifier" && event.method === "Verified") {
+      ah.verifierVerifiedCount++;
+      logger.debug(`✓ Page verified (${ah.verifierVerifiedCount}/${ah.signedStoredPages.length}) at block ${event.blockNumber}`);
+    }
+  
+    if (event.section === "multiBlockElectionVerifier" && event.method === "Queued") {
+      ah.verifierQueued = true;
+      logger.info(`✓ Solution queued at block ${event.blockNumber}`);
+    }
+  
+    if (event.section === "staking" && event.method === "PagedElectionProceeded") {
+      ah.pagedElectionProceededCount++;
+      logger.debug(`✓ Page exported (${ah.pagedElectionProceededCount}) at block ${event.blockNumber}`);
+    }
+  
+    if (event.section === "staking" && event.method === "EraPaid") {
+      ah.eraPaid = true;
+      logger.info(`💰 Era paid: era ${event.data.eraIndex}, payout ${event.data.validatorPayout} at block ${event.blockNumber}`);
+    }
+  
+    if (event.section === "stakingRcClient" && event.method === "SessionReportReceived") {
+      if (event.data.activationTimestamp) {
+        ah.sessionReportReceived = true;
+        logger.info(`✓ Session report with activation timestamp received at block ${event.blockNumber}`);
+      }
+    }
+  
+    ah.lastBlockNumber = event.blockNumber;
+  }
+
+function processRCEvent(state: EventProcessorState, event: EventRecord): void {
+    const rc = state.rc;
+  
+    if (event.section === "stakingAhClient" && event.method === "ValidatorSetReceived") {
+      rc.validatorSetReceived = true;
+      rc.lastValidatorSetBlock = event.blockNumber;
+      logger.info(`✓ Validator set received on RC at block ${event.blockNumber}`);
+    }
+  
+    if (event.section === "session" && event.method === "NewSession") {
+      rc.sessionNewSessionCount++;
+      
+      if (rc.validatorSetReceived) {
+        logger.debug(`✓ New session on RC (${rc.sessionNewSessionCount}) at block ${event.blockNumber}`);
+      }
+    }
+  
+    rc.lastBlockNumber = event.blockNumber;
+  }
 
 const getEndpoints = (base_path: string) => {
     let ports = JSON.parse(fs.readFileSync(`${base_path}/ports.json`, "utf-8"));
