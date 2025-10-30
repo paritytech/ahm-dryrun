@@ -44,6 +44,12 @@ jobs:
         with:
           node-version: 22
 
+      - name: deps (Ubuntu)
+        if: ${{ runner.environment == 'github-hosted' }}
+        shell: bash
+        run: |
+          sudo apt-get install protobuf-compiler
+
       - name: install_zombie_bite
         shell: bash
         run: |
