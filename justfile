@@ -128,56 +128,6 @@ e2e-tests NETWORK:
     # Exit with failed count as exit code
     exit $failed_count
 
-short-e2e-tests NETWORK:
-    #!/usr/bin/env bash
-    set -e
-    
-    # Validate NETWORK argument
-    if [[ "{{ NETWORK }}" != "polkadot" ]]; then
-        echo "Error: NETWORK must be polkadot"
-        exit 1
-    fi
-    
-    # Load shared E2E environment setup (loads .env, validates vars, installs deps)
-    source scripts/setup-e2e-env.sh
-    setup_e2e_env "{{ NETWORK }}"
-    
-    # Set up interrupt handler to exit on `CTRL^C` without starting the next set of tests
-    # `pkill -P $$` kills all descendant processes which were spawned by the current process, to avoid leaving
-    # orphaned processes running.
-    # `exit 130` is the standard signal for `SIGINT` in bash.
-    trap 'echo -e "\nInterrupted. Killing yarn processes and exiting..."; pkill -P $$; exit 130' INT
-
-    failed_count=0
-    test_results=""
-    
-    echo "=========================================="
-    echo "🚀 Running PET test shortlist for PAH"
-    echo "=========================================="
-
-    declare -A critical_tests
-    critical_tests["assetHub${NETWORK_CAPITALIZED}.staking"]="lifecycle"
-    critical_tests["assetHub${NETWORK_CAPITALIZED}.accounts"]="transfer_allow_death|transfer_keep_alive|transfer_all"
-    critical_tests["assetHub${NETWORK_CAPITALIZED}.scheduler"]="scheduling a call is possible"
-
-    for test in "${!critical_tests[@]}"; do
-        pattern="${critical_tests[$test]}"
-        echo "Running critical test: $test -t '$pattern'"
-        if ! yarn test "$test" -t "$pattern" --run -u; then
-            failed_count=$((failed_count + 1))
-            test_results="${test_results}❌ Test failed: $test -t '$pattern'\n"
-        else
-            test_results="${test_results}✅ Test passed: $test -t '$pattern'\n"
-        fi
-    done
-
-    # Print results and failure count
-    echo -e "$test_results"
-    echo "Total failed tests: $failed_count"
-
-    # Exit with failed count as exit code
-    exit $failed_count
-
 staged-e2e-tests NETWORK STAGE:
     #!/usr/bin/env bash
     set -e
