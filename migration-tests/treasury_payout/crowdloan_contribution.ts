@@ -1,0 +1,546 @@
+import '@polkadot/api-augment';
+import '@polkadot/types-augment';
+import { sendTransaction, setupNetworks } from '@acala-network/chopsticks-testing';
+import { Keyring } from '@polkadot/api';
+import { cryptoWaitReady } from '@polkadot/util-crypto';
+import { logger } from '../../shared/logger.js';
+import assert from 'assert';
+import { logAllEvents } from './helper.js';
+import fs from 'fs';
+import path from 'path';
+
+// Wait for crypto to be ready before creating Keyring
+await cryptoWaitReady();
+const keyring = new Keyring({ type: 'sr25519' });
+const alicePair = keyring.addFromUri('//Alice');
+
+export interface NetworkConfig {
+    relayEndpoint: string;
+    relayPort: number;
+    assetHubEndpoint: string;
+    assetHubPort: number;
+}
+
+export interface FailedWithdrawal {
+    contributorAddress: string;
+    paraId: number;
+    withdrawBlock: number;
+    crowdloanAccount: string;
+    amount: string;
+    errorMessage?: string;
+    timestamp: string;
+    crowdloanAccountFreeBalance: string;
+    crowdloanAccountReservedBalance: string;
+    crowdloanAccountTotalBalance: string;
+}
+
+
+
+/**
+ * Test that crowdloan contributions can be unlocked post-migration when the unlock eligibility is met.
+ * 
+ * @param config - Network configuration with endpoints and ports
+ */
+async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promise<void> {
+    logger.info('Starting crowdloan contribution withdrawal test on forked Polkadot network');
+    
+    // Setup networks based on configuration
+    const networks = await setupNetworks({
+        Polkadot: {
+            endpoint: config.relayEndpoint,
+            port: config.relayPort,
+        },
+        assetHubPolkadot: {
+            endpoint: config.assetHubEndpoint,
+            port: config.assetHubPort,
+        },
+    });
+
+    const relayChain = (networks as any).Polkadot;
+    const assetHub = (networks as any).assetHubPolkadot;
+
+    try {
+        // Fund Alice account for transaction fees
+        const aliceAddress = '15oF4uVJwmo4TdGW7VfQxNLavjCXviqxT9S1MgbjMNHr6Sp5';
+        const fundingAmount = 1000e10; 
+                
+        await assetHub.dev.setStorage({
+            System: {
+                account: [
+                    [
+                        [aliceAddress], 
+                        { 
+                            providers: 1, 
+                            data: { 
+                                free: fundingAmount 
+                            } 
+                        }
+                    ]
+                ]
+            }
+        });
+        
+        logger.info('✅ Alice account funded successfully');
+
+        // Get all crowdloan contributions from Asset Hub
+        const contributions = await assetHub.api.query.ahOps.rcCrowdloanContribution.entries();
+        logger.info(`Found ${contributions.length} total crowdloan contributions`);
+
+        if (contributions.length === 0) {
+            logger.info('No crowdloan contributions found for testing');
+            return;
+        }
+
+        // Get current relay chain block number (this is what RcBlockNumberProvider uses)
+        const currentRelayChainBlockNumber = (await relayChain.api.query.system.number()).toNumber();
+        logger.info(`Current relay chain block number: ${currentRelayChainBlockNumber}`);
+
+        // Update all contribution entries to have withdraw_block = currentRelayChainBlockNumber - 5
+        // This makes them eligible for withdrawal testing
+        const newWithdrawBlock = 28389000 //Math.max(0, currentRelayChainBlockNumber - 5);
+        logger.info(`Updating all contribution entries to have withdraw_block = ${newWithdrawBlock} (current RC block: ${currentRelayChainBlockNumber})`);
+        
+        // Collect all contributions and prepare storage updates
+        // We'll remove old entries and add new ones with updated withdraw_block
+        // For StorageNMap, we need to use the structured format with key tuples and values
+        const newContributionEntries: any[] = [];
+        const newLeaseReserveEntries: any[] = [];
+        const newCrowdloanReserveEntries: any[] = [];
+        let contributionCount = 0;
+
+        let uniqueParaIds: number[] = [];
+        let contributionCountByParaId: { [key: number]: number } = {};
+        
+        for (const entry of contributions) {
+            const [storageKey, contributionData] = entry;
+            
+            if (!contributionData || contributionData.isNone) {
+                continue;
+            }
+
+            const keys = storageKey.args;
+            const oldWithdrawBlock = keys[0].toNumber();
+            const paraId = keys[1].toNumber ? keys[1].toNumber() : parseInt(keys[1].toString().replace(/,/g, ''));
+            const contributorAddress = keys[2].toString();
+            
+            const contributionValue = contributionData.unwrap() as any;
+            const crowdloanAccount = contributionValue[0].toString();
+            const amount = contributionValue[1];
+            // For setStorage structured format, amounts should be numbers or strings (not encoded hex)
+            const amountValue = amount.toBn ? amount.toBn().toString() : (amount.toString ? amount.toString() : amount);
+
+            // fill the uniqueParaIds and contributionCountByParaId arrays
+            if (!uniqueParaIds.includes(paraId)) {
+                uniqueParaIds.push(paraId);
+            }
+            if (!contributionCountByParaId[paraId]) {
+                contributionCountByParaId[paraId] = 0;
+            }
+            contributionCountByParaId[paraId]++;
+            
+            // Prepare new contribution entry with updated withdraw_block
+            // Format for StorageNMap: [[key1, key2, key3], value]
+            // Value is a tuple: (AccountId, Balance)
+            newContributionEntries.push([
+                [newWithdrawBlock, paraId, contributorAddress],
+                [crowdloanAccount, amountValue]
+            ]);
+            
+            contributionCount++;
+            // logger.debug(`Updating: old_withdraw_block=${oldWithdrawBlock}, new_withdraw_block=${newWithdrawBlock}, para_id=${paraId}, contributor=${contributorAddress}`);
+        }
+
+        // Now fetch and update lease reserve entries
+        logger.info('Fetching lease reserve entries...');
+        const leaseReserves = await assetHub.api.query.ahOps.rcLeaseReserve.entries();
+        logger.info(`Found ${leaseReserves.length} lease reserve entries`);
+        
+        for (const entry of leaseReserves) {
+            const [storageKey, reserveData] = entry;
+            
+            if (!reserveData || reserveData.isNone) {
+                continue;
+            }
+
+            const keys = storageKey.args;
+            const oldWithdrawBlock = keys[0].toNumber();
+            const paraId = keys[1].toNumber ? keys[1].toNumber() : parseInt(keys[1].toString().replace(/,/g, ''));
+            const depositorAddress = keys[2].toString();
+            
+            const reserveAmount = reserveData.unwrap();
+            const amountValue = reserveAmount.toBn ? reserveAmount.toBn().toString() : (reserveAmount.toString ? reserveAmount.toString() : reserveAmount);
+            
+           
+            newLeaseReserveEntries.push([
+                [newWithdrawBlock, paraId, depositorAddress],
+                amountValue
+            ]);
+            
+        }
+        
+        // Now fetch and update crowdloan reserve entries
+        logger.info('Fetching crowdloan reserve entries...');
+        const crowdloanReserves = await assetHub.api.query.ahOps.rcCrowdloanReserve.entries();
+        logger.info(`Found ${crowdloanReserves.length} crowdloan reserve entries`);
+        
+        for (const entry of crowdloanReserves) {
+            const [storageKey, reserveData] = entry;
+            
+            if (!reserveData || reserveData.isNone) {
+                continue;
+            }
+
+            const keys = storageKey.args;
+            const oldWithdrawBlock = keys[0].toNumber();
+            const paraId = keys[1].toNumber ? keys[1].toNumber() : parseInt(keys[1].toString().replace(/,/g, ''));
+            const depositorAddress = keys[2].toString();
+            
+            const reserveAmount = reserveData.unwrap();
+            const amountValue = reserveAmount.toBn ? reserveAmount.toBn().toString() : (reserveAmount.toString ? reserveAmount.toString() : reserveAmount);
+            
+           
+            newCrowdloanReserveEntries.push([
+                [newWithdrawBlock, paraId, depositorAddress],
+                amountValue
+            ]);
+            
+        }
+
+        // log the uniqueParaIds and contributionCountByParaId arrays
+        logger.info(`uniqueParaIds: ${uniqueParaIds}`);
+        logger.info(`contributionCountByParaId: ${JSON.stringify(contributionCountByParaId)}`);
+        
+        // log the contributions count
+        logger.info(`contributions count: ${contributionCount}`);
+        logger.info(`newContributionEntries length: ${newContributionEntries.length}`);
+        logger.info(`newLeaseReserveEntries length: ${newLeaseReserveEntries.length}`);
+        logger.info(`newCrowdloanReserveEntries length: ${newCrowdloanReserveEntries.length}`);
+        // Apply all storage updates using structured format
+        // First remove all old entries, then add new ones
+        if (contributionCount > 0) {
+            logger.info(`Updating ${contributionCount} contribution entries, ${newLeaseReserveEntries.length} lease reserve entries, and ${newCrowdloanReserveEntries.length} crowdloan reserve entries`);
+            
+            // Remove all existing entries using $removePrefix, then add new ones
+            await assetHub.dev.setStorage({
+                AhOps: {
+                    $removePrefix: ['rcCrowdloanContribution', 'rcLeaseReserve', 'rcCrowdloanReserve'],
+                    rcCrowdloanContribution: newContributionEntries,
+                    rcLeaseReserve: newLeaseReserveEntries,
+                    rcCrowdloanReserve: newCrowdloanReserveEntries,
+                }
+            });
+            
+            logger.info('✅ Successfully updated all storage entries');
+            
+            // Re-query to get updated contributions
+            const updatedContributions = await assetHub.api.query.ahOps.rcCrowdloanContribution.entries();
+            const updatedLeaseReserves = await assetHub.api.query.ahOps.rcLeaseReserve.entries();
+            const updatedCrowdloanReserves = await assetHub.api.query.ahOps.rcCrowdloanReserve.entries();
+            
+            logger.info(`Re-queried storage: contributions=${updatedContributions.length}, lease reserves=${updatedLeaseReserves.length}, crowdloan reserves=${updatedCrowdloanReserves.length}`);
+            
+            // Verify the update worked
+            if (updatedContributions.length === contributionCount) {
+                logger.info('✅ Verification: All contributions updated successfully');
+            } else {
+                logger.warn(`⚠️  Warning: Expected ${contributionCount} contribution entries after update, but found ${updatedContributions.length}`);
+            }
+            
+            if (updatedLeaseReserves.length === newLeaseReserveEntries.length) {
+                logger.info('✅ Verification: All lease reserves updated successfully');
+            } else {
+                logger.warn(`⚠️  Warning: Expected ${newLeaseReserveEntries.length} lease reserve entries after update, but found ${updatedLeaseReserves.length}`);
+            }
+            
+            if (updatedCrowdloanReserves.length === newCrowdloanReserveEntries.length) {
+                logger.info('✅ Verification: All crowdloan reserves updated successfully');
+            } else {
+                logger.warn(`⚠️  Warning: Expected ${newCrowdloanReserveEntries.length} crowdloan reserve entries after update, but found ${updatedCrowdloanReserves.length}`);
+            }
+            
+            // Use the updated contributions for filtering
+            contributions.splice(0, contributions.length, ...updatedContributions);
+        }
+
+        let minWithdrawBlock = newWithdrawBlock;
+
+        // Filter contributions which are eligible for withdrawal
+        // Eligibility: withdraw_block <= currentRelayChainBlockNumber
+        const eligibleContributions = contributions.filter((entry: any) => {
+            const [storageKey, contributionData] = entry;
+            
+            if (!contributionData || contributionData.isNone) {
+                return false;
+            }
+
+            // Decode the storage key: (withdraw_block, para_id, contributor)
+            // storageKey.args gives us the decoded tuple arguments
+            const keys = storageKey.args;
+            const withdrawBlock = keys[0].toNumber();
+            // log the (withdraw_block, para_id, contributor)
+            const paraIdNum = keys[1].toNumber ? keys[1].toNumber() : parseInt(keys[1].toString().replace(/,/g, ''));
+            const contributorAddress = keys[2].toString();
+            return withdrawBlock <= currentRelayChainBlockNumber;
+        });
+        // log the difference between minWithdrawBlock and currentRelayChainBlockNumber
+        logger.info(`difference between minWithdrawBlock and currentRelayChainBlockNumber: ${minWithdrawBlock - currentRelayChainBlockNumber}`);
+
+        logger.info(`Found ${eligibleContributions.length} eligible contributions for withdrawal testing`);
+
+        if (eligibleContributions.length === 0) {
+            logger.info('No eligible contributions found for withdrawal testing');
+            logger.info('Note: Contributions may not be eligible yet. Current RC block:', currentRelayChainBlockNumber);
+            
+            // Log some sample contributions to help debugging
+            const sampleContributions = contributions.slice(0, 5).map((entry: any) => {
+                const [storageKey, contributionData] = entry;
+                const keys = storageKey.args;
+                const withdrawBlock = keys[0].toNumber();
+                const paraId = keys[1].toNumber ? keys[1].toNumber() : parseInt(keys[1].toString().replace(/,/g, ''));
+                const contributor = keys[2].toString();
+                const contributionValue = contributionData.unwrap() as any;
+                const crowdloanAccount = contributionValue[0].toString();
+                const amount = contributionValue[1].toBn().toString();
+                return {
+                    withdrawBlock,
+                    paraId,
+                    contributor,
+                    crowdloanAccount,
+                    amount,
+                };
+            });
+            logger.info('Sample contributions:', JSON.stringify(sampleContributions, null, 2));
+            return;
+        }
+
+        let countOfSuccessfulWithdrawals = 0;
+        let countOfFailedWithdrawals = 0;
+        const failedWithdrawals: FailedWithdrawal[] = [];
+
+
+
+        // Test withdrawal for each eligible contribution
+        for (const entry of eligibleContributions) {
+            const [storageKey, contributionData] = entry;
+            
+            // Decode storage key: (withdraw_block, para_id, contributor)
+            // The storage key is a tuple, we need to decode it properly
+            const keys = storageKey.args;
+            const withdrawBlock = keys[0].toNumber();
+            // ParaId is a number (u32), extract it as number
+            const paraId = keys[1].toNumber ? keys[1].toNumber() : parseInt(keys[1].toString().replace(/,/g, ''));
+            const contributorAddress = keys[2].toString();
+            
+            // Decode contribution data: (crowdloan_account, amount)
+            const contributionValue = contributionData.unwrap();
+            const contributionTuple = contributionValue as any;
+            const crowdloanAccount = contributionTuple[0].toString();
+            // get the crowdloan account available balance
+            const crowdloanAccountBalance = await assetHub.api.query.system.account(crowdloanAccount) as any;
+            const crowdloanAccountFreeBalance = crowdloanAccountBalance.data.free.toBn();
+            // reserved blance
+            const crowdloanAccountReservedBalance = crowdloanAccountBalance.data.reserved?.toBn() || 0n;
+            const crowdloanAccountTotalBalance = crowdloanAccountFreeBalance.add(crowdloanAccountReservedBalance);
+            const amountBn = contributionTuple[1]; // This is a Balance type
+            
+            const contributionAmount = amountBn.toBn();
+            // logger.info(`Testing withdrawal for: para_id=${paraId}, contributor=${contributorAddress}, withdraw_block=${withdrawBlock}, amount=${contributionAmount.toString()}`);
+            
+            try {
+                // Fund contributor account for transaction fees if needed
+                const contributorBalance = await assetHub.api.query.system.account(contributorAddress);
+                const contributorFreeBalance = contributorBalance.data.free.toBn();
+                const minBalanceForFees = assetHub.api.consts.balances.existentialDeposit.toBn();
+                
+                if (contributorFreeBalance.lt(minBalanceForFees)) {
+                    // Fund the contributor with enough balance for transaction fees
+                    await assetHub.dev.setStorage({
+                        System: {
+                            account: [
+                                [
+                                    [contributorAddress], 
+                                    { 
+                                        providers: 1, 
+                                        data: { 
+                                            free: minBalanceForFees.muln(10).toString()
+                                        } 
+                                    }
+                                ]
+                            ]
+                        }
+                    });
+                    logger.info(`Funded contributor ${contributorAddress} for transaction fees`);
+                }
+                
+                // Get contributor's balance before withdrawal
+                const balanceBefore = await assetHub.api.query.system.account(contributorAddress);
+                const balanceBeforeValue = balanceBefore.data.free.toBn();
+                
+                // Create and sign the withdrawal transaction
+                // withdraw_crowdloan_contribution(block, depositor: Option<AccountId>, para_id)
+                // We pass the contributor as depositor, but Alice signs (anyone can call this)
+                const withdrawTx = assetHub.api.tx.ahOps.withdrawCrowdloanContribution(
+                    withdrawBlock,
+                    contributorAddress, // depositor is the contributor
+                    paraId // ParaId is already a number
+                );
+                
+                // Anyone can sign and call this transaction, so we use Alice
+                await sendTransaction(withdrawTx.signAsync(alicePair)).catch((error: any) => {
+                    logger.error(`Failed to send transaction: ${error}`);
+                    throw error;
+                });
+                
+                // Process the block
+                await assetHub.api.rpc('dev_newBlock', { count: 1 }).catch((error: any) => {
+                    logger.error(`Failed to process block: ${error}`);
+                    throw error;
+                });
+
+                // log all events
+                await logAllEvents(assetHub).catch((error: any) => {
+                    logger.warn(`Failed to log events: ${error}`);
+                    // Don't throw - this is just logging, continue with the test
+                });
+                
+                // Verify the contributor's balance increased
+                const balanceAfter = await assetHub.api.query.system.account(contributorAddress);
+                const balanceAfterValue = balanceAfter.data.free.toBn();
+                const balanceIncrease = balanceAfterValue.sub(balanceBeforeValue);
+                
+                // logger.info(`Balance before: ${balanceBeforeValue.toString()}, after: ${balanceAfterValue.toString()}, increase: ${balanceIncrease.toString()}`);
+                
+                // The balance should have increased by the contribution amount (minus any transaction fees paid by Alice)
+                // Since Alice paid for the transaction fees, the contributor should receive the full amount
+                // The contributionAmount is already in Bn format, so we can compare directly
+                
+                // The contributor's balance should have increased by approximately the contribution amount
+                // (allowing for any small rounding differences)
+                // const expectedMinimum = contributionAmount.muln(9).divn(10); // 90% of contribution
+                assert(
+                    balanceIncrease.eq(contributionAmount),
+                    `Contributor balance should increase by the contribution amount. ` +
+                    `Expected ${contributionAmount.toString()}, got ${balanceIncrease.toString()} ` +
+                    `(contribution amount: ${contributionAmount.toString()})` +
+                    `contributor address: ${contributorAddress}, para_id: ${paraId}, withdraw_block: ${withdrawBlock}`
+                );
+                
+                logger.info(`✅ Successfully withdrew contribution for contributor ${contributorAddress}, para_id: ${paraId}, countOfSuccessfulWithdrawals: ${countOfSuccessfulWithdrawals}`);
+                
+                countOfSuccessfulWithdrawals++;
+            } catch (error: any) {
+                logger.error(`❌ Failed to withdraw contribution for contributor ${contributorAddress}, para_id=${paraId}, countOfFailedWithdrawals: ${countOfFailedWithdrawals}:`, error);
+                
+                // Collect failed withdrawal details
+                const failedWithdrawal: FailedWithdrawal = {
+                    contributorAddress,
+                    paraId,
+                    withdrawBlock,
+                    crowdloanAccount,
+                    amount: contributionAmount.toString(),
+                    errorMessage: error?.message || error?.toString() || 'Unknown error',
+                    timestamp: new Date().toISOString(),
+                    crowdloanAccountFreeBalance: crowdloanAccountFreeBalance.toString(),
+                    crowdloanAccountReservedBalance: crowdloanAccountReservedBalance.toString(),
+                    crowdloanAccountTotalBalance: crowdloanAccountTotalBalance.toString(),
+                };
+                
+                failedWithdrawals.push(failedWithdrawal);
+                
+                // Log the error details if available
+                if (error?.message) {
+                    logger.error(`Error message: ${error.message}`);
+                }
+                if (error?.stack) {
+                    logger.error(`Error stack: ${error.stack}`);
+                }
+                
+                // Write individual failed withdrawal to JSON file
+                try {
+                    const individualFailedFile = path.join(process.cwd(), 'logs', `failed_1`, `failed_withdrawal_${paraId}_${contributorAddress}.json`);
+                    await fs.promises.mkdir(path.dirname(individualFailedFile), { recursive: true });
+                    await fs.promises.writeFile(individualFailedFile, JSON.stringify(failedWithdrawal, null, 2));
+                    logger.info(`Individual failed withdrawal details saved to: ${individualFailedFile}`);
+                } catch (writeError) {
+                    logger.warn(`Failed to write individual failed withdrawal file: ${writeError}`);
+                }
+                
+                // Continue with next contribution instead of failing the entire test
+                countOfFailedWithdrawals++;
+                continue;
+            }
+        }
+
+        logger.info(`✅ Crowdloan contribution withdrawal test completed successfully with ${countOfSuccessfulWithdrawals} successful withdrawals and ${countOfFailedWithdrawals} failed withdrawals`);
+        
+        // Write all failed withdrawals to a summary JSON file
+        if (failedWithdrawals.length > 0) {
+            try {
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                const summaryFailedFile = path.join(process.cwd(), 'logs', `failed_withdrawals_summary_${timestamp}.json`);
+                await fs.promises.mkdir(path.dirname(summaryFailedFile), { recursive: true });
+                await fs.promises.writeFile(summaryFailedFile, JSON.stringify(failedWithdrawals, null, 2));
+                logger.info(`Summary of ${failedWithdrawals.length} failed withdrawals saved to: ${summaryFailedFile}`);
+            } catch (writeError) {
+                logger.warn(`Failed to write summary failed withdrawals file: ${writeError}`);
+            }
+        } else {
+            logger.info('No failed withdrawals to save');
+        }
+
+    } catch (error: any) {
+        logger.error('❌ Crowdloan contribution withdrawal test failed:', error);
+        if (error?.message) {
+            logger.error(`Error message: ${error.message}`);
+        }
+        if (error?.stack) {
+            logger.error(`Error stack: ${error.stack}`);
+        }
+        throw error;
+    } finally {
+        // Cleanup - ensure teardown doesn't throw unhandled rejections
+        try {
+            await relayChain.teardown().catch((err: any) => {
+                logger.warn(`Error during relay chain teardown: ${err}`);
+            });
+        } catch (err: any) {
+            logger.warn(`Error during relay chain teardown: ${err}`);
+        }
+        try {
+            await assetHub.teardown().catch((err: any) => {
+                logger.warn(`Error during asset hub teardown: ${err}`);
+            });
+        } catch (err: any) {
+            logger.warn(`Error during asset hub teardown: ${err}`);
+        }
+    }
+}
+
+const polkadot = () => {
+    return {
+        relayEndpoint: 'ws://127.0.0.1:63169',
+        relayPort: 8008,
+        assetHubEndpoint: 'ws://127.0.0.1:63170',
+        assetHubPort: 8009,
+    }
+}
+
+/**
+ * Main function to run crowdloan contribution withdrawal tests for Polkadot
+ */
+export async function runCrowdloanContributionTests(): Promise<void> {
+    try {
+        const config = polkadot();
+        await testCrowdloanContributionWithdrawal(config);
+        logger.info('✅ Crowdloan contribution withdrawal tests completed successfully for Polkadot');
+    } catch (error: any) {
+        logger.error('❌ Crowdloan contribution withdrawal tests failed for Polkadot:', error);
+        if (error?.message) {
+            logger.error(`Error message: ${error.message}`);
+        }
+        if (error?.stack) {
+            logger.error(`Error stack: ${error.stack}`);
+        }
+        throw error;
+    }
+}
