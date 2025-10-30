@@ -146,3 +146,24 @@ rust-test runtime base_path:
       --features {{ runtime }}-ahm \
       --features try-runtime \
       post_migration_checks_only -- --include-ignored --nocapture --test-threads 1
+
+# Run treasury payout tests for a given network
+treasury-payouts network="Polkadot":
+    #!/usr/bin/env bash
+    set -ex
+
+    if [[ "{{ network }}" != "Kusama" && "{{ network }}" != "Polkadot" ]]; then
+        echo "Error: network must be one of: Kusama, Polkadot"
+        exit 1
+    fi
+
+    just ahm _npm-build
+    node dist/migration-tests/treasury_payout/run_treasury_payouts.js {{ network }}
+
+# Run crowdloan contribution withdrawal tests for Polkadot
+crowdloan-contribution:
+    #!/usr/bin/env bash
+    set -ex
+
+    just ahm _npm-build
+    node dist/migration-tests/treasury_payout/run_crowdloan_contribution.js
