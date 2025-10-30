@@ -18,9 +18,7 @@ env:
 
 jobs:
   run_pet_tests:
-    runs-on: parity-default
-    container:
-      image: docker.io/paritytech/ci-unified:bullseye-1.88.0-2025-06-27-v202507221446
+    runs-on: ubuntu-latest
     timeout-minutes: 90
 
     steps:
