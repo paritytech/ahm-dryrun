@@ -16,6 +16,8 @@ export interface PreCheckContext {
 export interface PostCheckContext {
     rc_api_after: ApiDecoration<'promise'>;
     ah_api_after: ApiDecoration<'promise'>;
+    rc_api_full: ApiPromise;
+    ah_api_full: ApiPromise;
     network?: string;
 }
 
