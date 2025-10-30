@@ -34,8 +34,6 @@ export interface FailedWithdrawal {
     crowdloanAccountTotalBalance: string;
 }
 
-
-
 /**
  * Test that crowdloan contributions can be unlocked post-migration when the unlock eligibility is met.
  * 
@@ -62,7 +60,7 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
     try {
         // Fund Alice account for transaction fees
         const aliceAddress = '15oF4uVJwmo4TdGW7VfQxNLavjCXviqxT9S1MgbjMNHr6Sp5';
-        const fundingAmount = 1000e10; 
+        const fundingAmount = 100000e10; 
                 
         await assetHub.dev.setStorage({
             System: {
@@ -91,26 +89,21 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
             return;
         }
 
-        // Get current relay chain block number (this is what RcBlockNumberProvider uses)
+        // Get current relay chain block number 
         const currentRelayChainBlockNumber = (await relayChain.api.query.system.number()).toNumber();
-        logger.info(`Current relay chain block number: ${currentRelayChainBlockNumber}`);
+        logger.info(`Current relay chain block number: ${currentRelayChainBlockNumber}`); // remove
 
-        // Update all contribution entries to have withdraw_block = currentRelayChainBlockNumber - 5
-        // This makes them eligible for withdrawal testing
-        const newWithdrawBlock = 28389000 //Math.max(0, currentRelayChainBlockNumber - 5);
-        logger.info(`Updating all contribution entries to have withdraw_block = ${newWithdrawBlock} (current RC block: ${currentRelayChainBlockNumber})`);
+        // Update all contribution entries to have withdraw_block = 28389000 ( any past RC block number can be used)
+        // This makes them eligible for withdrawal testing withdrawal
+        const newWithdrawBlock = 28389000; // any past RC block number can be used 
+        logger.info(`Updating all contribution entries to have withdraw_block = ${newWithdrawBlock} (current RC block: ${currentRelayChainBlockNumber})`); // remove
         
         // Collect all contributions and prepare storage updates
         // We'll remove old entries and add new ones with updated withdraw_block
         // For StorageNMap, we need to use the structured format with key tuples and values
         const newContributionEntries: any[] = [];
-        const newLeaseReserveEntries: any[] = [];
-        const newCrowdloanReserveEntries: any[] = [];
         let contributionCount = 0;
 
-        let uniqueParaIds: number[] = [];
-        let contributionCountByParaId: { [key: number]: number } = {};
-        
         for (const entry of contributions) {
             const [storageKey, contributionData] = entry;
             
@@ -119,25 +112,15 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
             }
 
             const keys = storageKey.args;
-            const oldWithdrawBlock = keys[0].toNumber();
             const paraId = keys[1].toNumber ? keys[1].toNumber() : parseInt(keys[1].toString().replace(/,/g, ''));
             const contributorAddress = keys[2].toString();
             
             const contributionValue = contributionData.unwrap() as any;
             const crowdloanAccount = contributionValue[0].toString();
             const amount = contributionValue[1];
-            // For setStorage structured format, amounts should be numbers or strings (not encoded hex)
+            // For setStorage structured format, amounts should be numbers or strings 
             const amountValue = amount.toBn ? amount.toBn().toString() : (amount.toString ? amount.toString() : amount);
 
-            // fill the uniqueParaIds and contributionCountByParaId arrays
-            if (!uniqueParaIds.includes(paraId)) {
-                uniqueParaIds.push(paraId);
-            }
-            if (!contributionCountByParaId[paraId]) {
-                contributionCountByParaId[paraId] = 0;
-            }
-            contributionCountByParaId[paraId]++;
-            
             // Prepare new contribution entry with updated withdraw_block
             // Format for StorageNMap: [[key1, key2, key3], value]
             // Value is a tuple: (AccountId, Balance)
@@ -147,11 +130,10 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
             ]);
             
             contributionCount++;
-            // logger.debug(`Updating: old_withdraw_block=${oldWithdrawBlock}, new_withdraw_block=${newWithdrawBlock}, para_id=${paraId}, contributor=${contributorAddress}`);
         }
 
-        // Now fetch and update lease reserve entries
         logger.info('Fetching lease reserve entries...');
+        const newLeaseReserveEntries: any[] = [];
         const leaseReserves = await assetHub.api.query.ahOps.rcLeaseReserve.entries();
         logger.info(`Found ${leaseReserves.length} lease reserve entries`);
         
@@ -163,14 +145,12 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
             }
 
             const keys = storageKey.args;
-            const oldWithdrawBlock = keys[0].toNumber();
             const paraId = keys[1].toNumber ? keys[1].toNumber() : parseInt(keys[1].toString().replace(/,/g, ''));
             const depositorAddress = keys[2].toString();
             
             const reserveAmount = reserveData.unwrap();
             const amountValue = reserveAmount.toBn ? reserveAmount.toBn().toString() : (reserveAmount.toString ? reserveAmount.toString() : reserveAmount);
             
-           
             newLeaseReserveEntries.push([
                 [newWithdrawBlock, paraId, depositorAddress],
                 amountValue
@@ -178,8 +158,8 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
             
         }
         
-        // Now fetch and update crowdloan reserve entries
         logger.info('Fetching crowdloan reserve entries...');
+        const newCrowdloanReserveEntries: any[] = [];
         const crowdloanReserves = await assetHub.api.query.ahOps.rcCrowdloanReserve.entries();
         logger.info(`Found ${crowdloanReserves.length} crowdloan reserve entries`);
         
@@ -191,13 +171,11 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
             }
 
             const keys = storageKey.args;
-            const oldWithdrawBlock = keys[0].toNumber();
             const paraId = keys[1].toNumber ? keys[1].toNumber() : parseInt(keys[1].toString().replace(/,/g, ''));
             const depositorAddress = keys[2].toString();
             
             const reserveAmount = reserveData.unwrap();
             const amountValue = reserveAmount.toBn ? reserveAmount.toBn().toString() : (reserveAmount.toString ? reserveAmount.toString() : reserveAmount);
-            
            
             newCrowdloanReserveEntries.push([
                 [newWithdrawBlock, paraId, depositorAddress],
@@ -206,21 +184,15 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
             
         }
 
-        // log the uniqueParaIds and contributionCountByParaId arrays
-        logger.info(`uniqueParaIds: ${uniqueParaIds}`);
-        logger.info(`contributionCountByParaId: ${JSON.stringify(contributionCountByParaId)}`);
-        
-        // log the contributions count
-        logger.info(`contributions count: ${contributionCount}`);
         logger.info(`newContributionEntries length: ${newContributionEntries.length}`);
         logger.info(`newLeaseReserveEntries length: ${newLeaseReserveEntries.length}`);
         logger.info(`newCrowdloanReserveEntries length: ${newCrowdloanReserveEntries.length}`);
         // Apply all storage updates using structured format
         // First remove all old entries, then add new ones
         if (contributionCount > 0) {
-            logger.info(`Updating ${contributionCount} contribution entries, ${newLeaseReserveEntries.length} lease reserve entries, and ${newCrowdloanReserveEntries.length} crowdloan reserve entries`);
+            logger.info(`Updating ${newContributionEntries.length} contribution entries, ${newLeaseReserveEntries.length} lease reserve entries, and ${newCrowdloanReserveEntries.length} crowdloan reserve entries`);
             
-            // Remove all existing entries using $removePrefix, then add new ones
+            // Remove all existing entries, then add new ones
             await assetHub.dev.setStorage({
                 AhOps: {
                     $removePrefix: ['rcCrowdloanContribution', 'rcLeaseReserve', 'rcCrowdloanReserve'],
@@ -262,31 +234,24 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
             contributions.splice(0, contributions.length, ...updatedContributions);
         }
 
-        let minWithdrawBlock = newWithdrawBlock;
-
         // Filter contributions which are eligible for withdrawal
         // Eligibility: withdraw_block <= currentRelayChainBlockNumber
+        // This might be redundant since we updated all entries to have withdraw_block = 28389000 but still keeping it for extra safety
         const eligibleContributions = contributions.filter((entry: any) => {
             const [storageKey, contributionData] = entry;
             
             if (!contributionData || contributionData.isNone) {
                 return false;
             }
-
-            // Decode the storage key: (withdraw_block, para_id, contributor)
-            // storageKey.args gives us the decoded tuple arguments
+            
             const keys = storageKey.args;
             const withdrawBlock = keys[0].toNumber();
-            // log the (withdraw_block, para_id, contributor)
-            const paraIdNum = keys[1].toNumber ? keys[1].toNumber() : parseInt(keys[1].toString().replace(/,/g, ''));
-            const contributorAddress = keys[2].toString();
             return withdrawBlock <= currentRelayChainBlockNumber;
         });
-        // log the difference between minWithdrawBlock and currentRelayChainBlockNumber
-        logger.info(`difference between minWithdrawBlock and currentRelayChainBlockNumber: ${minWithdrawBlock - currentRelayChainBlockNumber}`);
 
         logger.info(`Found ${eligibleContributions.length} eligible contributions for withdrawal testing`);
 
+        // Note: this is for extra safety, we should have all contributions eligible for withdrawal, but just in case, we check again
         if (eligibleContributions.length === 0) {
             logger.info('No eligible contributions found for withdrawal testing');
             logger.info('Note: Contributions may not be eligible yet. Current RC block:', currentRelayChainBlockNumber);
@@ -317,14 +282,11 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
         let countOfFailedWithdrawals = 0;
         const failedWithdrawals: FailedWithdrawal[] = [];
 
-
-
         // Test withdrawal for each eligible contribution
         for (const entry of eligibleContributions) {
             const [storageKey, contributionData] = entry;
             
             // Decode storage key: (withdraw_block, para_id, contributor)
-            // The storage key is a tuple, we need to decode it properly
             const keys = storageKey.args;
             const withdrawBlock = keys[0].toNumber();
             // ParaId is a number (u32), extract it as number
@@ -335,43 +297,17 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
             const contributionValue = contributionData.unwrap();
             const contributionTuple = contributionValue as any;
             const crowdloanAccount = contributionTuple[0].toString();
+
             // get the crowdloan account available balance
             const crowdloanAccountBalance = await assetHub.api.query.system.account(crowdloanAccount) as any;
             const crowdloanAccountFreeBalance = crowdloanAccountBalance.data.free.toBn();
-            // reserved blance
             const crowdloanAccountReservedBalance = crowdloanAccountBalance.data.reserved?.toBn() || 0n;
             const crowdloanAccountTotalBalance = crowdloanAccountFreeBalance.add(crowdloanAccountReservedBalance);
             const amountBn = contributionTuple[1]; // This is a Balance type
             
             const contributionAmount = amountBn.toBn();
-            // logger.info(`Testing withdrawal for: para_id=${paraId}, contributor=${contributorAddress}, withdraw_block=${withdrawBlock}, amount=${contributionAmount.toString()}`);
             
             try {
-                // Fund contributor account for transaction fees if needed
-                const contributorBalance = await assetHub.api.query.system.account(contributorAddress);
-                const contributorFreeBalance = contributorBalance.data.free.toBn();
-                const minBalanceForFees = assetHub.api.consts.balances.existentialDeposit.toBn();
-                
-                if (contributorFreeBalance.lt(minBalanceForFees)) {
-                    // Fund the contributor with enough balance for transaction fees
-                    await assetHub.dev.setStorage({
-                        System: {
-                            account: [
-                                [
-                                    [contributorAddress], 
-                                    { 
-                                        providers: 1, 
-                                        data: { 
-                                            free: minBalanceForFees.muln(10).toString()
-                                        } 
-                                    }
-                                ]
-                            ]
-                        }
-                    });
-                    logger.info(`Funded contributor ${contributorAddress} for transaction fees`);
-                }
-                
                 // Get contributor's balance before withdrawal
                 const balanceBefore = await assetHub.api.query.system.account(contributorAddress);
                 const balanceBeforeValue = balanceBefore.data.free.toBn();
@@ -397,11 +333,11 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
                     throw error;
                 });
 
-                // log all events
-                await logAllEvents(assetHub).catch((error: any) => {
-                    logger.warn(`Failed to log events: ${error}`);
-                    // Don't throw - this is just logging, continue with the test
-                });
+                // log all events 
+                // await logAllEvents(assetHub).catch((error: any) => { // remove
+                //     logger.warn(`Failed to log events: ${error}`);
+                //     // Don't throw - this is just logging, continue with the test
+                // });
                 
                 // Verify the contributor's balance increased
                 const balanceAfter = await assetHub.api.query.system.account(contributorAddress);
@@ -410,13 +346,8 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
                 
                 // logger.info(`Balance before: ${balanceBeforeValue.toString()}, after: ${balanceAfterValue.toString()}, increase: ${balanceIncrease.toString()}`);
                 
-                // The balance should have increased by the contribution amount (minus any transaction fees paid by Alice)
+                // The contributor's balance should have increased by the contribution amount 
                 // Since Alice paid for the transaction fees, the contributor should receive the full amount
-                // The contributionAmount is already in Bn format, so we can compare directly
-                
-                // The contributor's balance should have increased by approximately the contribution amount
-                // (allowing for any small rounding differences)
-                // const expectedMinimum = contributionAmount.muln(9).divn(10); // 90% of contribution
                 assert(
                     balanceIncrease.eq(contributionAmount),
                     `Contributor balance should increase by the contribution amount. ` +
@@ -455,6 +386,7 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
                     logger.error(`Error stack: ${error.stack}`);
                 }
                 
+                // Note: we don't write individual failed withdrawal to JSON file, we only write the summary file  remove this section
                 // Write individual failed withdrawal to JSON file
                 try {
                     const individualFailedFile = path.join(process.cwd(), 'logs', `failed_1`, `failed_withdrawal_${paraId}_${contributorAddress}.json`);
