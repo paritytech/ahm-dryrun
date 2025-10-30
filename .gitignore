@@ -8,6 +8,9 @@ logs/
 .claude
 zombie-bite/doppelganger/bin/
 .vscode
+zombie-bite/doppelganger/.crates.toml
+zombie-bite/doppelganger/.crates2.json
 
 # for local testing, it is conventional in this repo to use `migration-run-{id}` as the name of the folder; ignore it
 migration-run-*
+

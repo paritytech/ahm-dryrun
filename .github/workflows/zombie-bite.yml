@@ -3,9 +3,9 @@ name: AHM flow (all steps)
 on:
   workflow_dispatch:
     inputs:
-      sudo-key:
-        description: "Sudo key to use as override (optional, default is //Alice)"
-        required: false
+      # sudo-key:
+      #   description: "Sudo key to use as override (optional, default is //Alice)"
+      #   required: false
       network:
         description: "Network to use (ALL means Polkadot and Kusama)"
         default: "polkadot"
@@ -44,11 +44,26 @@ on:
         required: false
         type: string
         default: "parity-large-persistent-test"
+      concurrency-suffix:
+        description: "Extra suffix for the concurrency group"
+        type: string
+        required: false
+        default: "-mygroup"
+      ah-extra-args:
+        description: "Override ZOMBIE_BITE_AH_EXTRA_ARGS"
+        type: string
+        required: false
+        default: ""
+      rc-extra-args:
+        description: "Override ZOMBIE_BITE_RC_EXTRA_ARGS"
+        type: string
+        required: false
+        default: ""
   schedule:
-    - cron: "0 0 * * *" # Every Day for Polkadot
+    - cron: "0 0,8,16 * * *" # Every 8 hrs for Polkadot
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ inputs.runner }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ inputs.runner }}-${{ inputs.concurrency-suffix}}
   cancel-in-progress: true
 
 permissions: {}
@@ -63,10 +78,12 @@ jobs:
       sudo-key: ${{ inputs.sudo-key }}
       rc_runtime_override_url: ${{ inputs.rc_runtime_override_url }}
       ah_runtime_override_url: ${{ inputs.ah_runtime_override_url }}
-      runner: ${{ inputs.runner }}
+      runner: ${{ inputs.runner || 'parity-large-persistent-test'}}
       doppelganger_version: ${{ inputs.doppelganger_version }}
       pre_db_run_id: ${{ inputs.pre_db_run_id }}
       post_db_url: ${{ inputs.post_db_url }}
+      ah_extra_args: ${{ inputs.ah-extra-args }}
+      rc_extra_args: ${{ inputs.rc-extra-args }}
 
   zombie_bite_kusama:
     # run by demand
