@@ -189,10 +189,13 @@ In this case, it is unnecessary to have local ZB testnet for access to runtimes 
 just e2e-tests <kusama|polkadot>
 
 # This runs tests in stages. Inter-stage, it is sequential; intra-stage, it is concurrent.
-just staged-e2e-tests <polkadot>
+# Run all stages
+just staged-e2e-tests <kusama|polkadot> all
+# Run only stage 3 (Polkadot Asset Hub governance, vesting, multisig, proxy, scheduler E2E tests)
+just staged-e2e-tests polkadot 3
 
 # Run every test that exists for Kusama chains: relay, AH, bridge hub, coretime, etc.
-# Includes both E2E and XCM tests.
+# Includes both E2E and XCM connectivity tests with parachains.
 yarn test packages/kusama
 # Run every test suite that exists for KAH, E2E or otherwise.
 yarn test assetHubKusama

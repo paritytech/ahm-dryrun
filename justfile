@@ -178,25 +178,19 @@ short-e2e-tests NETWORK:
     # Exit with failed count as exit code
     exit $failed_count
 
-staged-e2e-tests NETWORK:
+staged-e2e-tests NETWORK STAGE:
     #!/usr/bin/env bash
     set -e
 
     # Validate NETWORK argument
-    if [[ "{{ NETWORK }}" != "polkadot" ]]; then
-        echo "Error: NETWORK must be polkadot"
+    if [[ "{{ NETWORK }}" != "kusama" && "{{ NETWORK }}" != "polkadot" ]]; then
+        echo "Error: NETWORK must be one of: kusama, polkadot"
         exit 1
     fi
 
     # Load shared E2E environment setup (loads .env, validates vars, installs deps)
     source scripts/setup-e2e-env.sh
     setup_e2e_env "{{ NETWORK }}"
-
-    # Set up interrupt handler to exit on `CTRL^C` without starting the next set of tests
-    trap 'echo -e "\nInterrupted. Killing yarn processes and exiting..."; pkill -P $$; exit 130' INT
-
-    failed_count=0
-    test_results=""
 
     # Define stages: name:::prefix:::modules:::pattern
     stages=(
@@ -207,11 +201,36 @@ staged-e2e-tests NETWORK:
         "Polkadot Relay E2E Tests:::packages/polkadot/src/{{ NETWORK }}:::accounts proxy multisig:::"
     )
 
-    # Run all stages, from first to last, beginning the next stage only after the last test of the previous stage has
-    # completed.
+    # Validate STAGE argument - can only be done after `scripts/setup-e2e-env.sh` is run
+    total_stages=${#stages[@]}
+    if [[ "{{ STAGE }}" == "all" ]]; then
+        run_all=true
+    elif [[ "{{ STAGE }}" =~ ^[0-9]+$ ]]; then
+        if [[ "{{ STAGE }}" -lt 1 || "{{ STAGE }}" -gt $total_stages ]]; then
+            echo "Error: STAGE must be between 1 and $total_stages, or 'all'"
+            exit 1
+        fi
+        run_all=false
+    else
+        echo "Error: STAGE must be a number between 1 and $total_stages, or 'all'"
+        exit 1
+    fi
+
+    # Set up interrupt handler to exit on `CTRL^C` without starting the next set of tests
+    trap 'echo -e "\nInterrupted. Killing yarn processes and exiting..."; pkill -P $$; exit 130' INT
+
+    failed_count=0
+    test_results=""
+
+    # Run all stages, from first to last, or, if given a specific stage, run only that stage.
     # Stages are done sequentially, but there is intra-stage concurrency.
     stage_num=1
     for stage_def in "${stages[@]}"; do
+        # Skip if specific stage requested and this isn't it
+        if [[ "$run_all" == "false" && "{{ STAGE }}" -ne $stage_num ]]; then
+            stage_num=$((stage_num + 1))
+            continue
+        fi
         stage_name="${stage_def%%:::*}"
         rest="${stage_def#*:::}"
         prefix="${rest%%:::*}"
