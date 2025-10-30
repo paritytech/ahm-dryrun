@@ -22,7 +22,7 @@ permissions: {}
 
 jobs:
   get-run-id:
-    runs-on: ubuntu-latest
+    runs-on: parity-default
     if: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.run-id == '') || 'true' }}
     outputs:
       RUN_ID: ${{ steps.get_run_id.outputs.RUN_ID }}
