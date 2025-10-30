@@ -15,6 +15,7 @@ env:
   ZOMBIE_BITE_BASE_PATH: "/tmp/ci"
   AHM_BINS: "/tmp"
   RUSTFLAGS: "-A warnings"
+  ZOMBIE_RM_TGZ_AFTER_EXTRACT: "1"
 
 jobs:
   run_pet_tests:
