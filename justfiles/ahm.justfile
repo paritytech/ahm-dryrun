@@ -166,4 +166,4 @@ crowdloan-contribution:
     set -ex
 
     just ahm _npm-build
-    node dist/migration-tests/treasury_payout/run_crowdloan_contribution.js
+    node dist/migration-tests/crowdloan_contributions/run_crowdloan_contribution.js
