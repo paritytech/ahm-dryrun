@@ -173,6 +173,6 @@ monitor-snapshots base_path network:
 
 # Run staking era events back-test
 # Example: `just zb staking-events-backtest kusama`
-backtest-staking-events runtime:
+staking-events-backtest runtime:
     just ahm _npm-build
     npm run staking-events-backtest {{ runtime }}
