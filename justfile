@@ -32,7 +32,7 @@ install-doppelganger:
         --bin doppelganger-parachain \
         --bin polkadot-execute-worker \
         --bin polkadot-prepare-worker  \
-        --root ${DOPPELGANGER_PATH}
+        --locked --root ${DOPPELGANGER_PATH}
 
 # Install the `zombie-bite` binary on your system.
 install-zombie-bite:
