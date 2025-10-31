@@ -6,7 +6,8 @@ import {
   MigrationTest,
   PreCheckResult,
 } from "../types.js";
-import type { IOption, ITuple, Codec } from "@polkadot/types/types";
+import type { IOption, ITuple, Codec, } from "@polkadot/types/types";
+import type { u32 } from '@polkadot/types';
 import type { AccountId32 } from "@polkadot/types/interfaces";
 import type { ApiDecoration } from "@polkadot/api/types";
 import { ApiPromise } from "@polkadot/api";
@@ -35,7 +36,7 @@ export const crowdloanTests: MigrationTest = {
     const rc_funds_data: CrowdloanReserve[] = [];
 
     for (const [key, value] of rc_funds) {
-      const para_id = (key.args[0] as any).toNumber();
+      const para_id = (key.args[0] as u32).toNumber();
       const fund = value.toJSON() as any;
        
       // Get leases for this parachain to calculate unreserve_block
@@ -78,7 +79,7 @@ export const crowdloanTests: MigrationTest = {
     const rc_leases_data: LeaseReserve[] = [];
 
     for (const [key, value] of rc_leases) {
-      const para_id = (key.args[0] as any).toNumber();
+      const para_id = (key.args[0] as u32).toNumber();
 
       // if para_id is less then 2000, it is a system chain so skip
       if (para_id < 2000) {
@@ -204,7 +205,7 @@ async function verifyLeaseReservesMigration(
 ): Promise<void> {
   // Handle Bifrost special case (para_id 2030 -> 3356)
   const processed_rc_leases = rc_leases_before.map((lease) => {
-    if (lease.para_id === 2030) {
+    if (lease.para_id === 2030 ) {
       return { ...lease, para_id: 3356 };
     }
     return lease;
@@ -214,9 +215,9 @@ async function verifyLeaseReservesMigration(
   for (const rc_lease of processed_rc_leases) {
     const matching_entry = ah_lease_reserves_after.find(([key, value]) => {
       const [unreserve_block, para_id, account] = key.args;
-      const amount = value?.toJSON() as any;
+      const amount = value?.toJSON() as string;
       return (
-        para_id?.toNumber() === rc_lease.para_id &&
+        para_id?.toString() === rc_lease.para_id.toString() &&
         unreserve_block.toNumber() === rc_lease.unreserve_block &&
         account?.toString() === rc_lease.account &&
         amount?.toString() === rc_lease.amount
@@ -241,7 +242,7 @@ async function verifyCrowdloanReservesMigration(
   for (const rc_fund of rc_funds_before) {
     const matching_entry = ah_reserves_after.find(([key, value]) => {
       const [unreserve_block, para_id, depositor] = key.args;
-      const amount = value?.toJSON() as any;
+      const amount = value?.toJSON() as string;
       return (
         para_id?.toNumber() === rc_fund.para_id &&
         unreserve_block?.toNumber() === rc_fund.unreserve_block &&
