@@ -331,6 +331,7 @@ function processAHEvent(state: EventProcessorState, event: EventRecord, network:
     const activeEra = event.data.activeEra;
     const plannedEra = event.data.plannedEra;
 
+    logger.info(`[AH] SessionRotated event: active_era=${activeEra}, planned_era=${plannedEra} at block ${event.blockNumber}`);
     if (!state.started && activeEra !== undefined && plannedEra === activeEra + 1) {
       state.started = true;
       state.eraStartBlock = event.blockNumber;
