@@ -17,6 +17,7 @@
     "make-new-snapshot": "node dist/zombie-bite-scripts/make_new_snapshot.js",
     "create-migration-done-file": "node dist/zombie-bite-scripts/create_migration_done_file.js",
     "ahm": "node dist/zombie-bite-scripts/orchestrator.js",
+    "first-block-in-next-era": "node dist/zombie-bite-scripts/first_block_in_next_era.js",
     "prettier": "prettier --write .",
     "clean": "rm -rf dist",
     "postinstall": "papi"

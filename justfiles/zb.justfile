@@ -170,3 +170,7 @@ monitor-snapshots base_path network:
     set -xe
     just ahm _npm-build
     node dist/zombie-bite-scripts/migration_snapshot.js {{ base_path }} {{ network }}
+
+find-first-block-in-next-era network:
+    just ahm _npm-build
+    npm run first-block-in-next-era {{ network }}
