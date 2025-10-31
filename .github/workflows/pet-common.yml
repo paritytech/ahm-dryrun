@@ -132,6 +132,6 @@ jobs:
           echo "Sleeping for 90 seconds before running tests..."
           sleep 90
 
-          # Run E2E tests using the just command
-          just e2e-tests ${{ inputs.network }}
+          # Run E2E tests
+          just staged-e2e-tests ${{ inputs.network }} all
           echo "::endgroup::"
