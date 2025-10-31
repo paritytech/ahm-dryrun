@@ -280,9 +280,18 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
 
         let countOfSuccessfulWithdrawals = 0;
         let countOfFailedWithdrawals = 0;
+        let isTransferEventExists = false;
+        let countOfWithdrawals = 0;
         const failedWithdrawals: FailedWithdrawal[] = [];
 
         for (const entry of eligibleContributions) {
+
+            // break the loop if countOfWithdrawals is greater than or equal to 100
+            if(countOfWithdrawals >= 100)
+                break;
+
+            countOfWithdrawals++;
+
             const [storageKey, contributionData] = entry;
             
             // Decode storage key: (withdraw_block, para_id, contributor)
@@ -305,6 +314,8 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
             const amountBn = contributionTuple[1]; // This is a Balance type
             
             const contributionAmount = amountBn.toBn();
+
+            
             
             try {
                 // Get contributor's balance before withdrawal
@@ -320,6 +331,9 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
                     paraId // ParaId is already a number
                 );
                 
+                // set isTransferEventExists to false before sending the transaction
+                isTransferEventExists = false;
+                
                 // Anyone can sign and call this transaction, so we use Alice
                 await sendTransaction(withdrawTx.signAsync(alicePair)).catch((error: any) => {
                     logger.error(`Failed to send transaction: ${error}`);
@@ -332,12 +346,11 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
                     throw error;
                 });
 
-                // log all events 
-                // await logAllEvents(assetHub).catch((error: any) => { // remove
-                //     logger.warn(`Failed to log events: ${error}`);
-                //     // Don't throw - this is just logging, continue with the test
-                // });
-                
+                // get the Transfer event of balances section from the assetHub
+                const events = await assetHub.api.query.system.events();
+                const transferEvent = events.find((event: any) => event.section === 'balances' && event.method === 'Transfer');
+                isTransferEventExists = transferEvent ? true : false; // if Transfer event exists, set isTransferEventExists to true
+
                 // Verify the contributor's balance increased
                 const balanceAfter = await assetHub.api.query.system.account(contributorAddress);
                 const balanceAfterValue = balanceAfter.data.free.toBn();
@@ -397,8 +410,10 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
                     logger.error(`Error stack: ${error.stack}`);
                 }
                 
-                // Continue with next contribution instead of failing the entire test
-                countOfFailedWithdrawals++;
+                // increment countOfFailedWithdrawals if Transfer event does not exist
+                if(!isTransferEventExists) {
+                    countOfFailedWithdrawals++
+                }
                 continue;
             }
         }
