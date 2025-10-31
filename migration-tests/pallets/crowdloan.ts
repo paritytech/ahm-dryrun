@@ -35,7 +35,7 @@ interface CrowdloanContribution {
 export const crowdloanTests: MigrationTest = {
   name: "crowdloan_pallet",
   pre_check: async (context: PreCheckContext): Promise<PreCheckResult> => {
-    const { rc_api_before, ah_api_before, rc_api_full, ah_api_full } = context;
+    const { rc_api_before, ah_api_before, rc_api_full } = context;
 
     // Collect RC crowdloan funds data
     const rc_funds = await rc_api_before.query.crowdloan.funds.entries();

@@ -10,14 +10,11 @@ export interface PreCheckContext {
     rc_api_before: ApiDecoration<'promise'>;
     ah_api_before: ApiDecoration<'promise'>;
     rc_api_full: ApiPromise;
-    ah_api_full: ApiPromise;
 }
 
 export interface PostCheckContext {
     rc_api_after: ApiDecoration<'promise'>;
     ah_api_after: ApiDecoration<'promise'>;
-    rc_api_full: ApiPromise;
-    ah_api_full: ApiPromise;
     network?: string;
 }
 
