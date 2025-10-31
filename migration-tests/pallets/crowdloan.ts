@@ -31,7 +31,6 @@ export const crowdloanTests: MigrationTest = {
   pre_check: async (context: PreCheckContext): Promise<PreCheckResult> => {
     const { rc_api_before, ah_api_before, rc_api_full } = context;
 
-    // Collect RC crowdloan funds data
     const rc_funds = await rc_api_before.query.crowdloan.funds.entries();
     const rc_funds_data: CrowdloanReserve[] = [];
 
@@ -275,8 +274,8 @@ async function calculateUnreserveBlock(
     const now = current_block.number.toNumber();
 
     // Get lease period configuration
-    const lease_period = (await api.consts.slots.leasePeriod) as any;
-    const lease_offset = (await api.consts.slots.leaseOffset) as any;
+    const lease_period =  api.consts.slots.leasePeriod as any;
+    const lease_offset =  api.consts.slots.leaseOffset as any;
 
     const period = lease_period.toNumber();
     const offset = lease_offset.toNumber();
@@ -297,10 +296,10 @@ async function calculateUnreserveBlock(
 
     // Ensure the unreserve block is not in the past
     if (last_period_end_block <= now) {
-      // If the calculated block is in the past, use current block + period
+      // If the calculated block is in the past, use current block + period to make it in the future - this is a special case for bifrost (para_id 3356) which has no active leases
       const future_unreserve_block = now + period;
-      logger.warn(
-        `Calculated unreserve block ${last_period_end_block} is in the past (current: ${now}), using future block: ${future_unreserve_block}`
+      logger.debug(
+        `Calculated unreserve block ${last_period_end_block} is in the past (current: ${now}), using future block: ${future_unreserve_block} for num_leases: ${num_leases}`
       );
       return future_unreserve_block;
     }
@@ -308,18 +307,6 @@ async function calculateUnreserveBlock(
     return last_period_end_block;
   } catch (error) {
     logger.error("Error calculating unreserve block:", error);
-    // Fallback: return current block + some reasonable offset
-    try {
-      const lease_period = (await api.consts.slots.leasePeriod) as any;
-      const period = lease_period.toNumber();
-      const fallback_block = period * 1000; // Use a large multiple of period
-      logger.warn(`Using fallback unreserve block: ${fallback_block}`);
-      return fallback_block;
-    } catch (fallback_error) {
-      logger.error("Failed to get fallback block:", fallback_error);
-      throw new Error(
-        `Failed to calculate unreserve block: ${error}. Fallback also failed: ${fallback_error}`
-      );
-    }
+    throw new Error(`Error calculating unreserve block: ${error}`);
   }
 }
