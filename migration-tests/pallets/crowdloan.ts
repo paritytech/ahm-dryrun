@@ -74,24 +74,27 @@ export const crowdloanTests: MigrationTest = {
       });
     }
 
-    // Collect RC leases data
     const rc_leases = await rc_api_before.query.slots.leases.entries();
-
     const rc_leases_data: LeaseReserve[] = [];
 
     for (const [key, value] of rc_leases) {
       const para_id = (key.args[0] as any).toNumber();
+
+      // if para_id is less then 2000, it is a system chain so skip
+      if (para_id < 2000) {
+        continue;
+      }
+
       const leases = value as unknown as IOption<
         ITuple<[AccountId32, Codec]>
       >[];
-
       const active_leases = leases.filter(
         (lease: IOption<ITuple<[AccountId32, Codec]>>) =>
           lease.isSome
       );
 
       if (active_leases.length > 0) {
-        // Take only the last active lease (matching Rust logic)
+        // Take only the last active lease matching the rust implementation
         const last_lease = active_leases[active_leases.length - 1];
         const [account, amount] = last_lease.unwrap();
 
@@ -182,7 +185,7 @@ async function verifyAhStorageMatchesRcPreMigrationData(
   rc_funds_before: CrowdloanReserve[],
   rc_leases_before: LeaseReserve[],
 ): Promise<void> {
-  // Get AH storage after migration
+
   const ah_lease_reserves_after =
     await ah_api_after.query.ahOps.rcLeaseReserve.entries();
   const ah_crowdloan_reserves_after =
@@ -209,8 +212,9 @@ async function verifyLeaseReservesMigration(
 
   // Verify each lease reserve exists in AH
   for (const rc_lease of processed_rc_leases) {
-    const matching_entry = ah_lease_reserves_after.find(([key]) => {
-      const [unreserve_block, para_id, account, amount] = key.args;
+    const matching_entry = ah_lease_reserves_after.find(([key, value]) => {
+      const [unreserve_block, para_id, account] = key.args;
+      const amount = value?.toJSON() as any;
       return (
         para_id?.toNumber() === rc_lease.para_id &&
         unreserve_block.toNumber() === rc_lease.unreserve_block &&
@@ -221,10 +225,11 @@ async function verifyLeaseReservesMigration(
 
     assert(
       matching_entry !== undefined,
-      `Contribution for para_id ${rc_contribution.para_id}, contributor ${rc_contribution.contributor} not found after migration`
+      `Lease reserve for para_id ${rc_lease.para_id} not found after migration`
     );
   }
 }
+
 
 async function verifyCrowdloanReservesMigration(
   ah_reserves_after: [any, any][],
