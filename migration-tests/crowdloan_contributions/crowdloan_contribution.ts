@@ -444,11 +444,12 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
     }
 }
 
+// Note: This test will only work with post migration Polkadot network
 const polkadot = () => {
     return {
-        relayEndpoint: 'ws://127.0.0.1:63169',
+        relayEndpoint:  'wss://polkadot-rpc.n.dwellir.com',
         relayPort: 8008,
-        assetHubEndpoint: 'ws://127.0.0.1:63170',
+        assetHubEndpoint: 'wss://asset-hub-polkadot-rpc.n.dwellir.com',
         assetHubPort: 8009,
     }
 }
