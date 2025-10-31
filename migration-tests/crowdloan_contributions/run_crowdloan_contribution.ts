@@ -5,7 +5,8 @@ import { logger } from '../../shared/logger.js';
 process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
     // Ignore WebSocket disconnection errors 
     const errorMsg = reason?.message || reason?.toString() || '';
-    if (errorMsg.includes('WebSocket') && (errorMsg.includes('not connected') || errorMsg.includes('disconnected')) || errorMsg.includes('Abnormal Closure')) {
+    if (errorMsg.includes('not connected') || errorMsg.includes('disconnected') || errorMsg.includes('Abnormal Closure') ||
+        errorMsg.includes('No response received from RPC endpoint')) {
         logger.warn('WebSocket disconnection error:', errorMsg);
         return;
     }

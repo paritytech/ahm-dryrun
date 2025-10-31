@@ -31,6 +31,10 @@ export interface FailedWithdrawal {
     crowdloanAccountTotalBalance: string;
 }
 
+const ALICE_FUNDING_AMOUNT = 100_000_000_000_000_000n; // initail funing to Alice for transaction fees
+const PAST_RC_BLOCK_NUMBER = 28_380_000; // // any past RC block number can be used 
+const MAX_WITHDRAWAL_CALLS = 100; // Limit number of withdrawal calls to avoid running the entire test for too long
+
 /**
  * Test that crowdloan contributions can be unlocked post-migration when the unlock eligibility is met.
  * 
@@ -56,8 +60,8 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
 
     try {
         // Fund Alice account for transaction fees
-        const aliceAddress = '15oF4uVJwmo4TdGW7VfQxNLavjCXviqxT9S1MgbjMNHr6Sp5';
-        const fundingAmount = 100000e10; 
+        const aliceAddress = alicePair.address 
+        const fundingAmount = ALICE_FUNDING_AMOUNT; 
                 
         await assetHub.dev.setStorage({
             System: {
@@ -89,9 +93,9 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
         // Get current relay chain block number 
         const currentRelayChainBlockNumber = (await relayChain.api.query.system.number()).toNumber();
 
-        // Update all contribution entries to have withdraw_block = 28389000 ( any past RC block number can be used)
+        // Update all contribution entries to have withdraw_block = PAST_RC_BLOCK_NUMBER ( any past RC block number can be used)
         // This makes them eligible for withdrawal testing withdrawal
-        const newWithdrawBlock = 28380000; // any past RC block number can be used 
+        const newWithdrawBlock = PAST_RC_BLOCK_NUMBER; // any past RC block number can be used 
         logger.debug(`Updating all contribution entries to have withdraw_block = ${newWithdrawBlock} (current RC block: ${currentRelayChainBlockNumber})`); 
         
         // Collect all contributions and prepare storage updates
@@ -276,14 +280,16 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
 
         let countOfSuccessfulWithdrawals = 0;
         let countOfFailedWithdrawals = 0;
-        let isTransferEventExists = false;
         let countOfWithdrawals = 0;
         const failedWithdrawals: FailedWithdrawal[] = [];
 
         for (const entry of eligibleContributions) {
 
-            // break the loop if countOfWithdrawals is greater than or equal to 100
-            if(countOfWithdrawals >= 100)
+            let isTransferEventExists = false;
+
+            // break the loop if countOfWithdrawals is greater than or equal to 100 
+            // as running the entire test might take too long to complete
+            if(countOfWithdrawals >= MAX_WITHDRAWAL_CALLS)
                 break;
 
             countOfWithdrawals++;
@@ -310,8 +316,6 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
             const amountBn = contributionTuple[1]; // This is a Balance type
             
             const contributionAmount = amountBn.toBn();
-
-            
             
             try {
                 // Get contributor's balance before withdrawal
@@ -326,9 +330,6 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
                     contributorAddress, // depositor is the contributor
                     paraId // ParaId is already a number
                 );
-                
-                // set isTransferEventExists to false before sending the transaction
-                isTransferEventExists = false;
                 
                 // Anyone can sign and call this transaction, so we use Alice
                 await sendTransaction(withdrawTx.signAsync(alicePair)).catch((error: any) => {
@@ -372,8 +373,8 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
                 
                 // Ignore WebSocket/RPC connection errors 
                 const isRpcConnectionError = 
-                    (errorMsg.includes('WebSocket') && (errorMsg.includes('not connected') || errorMsg.includes('disconnected') || errorMsg.includes('Abnormal Closure'))) ||
-                    errorMsg.includes('No response received from RPC endpoint');
+                   (errorMsg.includes('not connected') || errorMsg.includes('disconnected') || errorMsg.includes('Abnormal Closure') ||
+                    errorMsg.includes('No response received from RPC endpoint'));
                 
                 if (isRpcConnectionError) {
                     logger.warn(`⚠️ RPC/WebSocket connection error (ignored): ${errorMsg.substring(0, 200)}`);
@@ -424,7 +425,6 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
         if (error?.stack) {
             logger.error(`Error stack: ${error.stack}`);
         }
-        throw error;
     } finally {
         // Cleanup - ensure teardown doesn't throw unhandled rejections
         try {
