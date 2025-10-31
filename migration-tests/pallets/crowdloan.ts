@@ -7,7 +7,7 @@ import {
   PreCheckResult,
 } from "../types.js";
 import type { IOption, ITuple, Codec } from "@polkadot/types/types";
-import type { u32 } from '@polkadot/types';
+import type { u32 } from "@polkadot/types";
 import type { AccountId32 } from "@polkadot/types/interfaces";
 import type { ApiDecoration } from "@polkadot/api/types";
 import { ApiPromise } from "@polkadot/api";
@@ -56,7 +56,7 @@ export const crowdloanTests: MigrationTest = {
       // Calculate unreserve_block - use full API for RPC calls
       let unreserve_block: number = 0;
       try {
-          unreserve_block = await calculateUnreserveBlock(
+        unreserve_block = await calculateUnreserveBlock(
           rc_api_full,
           num_active_leases
         );
@@ -94,8 +94,7 @@ export const crowdloanTests: MigrationTest = {
         ITuple<[AccountId32, Codec]>
       >[];
       const active_leases = leases.filter(
-        (lease: IOption<ITuple<[AccountId32, Codec]>>) =>
-          lease.isSome
+        (lease: IOption<ITuple<[AccountId32, Codec]>>) => lease.isSome
       );
 
       if (active_leases.length > 0) {
@@ -107,10 +106,10 @@ export const crowdloanTests: MigrationTest = {
         const num_remaining_leases = active_leases.length;
         let unreserve_block: number = 0;
         try {
-           unreserve_block = await calculateUnreserveBlock(
-          rc_api_full,
-          num_remaining_leases
-        );
+          unreserve_block = await calculateUnreserveBlock(
+            rc_api_full,
+            num_remaining_leases
+          );
         } catch (error) {
           logger.error(`Error calculating unreserve_block: ${error}`);
         }
@@ -121,7 +120,6 @@ export const crowdloanTests: MigrationTest = {
           para_id,
           amount: amount.toString(),
         });
-
       }
     }
 
@@ -163,23 +161,21 @@ export const crowdloanTests: MigrationTest = {
     pre_payload: PreCheckResult
   ): Promise<void> => {
     const { rc_api_after, ah_api_after } = context;
-    const {
-      funds: rc_funds_before,
-      leases: rc_leases_before,
-    } = pre_payload.rc_pre_payload;
+    const { funds: rc_funds_before, leases: rc_leases_before } =
+      pre_payload.rc_pre_payload;
 
     await verifyRcStorageEmpty(rc_api_after);
 
     await verifyAhStorageMatchesRcPreMigrationData(
       ah_api_after,
       rc_funds_before,
-      rc_leases_before,
+      rc_leases_before
     );
   },
 } as const;
 
 async function verifyRcStorageEmpty(
-  rc_api_after: ApiDecoration<"promise">,
+  rc_api_after: ApiDecoration<"promise">
 ): Promise<void> {
   const rc_funds_after = await rc_api_after.query.crowdloan.funds.entries();
 
@@ -193,9 +189,8 @@ async function verifyRcStorageEmpty(
 async function verifyAhStorageMatchesRcPreMigrationData(
   ah_api_after: ApiDecoration<"promise">,
   rc_funds_before: CrowdloanReserve[],
-  rc_leases_before: LeaseReserve[],
+  rc_leases_before: LeaseReserve[]
 ): Promise<void> {
-
   const ah_lease_reserves_after =
     await ah_api_after.query.ahOps.rcLeaseReserve.entries();
   const ah_crowdloan_reserves_after =
@@ -240,12 +235,10 @@ async function verifyLeaseReservesMigration(
   }
 }
 
-
 async function verifyCrowdloanReservesMigration(
   ah_reserves_after: [any, any][],
   rc_funds_before: CrowdloanReserve[]
 ): Promise<void> {
-
   // Verify each fund reserve exists in AH except for bifrost (para_id 3356)
   let countOfMissingCrowdloanReserves = 0;
   for (const rc_fund of rc_funds_before) {
@@ -255,7 +248,7 @@ async function verifyCrowdloanReservesMigration(
       return (
         para_id?.toNumber() === rc_fund.para_id &&
         unreserve_block?.toNumber() === rc_fund.unreserve_block &&
-        depositor?.toString() === rc_fund.depositor && 
+        depositor?.toString() === rc_fund.depositor &&
         amount?.toString() === rc_fund.amount
       );
     });
@@ -267,8 +260,12 @@ async function verifyCrowdloanReservesMigration(
       );
     }
   }
-  // countOfMissingCrowdloanReserves should be equal 1 for bifrost (para_id 3356) - for Polkadot. 
-  assert.equal(countOfMissingCrowdloanReserves, 1, `Count of missing crowdloan reserves should be 1 beacuse of bifrost (para_id 3356) for Polkadot but found ${countOfMissingCrowdloanReserves}`);
+  // countOfMissingCrowdloanReserves should be equal 1 for bifrost (para_id 3356) - for Polkadot.
+  assert.equal(
+    countOfMissingCrowdloanReserves,
+    1,
+    `Count of missing crowdloan reserves should be 1 beacuse of bifrost (para_id 3356) for Polkadot but found ${countOfMissingCrowdloanReserves}`
+  );
 }
 
 /**
