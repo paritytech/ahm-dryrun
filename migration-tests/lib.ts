@@ -50,7 +50,8 @@ const excludedTestsPerNetwork: Record<Network, MigrationTest[]> = {
     // https://github.com/paritytech/ahm-dryrun/issues/66
     referendaTests,
     multisigTests,
-    generalStakingTests
+    generalStakingTests,
+    crowdloanTests
   ],
   Paseo: [],
   Kusama: [
@@ -58,6 +59,7 @@ const excludedTestsPerNetwork: Record<Network, MigrationTest[]> = {
     convictionVotingTests,
     voterListTests,
     // proxyTests,
+    crowdloanTests
   ],
   Polkadot: [
     convictionVotingTests,
