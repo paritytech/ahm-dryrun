@@ -5,9 +5,6 @@ import { Keyring } from '@polkadot/api';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import { logger } from '../../shared/logger.js';
 import assert from 'assert';
-import { logAllEvents } from './helper.js';
-import fs from 'fs';
-import path from 'path';
 
 // Wait for crypto to be ready before creating Keyring
 await cryptoWaitReady();
@@ -40,7 +37,7 @@ export interface FailedWithdrawal {
  * @param config - Network configuration with endpoints and ports
  */
 async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promise<void> {
-    logger.info('Starting crowdloan contribution withdrawal test on forked Polkadot network');
+    logger.debug('Starting crowdloan contribution withdrawal test on forked Polkadot network');
     
     // Setup networks based on configuration
     const networks = await setupNetworks({
@@ -78,25 +75,24 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
             }
         });
         
-        logger.info('✅ Alice account funded successfully');
+        logger.debug('✅ Alice account funded successfully');
 
         // Get all crowdloan contributions from Asset Hub
         const contributions = await assetHub.api.query.ahOps.rcCrowdloanContribution.entries();
-        logger.info(`Found ${contributions.length} total crowdloan contributions`);
+        logger.debug(`Found ${contributions.length} total crowdloan contributions`);
 
         if (contributions.length === 0) {
-            logger.info('No crowdloan contributions found for testing');
+            logger.debug('No crowdloan contributions found for testing');
             return;
         }
 
         // Get current relay chain block number 
         const currentRelayChainBlockNumber = (await relayChain.api.query.system.number()).toNumber();
-        logger.info(`Current relay chain block number: ${currentRelayChainBlockNumber}`); // remove
 
         // Update all contribution entries to have withdraw_block = 28389000 ( any past RC block number can be used)
         // This makes them eligible for withdrawal testing withdrawal
         const newWithdrawBlock = 28380000; // any past RC block number can be used 
-        logger.info(`Updating all contribution entries to have withdraw_block = ${newWithdrawBlock} (current RC block: ${currentRelayChainBlockNumber})`); // remove
+        logger.debug(`Updating all contribution entries to have withdraw_block = ${newWithdrawBlock} (current RC block: ${currentRelayChainBlockNumber})`); 
         
         // Collect all contributions and prepare storage updates
         // We'll remove old entries and add new ones with updated withdraw_block
@@ -132,10 +128,10 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
             contributionCount++;
         }
 
-        logger.info('Fetching lease reserve entries...');
+        logger.debug('Fetching lease reserve entries...');
         const newLeaseReserveEntries: any[] = [];
         const leaseReserves = await assetHub.api.query.ahOps.rcLeaseReserve.entries();
-        logger.info(`Found ${leaseReserves.length} lease reserve entries`);
+        logger.debug(`Found ${leaseReserves.length} lease reserve entries`);
         
         for (const entry of leaseReserves) {
             const [storageKey, reserveData] = entry;
@@ -158,10 +154,10 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
             
         }
         
-        logger.info('Fetching crowdloan reserve entries...');
+        logger.debug('Fetching crowdloan reserve entries...');
         const newCrowdloanReserveEntries: any[] = [];
         const crowdloanReserves = await assetHub.api.query.ahOps.rcCrowdloanReserve.entries();
-        logger.info(`Found ${crowdloanReserves.length} crowdloan reserve entries`);
+        logger.debug(`Found ${crowdloanReserves.length} crowdloan reserve entries`);
         
         for (const entry of crowdloanReserves) {
             const [storageKey, reserveData] = entry;
@@ -184,13 +180,13 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
             
         }
 
-        logger.info(`newContributionEntries length: ${newContributionEntries.length}`);
-        logger.info(`newLeaseReserveEntries length: ${newLeaseReserveEntries.length}`);
-        logger.info(`newCrowdloanReserveEntries length: ${newCrowdloanReserveEntries.length}`);
+        logger.debug(`newContributionEntries length: ${newContributionEntries.length}`);
+        logger.debug(`newLeaseReserveEntries length: ${newLeaseReserveEntries.length}`);
+        logger.debug(`newCrowdloanReserveEntries length: ${newCrowdloanReserveEntries.length}`);
         // Apply all storage updates using structured format
         // First remove all old entries, then add new ones
         if (contributionCount > 0) {
-            logger.info(`Updating ${newContributionEntries.length} contribution entries, ${newLeaseReserveEntries.length} lease reserve entries, and ${newCrowdloanReserveEntries.length} crowdloan reserve entries`);
+            logger.debug(`Updating ${newContributionEntries.length} contribution entries, ${newLeaseReserveEntries.length} lease reserve entries, and ${newCrowdloanReserveEntries.length} crowdloan reserve entries`);
             
             // Remove all existing entries, then add new ones
             await assetHub.dev.setStorage({
@@ -202,30 +198,30 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
                 }
             });
             
-            logger.info('✅ Successfully updated all storage entries');
+            logger.debug('✅ Successfully updated all storage entries');
             
             // Re-query to get updated contributions
             const updatedContributions = await assetHub.api.query.ahOps.rcCrowdloanContribution.entries();
             const updatedLeaseReserves = await assetHub.api.query.ahOps.rcLeaseReserve.entries();
             const updatedCrowdloanReserves = await assetHub.api.query.ahOps.rcCrowdloanReserve.entries();
             
-            logger.info(`Re-queried storage: contributions=${updatedContributions.length}, lease reserves=${updatedLeaseReserves.length}, crowdloan reserves=${updatedCrowdloanReserves.length}`);
+            logger.debug(`Re-queried storage: contributions=${updatedContributions.length}, lease reserves=${updatedLeaseReserves.length}, crowdloan reserves=${updatedCrowdloanReserves.length}`);
             
             // Verify the update worked
             if (updatedContributions.length === contributionCount) {
-                logger.info('✅ Verification: All contributions updated successfully');
+                logger.debug('✅ Verification: All contributions updated successfully');
             } else {
                 logger.warn(`⚠️  Warning: Expected ${contributionCount} contribution entries after update, but found ${updatedContributions.length}`);
             }
             
             if (updatedLeaseReserves.length === newLeaseReserveEntries.length) {
-                logger.info('✅ Verification: All lease reserves updated successfully');
+                logger.debug('✅ Verification: All lease reserves updated successfully');
             } else {
                 logger.warn(`⚠️  Warning: Expected ${newLeaseReserveEntries.length} lease reserve entries after update, but found ${updatedLeaseReserves.length}`);
             }
             
             if (updatedCrowdloanReserves.length === newCrowdloanReserveEntries.length) {
-                logger.info('✅ Verification: All crowdloan reserves updated successfully');
+                logger.debug('✅ Verification: All crowdloan reserves updated successfully');
             } else {
                 logger.warn(`⚠️  Warning: Expected ${newCrowdloanReserveEntries.length} crowdloan reserve entries after update, but found ${updatedCrowdloanReserves.length}`);
             }
@@ -249,12 +245,12 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
             return withdrawBlock <= currentRelayChainBlockNumber;
         });
 
-        logger.info(`Found ${eligibleContributions.length} eligible contributions for withdrawal testing`);
+        logger.debug(`Found ${eligibleContributions.length} eligible contributions for withdrawal testing`);
 
         // Note: this is for extra safety, we should have all contributions eligible for withdrawal, but just in case, we check again
         if (eligibleContributions.length === 0) {
-            logger.info('No eligible contributions found for withdrawal testing');
-            logger.info('Note: Contributions may not be eligible yet. Current RC block:', currentRelayChainBlockNumber);
+            logger.debug('No eligible contributions found for withdrawal testing');
+            logger.debug('Note: Contributions may not be eligible yet. Current RC block:', currentRelayChainBlockNumber);
             
             // Log some sample contributions to help debugging
             const sampleContributions = contributions.slice(0, 5).map((entry: any) => {
@@ -274,7 +270,7 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
                     amount,
                 };
             });
-            logger.info('Sample contributions:', JSON.stringify(sampleContributions, null, 2));
+            logger.debug('Sample contributions:', JSON.stringify(sampleContributions, null, 2));
             return;
         }
 
@@ -356,7 +352,7 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
                 const balanceAfterValue = balanceAfter.data.free.toBn();
                 const balanceIncrease = balanceAfterValue.sub(balanceBeforeValue);
                 
-                // logger.info(`Balance before: ${balanceBeforeValue.toString()}, after: ${balanceAfterValue.toString()}, increase: ${balanceIncrease.toString()}`);
+                // logger.debug(`Balance before: ${balanceBeforeValue.toString()}, after: ${balanceAfterValue.toString()}, increase: ${balanceIncrease.toString()}`);
                 
                 // The contributor's balance should have increased by the contribution amount 
                 // Since Alice paid for the transaction fees, the contributor should receive the full amount
@@ -368,7 +364,7 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
                     `contributor address: ${contributorAddress}, para_id: ${paraId}, withdraw_block: ${withdrawBlock}`
                 );
                 
-                logger.info(`✅ Successfully withdrew contribution for contributor ${contributorAddress}, para_id: ${paraId}, countOfSuccessfulWithdrawals: ${countOfSuccessfulWithdrawals}, countOfFailedWithdrawals: ${countOfFailedWithdrawals}`);
+                logger.debug(`✅ Successfully withdrew contribution for contributor ${contributorAddress}, para_id: ${paraId}, countOfSuccessfulWithdrawals: ${countOfSuccessfulWithdrawals}, countOfFailedWithdrawals: ${countOfFailedWithdrawals}`);
                 
                 countOfSuccessfulWithdrawals++;
             } catch (error: any) {

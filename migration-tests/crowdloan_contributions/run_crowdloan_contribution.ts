@@ -1,7 +1,7 @@
 import { runCrowdloanContributionTests } from './crowdloan_contribution.js';
 import { logger } from '../../shared/logger.js';
 
-// Handle unhandled promise rejections globally
+// Defensive: Handle unhandled promise rejections 
 process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
     // Ignore WebSocket disconnection errors 
     const errorMsg = reason?.message || reason?.toString() || '';
@@ -20,7 +20,7 @@ process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
     // Don't exit immediately - let the main function handle cleanup
 });
 
-// Handle uncaught exceptions
+// Defensive: Handle uncaught exceptions
 process.on('uncaughtException', (error: Error) => {
     logger.error('Uncaught Exception:', error);
     logger.error('Error message:', error.message);
