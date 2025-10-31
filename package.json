@@ -13,6 +13,7 @@
     "authorize-upgrade": "node dist/zombie-bite-scripts/authorize_upgrade_ah.js",
     "report-account-migration-status": "node dist/zombie-bite-scripts/report_account_migration_status.js",
     "compare-state": "node dist/migration-tests/index.js",
+    "crowdloan-contribution": "node dist/migration-tests/crowdloan_contributions/run_crowdloan_contribution.js",
     "find-rc-block-bite": "node dist/zombie-bite-scripts/find_rc_block_bite.js",
     "make-new-snapshot": "node dist/zombie-bite-scripts/make_new_snapshot.js",
     "create-migration-done-file": "node dist/zombie-bite-scripts/create_migration_done_file.js",
