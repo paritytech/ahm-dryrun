@@ -381,7 +381,7 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
                     continue; // Continue to next withdrawal
                 }
                 
-                logger.error(`❌ Failed to withdraw contribution for contributor ${contributorAddress}, para_id=${paraId},  countOfSuccessfulWithdrawals: ${countOfSuccessfulWithdrawals}, countOfFailedWithdrawals: ${countOfFailedWithdrawals}:`, error);
+                logger.debug(`❌ Failed to withdraw contribution for contributor ${contributorAddress}, para_id=${paraId},  countOfSuccessfulWithdrawals: ${countOfSuccessfulWithdrawals}, countOfFailedWithdrawals: ${countOfFailedWithdrawals}:`, error);
                 
                 // Collect failed withdrawal details
                 const failedWithdrawal: FailedWithdrawal = {
