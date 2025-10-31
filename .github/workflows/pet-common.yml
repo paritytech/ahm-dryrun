@@ -15,13 +15,20 @@ env:
   ZOMBIE_BITE_BASE_PATH: "/tmp/ci"
   AHM_BINS: "/tmp"
   RUSTFLAGS: "-A warnings"
+  ZOMBIE_RM_TGZ_AFTER_EXTRACT: "1"
 
 jobs:
   run_pet_tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
 
     steps:
+      - name: Free Disk Space (Ubuntu)
+        if: ${{ runner.environment == 'github-hosted' }}
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
+        with:
+          tool-cache: false
+
       - uses: actions/checkout@v4
         with:
           submodules: recursive
@@ -37,6 +44,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      - name: deps (Ubuntu)
+        if: ${{ runner.environment == 'github-hosted' }}
+        shell: bash
+        run: |
+          sudo apt-get install protobuf-compiler
 
       - name: install_zombie_bite
         shell: bash
@@ -109,16 +122,16 @@ jobs:
         run: |
           COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
           echo "::group::run-polkadot-ecosystem-tests"
-          
+
           # Set up environment variables for the just command
           export ASSETHUB${NETWORK^^}_ENDPOINT="ws://localhost:${COL_PORT}"
           export ASSETHUB${NETWORK^^}_BLOCK_NUMBER=$ASSETHUB_BLOCK_NUMBER
-          
+
           # Sleep before running tests - running them immediately after the network has been spun up
           # can lead to missing data in the `chopsticks` node, and false negatives.
           echo "Sleeping for 90 seconds before running tests..."
           sleep 90
-          
+
           # Run E2E tests using the just command
           just e2e-tests ${{ inputs.network }}
           echo "::endgroup::"

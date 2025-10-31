@@ -96,43 +96,13 @@ e2e-tests NETWORK:
         exit 1
     fi
 
-    # Check required environment variables in PET's .env file
-    NETWORK_UPPER="{{ NETWORK }}"
-    NETWORK_UPPER=${NETWORK_UPPER^^}
-    ENDPOINT_VAR="ASSETHUB${NETWORK_UPPER}_ENDPOINT"
-    BLOCK_VAR="ASSETHUB${NETWORK_UPPER}_BLOCK_NUMBER"
+    # Load shared E2E environment setup (loads .env, validates vars, installs deps)
+    source scripts/setup-e2e-env.sh
+    setup_e2e_env "{{ NETWORK }}"
 
-    # Load PET's .env file if it exists.
-    # If not, log that, and run with PET's default. Will cause meaningless test failures if run on an umigrated network
-    # due to absence of required pallets.
-    if [[ -f "${PET_PATH}/.env" ]]; then
-        source "${PET_PATH}/.env"
-    fi
-
-    if [[ -z "${!ENDPOINT_VAR}" ]]; then
-        echo "Warning: ${ENDPOINT_VAR} environment variable is not set in ${PET_PATH}/.env"
-        echo "Running with default PET endpoint for network {{ NETWORK }} (check PET source code)"
-    fi
-
-    if [[ -z "${!BLOCK_VAR}" ]]; then
-        echo "Warning: ${BLOCK_VAR} environment variable is not set in ${PET_PATH}/.env"
-        echo "Running with default block number for network {{ NETWORK }} (check PET source code)"
-    fi
-
-    echo "Running tests with:"
-    echo "  ${ENDPOINT_VAR}=${!ENDPOINT_VAR}"
-    echo "  ${BLOCK_VAR}=${!BLOCK_VAR}"
-
-    cd polkadot-ecosystem-tests
-
-    # Install dependencies
-    yarn install
-
-    # Run only KAH E2E tests
+    # Run only Asset Hub E2E tests
     failed_count=0
     test_results=""
-    NETWORK_CAPITALIZED="{{ NETWORK }}"
-    NETWORK_CAPITALIZED=${NETWORK_CAPITALIZED^}
     find packages -name "*assetHub${NETWORK_CAPITALIZED}*e2e*.test.ts" -type f > /tmp/test_list.txt
 
     # Set up interrupt handler to exit on `CTRL^C` without starting the next set of tests
@@ -152,6 +122,98 @@ e2e-tests NETWORK:
     done < /tmp/test_list.txt
 
     # Print results and failure count
+    echo -e "$test_results"
+    echo "Total failed tests: $failed_count"
+
+    # Exit with failed count as exit code
+    exit $failed_count
+
+staged-e2e-tests NETWORK STAGE:
+    #!/usr/bin/env bash
+    set -e
+
+    # Validate NETWORK argument
+    if [[ "{{ NETWORK }}" != "kusama" && "{{ NETWORK }}" != "polkadot" ]]; then
+        echo "Error: NETWORK must be one of: kusama, polkadot"
+        exit 1
+    fi
+
+    # Load shared E2E environment setup (loads .env, validates vars, installs deps)
+    source scripts/setup-e2e-env.sh
+    setup_e2e_env "{{ NETWORK }}"
+
+    # Define stages: name:::prefix:::modules:::pattern
+    stages=(
+        "Essential Tests:::assetHub${NETWORK_CAPITALIZED}:::staking accounts nominationPools scheduler:::lifecycle|transfer_allow_death|transfer_keep_alive|transfer_all|scheduling a call is possible"
+        "More Account Tests, Remainder of (Staking + Nomination Pools):::assetHub${NETWORK_CAPITALIZED}:::accounts staking nominationPools:::^(?!.*(transfer_allow_death|transfer_keep_alive|transfer_all|liquidity|lifecycle))"
+        "Governance, Vesting, Multisig, Proxy, Remaining Scheduler Tests, Bounties & Child Bounties:::assetHub${NETWORK_CAPITALIZED}:::governance vesting multisig proxy scheduler bounties childBounties:::^(?!.*(scheduling a call is possible))"
+        "Remaining PAH Accounts tests:::assetHub${NETWORK_CAPITALIZED}:::accounts:::liquidity"
+        "Polkadot Relay E2E Tests:::packages/polkadot/src/{{ NETWORK }}:::accounts proxy multisig:::"
+    )
+
+    # Validate STAGE argument - can only be done after `scripts/setup-e2e-env.sh` is run
+    total_stages=${#stages[@]}
+    if [[ "{{ STAGE }}" == "all" ]]; then
+        run_all=true
+    elif [[ "{{ STAGE }}" =~ ^[0-9]+$ ]]; then
+        if [[ "{{ STAGE }}" -lt 1 || "{{ STAGE }}" -gt $total_stages ]]; then
+            echo "Error: STAGE must be between 1 and $total_stages, or 'all'"
+            exit 1
+        fi
+        run_all=false
+    else
+        echo "Error: STAGE must be a number between 1 and $total_stages, or 'all'"
+        exit 1
+    fi
+
+    # Set up interrupt handler to exit on `CTRL^C` without starting the next set of tests
+    trap 'echo -e "\nInterrupted. Killing yarn processes and exiting..."; pkill -P $$; exit 130' INT
+
+    failed_count=0
+    test_results=""
+
+    # Run all stages, from first to last, or, if given a specific stage, run only that stage.
+    # Stages are done sequentially, but there is intra-stage concurrency.
+    stage_num=1
+    for stage_def in "${stages[@]}"; do
+        # Skip if specific stage requested and this isn't it
+        if [[ "$run_all" == "false" && "{{ STAGE }}" -ne $stage_num ]]; then
+            stage_num=$((stage_num + 1))
+            continue
+        fi
+        stage_name="${stage_def%%:::*}"
+        rest="${stage_def#*:::}"
+        prefix="${rest%%:::*}"
+        rest="${rest#*:::}"
+        modules="${rest%%:::*}"
+        pattern="${rest#*:::}"
+
+        echo "=========================================="
+        echo "🚀 STAGE ${stage_num}: ${stage_name}"
+        echo "=========================================="
+
+        # Build test command with all modules
+        modules_array=($modules)
+        test_args=""
+        for mod in "${modules_array[@]}"; do
+            test_args="${test_args} ${prefix}.${mod}"
+        done
+
+        echo "Running:${test_args} -t '$pattern'"
+        if ! yarn test ${test_args} -t "$pattern" --run -u; then
+            failed_count=$((failed_count + 1))
+            test_results="${test_results}❌ Stage ${stage_num}: ${stage_name}\n"
+        else
+            test_results="${test_results}✅ Stage ${stage_num}: ${stage_name}\n"
+        fi
+
+        stage_num=$((stage_num + 1))
+    done
+
+    # Print final results
+    echo "=========================================="
+    echo "🏁 ALL STAGES COMPLETE"
+    echo "=========================================="
     echo -e "$test_results"
     echo "Total failed tests: $failed_count"
 
