@@ -95,7 +95,7 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
 
         // Update all contribution entries to have withdraw_block = 28389000 ( any past RC block number can be used)
         // This makes them eligible for withdrawal testing withdrawal
-        const newWithdrawBlock = 28389000; // any past RC block number can be used 
+        const newWithdrawBlock = 28380000; // any past RC block number can be used 
         logger.info(`Updating all contribution entries to have withdraw_block = ${newWithdrawBlock} (current RC block: ${currentRelayChainBlockNumber})`); // remove
         
         // Collect all contributions and prepare storage updates
@@ -282,7 +282,6 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
         let countOfFailedWithdrawals = 0;
         const failedWithdrawals: FailedWithdrawal[] = [];
 
-        // Test withdrawal for each eligible contribution
         for (const entry of eligibleContributions) {
             const [storageKey, contributionData] = entry;
             
@@ -356,11 +355,23 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
                     `contributor address: ${contributorAddress}, para_id: ${paraId}, withdraw_block: ${withdrawBlock}`
                 );
                 
-                logger.info(`✅ Successfully withdrew contribution for contributor ${contributorAddress}, para_id: ${paraId}, countOfSuccessfulWithdrawals: ${countOfSuccessfulWithdrawals}`);
+                logger.info(`✅ Successfully withdrew contribution for contributor ${contributorAddress}, para_id: ${paraId}, countOfSuccessfulWithdrawals: ${countOfSuccessfulWithdrawals}, countOfFailedWithdrawals: ${countOfFailedWithdrawals}`);
                 
                 countOfSuccessfulWithdrawals++;
             } catch (error: any) {
-                logger.error(`❌ Failed to withdraw contribution for contributor ${contributorAddress}, para_id=${paraId}, countOfFailedWithdrawals: ${countOfFailedWithdrawals}:`, error);
+                const errorMsg = error?.message || error?.toString() || '';
+                
+                // Ignore WebSocket/RPC connection errors 
+                const isRpcConnectionError = 
+                    (errorMsg.includes('WebSocket') && (errorMsg.includes('not connected') || errorMsg.includes('disconnected') || errorMsg.includes('Abnormal Closure'))) ||
+                    errorMsg.includes('No response received from RPC endpoint');
+                
+                if (isRpcConnectionError) {
+                    logger.warn(`⚠️ RPC/WebSocket connection error (ignored): ${errorMsg.substring(0, 200)}`);
+                    continue; // Continue to next withdrawal
+                }
+                
+                logger.error(`❌ Failed to withdraw contribution for contributor ${contributorAddress}, para_id=${paraId},  countOfSuccessfulWithdrawals: ${countOfSuccessfulWithdrawals}, countOfFailedWithdrawals: ${countOfFailedWithdrawals}:`, error);
                 
                 // Collect failed withdrawal details
                 const failedWithdrawal: FailedWithdrawal = {
@@ -386,17 +397,6 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
                     logger.error(`Error stack: ${error.stack}`);
                 }
                 
-                // Note: we don't write individual failed withdrawal to JSON file, we only write the summary file  remove this section
-                // Write individual failed withdrawal to JSON file
-                try {
-                    const individualFailedFile = path.join(process.cwd(), 'logs', `failed_1`, `failed_withdrawal_${paraId}_${contributorAddress}.json`);
-                    await fs.promises.mkdir(path.dirname(individualFailedFile), { recursive: true });
-                    await fs.promises.writeFile(individualFailedFile, JSON.stringify(failedWithdrawal, null, 2));
-                    logger.info(`Individual failed withdrawal details saved to: ${individualFailedFile}`);
-                } catch (writeError) {
-                    logger.warn(`Failed to write individual failed withdrawal file: ${writeError}`);
-                }
-                
                 // Continue with next contribution instead of failing the entire test
                 countOfFailedWithdrawals++;
                 continue;
@@ -405,21 +405,6 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
 
         logger.info(`✅ Crowdloan contribution withdrawal test completed successfully with ${countOfSuccessfulWithdrawals} successful withdrawals and ${countOfFailedWithdrawals} failed withdrawals`);
         
-        // Write all failed withdrawals to a summary JSON file
-        if (failedWithdrawals.length > 0) {
-            try {
-                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-                const summaryFailedFile = path.join(process.cwd(), 'logs', `failed_withdrawals_summary_${timestamp}.json`);
-                await fs.promises.mkdir(path.dirname(summaryFailedFile), { recursive: true });
-                await fs.promises.writeFile(summaryFailedFile, JSON.stringify(failedWithdrawals, null, 2));
-                logger.info(`Summary of ${failedWithdrawals.length} failed withdrawals saved to: ${summaryFailedFile}`);
-            } catch (writeError) {
-                logger.warn(`Failed to write summary failed withdrawals file: ${writeError}`);
-            }
-        } else {
-            logger.info('No failed withdrawals to save');
-        }
-
     } catch (error: any) {
         logger.error('❌ Crowdloan contribution withdrawal test failed:', error);
         if (error?.message) {
