@@ -6,7 +6,7 @@ import {
   MigrationTest,
   PreCheckResult,
 } from "../types.js";
-import type { IOption, ITuple, Codec, } from "@polkadot/types/types";
+import type { IOption, ITuple, Codec } from "@polkadot/types/types";
 import type { u32 } from '@polkadot/types';
 import type { AccountId32 } from "@polkadot/types/interfaces";
 import type { ApiDecoration } from "@polkadot/api/types";
@@ -27,6 +27,10 @@ interface LeaseReserve {
   amount: string;
 }
 
+const BIFROST_PARA_ID = 3356;
+const BIFROST_PARA_ID_OLD = 2030;
+const SYSTEM_PARA_ID_MAX = 2000;
+
 export const crowdloanTests: MigrationTest = {
   name: "crowdloan_pallet",
   pre_check: async (context: PreCheckContext): Promise<PreCheckResult> => {
@@ -36,9 +40,9 @@ export const crowdloanTests: MigrationTest = {
     const rc_funds_data: CrowdloanReserve[] = [];
 
     for (const [key, value] of rc_funds) {
-      const para_id = (key.args[0] as u32).toNumber();
+      const para_id = (key?.args?.[0] as u32)?.toNumber();
       const fund = value.toJSON() as any;
-       
+
       // Get leases for this parachain to calculate unreserve_block
       const leases = await rc_api_before.query.slots.leases(para_id);
       const leasesArray = leases as unknown as IOption<
@@ -52,7 +56,7 @@ export const crowdloanTests: MigrationTest = {
       // Calculate unreserve_block - use full API for RPC calls
       let unreserve_block: number = 0;
       try {
-        unreserve_block = await calculateUnreserveBlock(
+          unreserve_block = await calculateUnreserveBlock(
           rc_api_full,
           num_active_leases
         );
@@ -79,10 +83,10 @@ export const crowdloanTests: MigrationTest = {
     const rc_leases_data: LeaseReserve[] = [];
 
     for (const [key, value] of rc_leases) {
-      const para_id = (key.args[0] as u32).toNumber();
+      const para_id = (key?.args?.[0] as u32)?.toNumber();
 
-      // if para_id is less then 2000, it is a system chain so skip
-      if (para_id < 2000) {
+      // if para_id is less than 2000, it is a system chain so skip
+      if (para_id < SYSTEM_PARA_ID_MAX) {
         continue;
       }
 
@@ -101,10 +105,15 @@ export const crowdloanTests: MigrationTest = {
 
         // Calculate unreserve_block for this lease - use full API for RPC calls
         const num_remaining_leases = active_leases.length;
-        const unreserve_block = await calculateUnreserveBlock(
+        let unreserve_block: number = 0;
+        try {
+           unreserve_block = await calculateUnreserveBlock(
           rc_api_full,
           num_remaining_leases
         );
+        } catch (error) {
+          logger.error(`Error calculating unreserve_block: ${error}`);
+        }
 
         rc_leases_data.push({
           unreserve_block,
@@ -205,8 +214,8 @@ async function verifyLeaseReservesMigration(
 ): Promise<void> {
   // Handle Bifrost special case (para_id 2030 -> 3356)
   const processed_rc_leases = rc_leases_before.map((lease) => {
-    if (lease.para_id === 2030 ) {
-      return { ...lease, para_id: 3356 };
+    if (lease.para_id === BIFROST_PARA_ID_OLD) {
+      return { ...lease, para_id: BIFROST_PARA_ID };
     }
     return lease;
   });
@@ -214,10 +223,10 @@ async function verifyLeaseReservesMigration(
   // Verify each lease reserve exists in AH
   for (const rc_lease of processed_rc_leases) {
     const matching_entry = ah_lease_reserves_after.find(([key, value]) => {
-      const [unreserve_block, para_id, account] = key.args;
+      const [unreserve_block, para_id, account] = key?.args;
       const amount = value?.toJSON() as string;
       return (
-        para_id?.toString() === rc_lease.para_id.toString() &&
+        para_id?.toNumber() === rc_lease.para_id &&
         unreserve_block.toNumber() === rc_lease.unreserve_block &&
         account?.toString() === rc_lease.account &&
         amount?.toString() === rc_lease.amount
@@ -241,7 +250,7 @@ async function verifyCrowdloanReservesMigration(
   let countOfMissingCrowdloanReserves = 0;
   for (const rc_fund of rc_funds_before) {
     const matching_entry = ah_reserves_after.find(([key, value]) => {
-      const [unreserve_block, para_id, depositor] = key.args;
+      const [unreserve_block, para_id, depositor] = key?.args;
       const amount = value?.toJSON() as string;
       return (
         para_id?.toNumber() === rc_fund.para_id &&
@@ -258,8 +267,8 @@ async function verifyCrowdloanReservesMigration(
       );
     }
   }
-  // countOfMissingCrowdloanReserves should be equal 1 for bifrost (para_id 3356)
-  assert.equal(countOfMissingCrowdloanReserves, 1, `Count of missing crowdloan reserves should be 1 for bifrost (para_id 3356) but found ${countOfMissingCrowdloanReserves}`);
+  // countOfMissingCrowdloanReserves should be equal 1 for bifrost (para_id 3356) - for Polkadot. 
+  assert.equal(countOfMissingCrowdloanReserves, 1, `Count of missing crowdloan reserves should be 1 beacuse of bifrost (para_id 3356) for Polkadot but found ${countOfMissingCrowdloanReserves}`);
 }
 
 /**
@@ -279,14 +288,13 @@ async function calculateUnreserveBlock(
   num_leases: number
 ): Promise<number> {
   try {
-
     // Get current block number
     const current_block = await api.rpc.chain.getHeader();
     const now = current_block.number.toNumber();
 
     // Get lease period configuration
-    const lease_period =  api.consts.slots.leasePeriod as any;
-    const lease_offset =  api.consts.slots.leaseOffset as any;
+    const lease_period = api.consts.slots.leasePeriod as any;
+    const lease_offset = api.consts.slots.leaseOffset as any;
 
     const period = lease_period.toNumber();
     const offset = lease_offset.toNumber();
