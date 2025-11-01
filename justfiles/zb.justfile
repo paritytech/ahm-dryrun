@@ -170,3 +170,9 @@ monitor-snapshots base_path network:
     set -xe
     just ahm _npm-build
     node dist/zombie-bite-scripts/migration_snapshot.js {{ base_path }} {{ network }}
+
+# Run staking era events back-test
+# Example: `just zb staking-events-backtest kusama`
+staking-events-backtest runtime:
+    just ahm _npm-build
+    npm run staking-events-backtest {{ runtime }}
