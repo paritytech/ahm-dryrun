@@ -20,7 +20,7 @@ env:
 jobs:
   run_pet_tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
 
     steps:
       - name: Free Disk Space (Ubuntu)
@@ -100,9 +100,11 @@ jobs:
         shell: bash
         run: |
           COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
+          RELAY_PORT=$(jq -r .alice_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
+
           echo "::group::get-current-block-number"
+
           echo "Getting current block from http://localhost:${COL_PORT}"
-          # Get current block number using JSON-RPC
           BLOCK_NUMBER=$(curl -s -H "Content-Type: application/json" -d '{"id":1,"jsonrpc":"2.0","method":"chain_getHeader","params":[]}' http://localhost:${COL_PORT} | jq -r '.result.number')
           if [ -z "$BLOCK_NUMBER" ] || [ "$BLOCK_NUMBER" = "null" ]; then
             echo "Failed to get block number from endpoint"
@@ -110,28 +112,44 @@ jobs:
           fi
           # Convert from hex to decimal
           BLOCK_NUMBER_DECIMAL=$((BLOCK_NUMBER))
-          echo "Current block number: $BLOCK_NUMBER_DECIMAL"
+          echo "Current AH block number: $BLOCK_NUMBER_DECIMAL"
           echo "ASSETHUB_BLOCK_NUMBER=$BLOCK_NUMBER_DECIMAL" >> $GITHUB_ENV
+
+          echo "Getting current block from relay at http://localhost:${RELAY_PORT}"
+          RELAY_BLOCK_NUMBER=$(curl -s -H "Content-Type: application/json" -d '{"id":1,"jsonrpc":"2.0","method":"chain_getHeader","params":[]}' http://localhost:${RELAY_PORT} | jq -r '.result.number')
+          if [ -z "$RELAY_BLOCK_NUMBER" ] || [ "$RELAY_BLOCK_NUMBER" = "null" ]; then
+            echo "Failed to get block number from relay endpoint"
+            exit 1
+          fi
+          # Convert relay block number from hex to decimal
+          RELAY_BLOCK_NUMBER_DECIMAL=$((RELAY_BLOCK_NUMBER))
+          echo "Relay block number: $RELAY_BLOCK_NUMBER_DECIMAL"
+          echo "RELAY_BLOCK_NUMBER=$RELAY_BLOCK_NUMBER_DECIMAL" >> $GITHUB_ENV
+
           echo "::endgroup::"
 
       - name: run_polkadot_ecosystem_tests
         shell: bash
         env:
           ASSETHUB_BLOCK_NUMBER: ${{ env.ASSETHUB_BLOCK_NUMBER }}
+          RELAY_BLOCK_NUMBER: ${{ env.RELAY_BLOCK_NUMBER }}
           NETWORK: ${{ inputs.network }}
         run: |
           COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
+          RELAY_PORT=$(jq -r .alice_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
           echo "::group::run-polkadot-ecosystem-tests"
 
           # Set up environment variables for the just command
           export ASSETHUB${NETWORK^^}_ENDPOINT="ws://localhost:${COL_PORT}"
           export ASSETHUB${NETWORK^^}_BLOCK_NUMBER=$ASSETHUB_BLOCK_NUMBER
+          export ${NETWORK^^}_ENDPOINT="ws://localhost:${RELAY_PORT}"
+          export ${NETWORK^^}_BLOCK_NUMBER=$RELAY_BLOCK_NUMBER
 
           # Sleep before running tests - running them immediately after the network has been spun up
           # can lead to missing data in the `chopsticks` node, and false negatives.
-          echo "Sleeping for 90 seconds before running tests..."
-          sleep 90
+          echo "Sleeping before running tests..."
+          sleep 120
 
-          # Run E2E tests using the just command
-          just e2e-tests ${{ inputs.network }}
+          # Run E2E tests, in priority-ordered stages. Include relay E2E tests.
+          just staged-e2e-tests ${{ inputs.network }} all
           echo "::endgroup::"
