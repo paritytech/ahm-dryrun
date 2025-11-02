@@ -71,7 +71,7 @@ permissions: {}
 jobs:
   zombie_bite_polkadot:
     # run by schedule or by demand
-    if: ${{ inputs.network == 'ALL' || inputs.network == 'polkadot' || github.event.schedule == '0 0 * * *' }}
+    if: ${{ inputs.network == 'ALL' || inputs.network == 'polkadot' || github.event_name == 'schedule' }}
     uses: ./.github/workflows/zombie-bite-common.yml
     with:
       network: polkadot
