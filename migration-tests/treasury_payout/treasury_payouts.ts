@@ -47,7 +47,7 @@ async function testTreasuryPayouts(networkName: 'Kusama' | 'Polkadot', config: N
 
     try {
         // Fund Alice account for transaction fees
-        const aliceAddress = '15oF4uVJwmo4TdGW7VfQxNLavjCXviqxT9S1MgbjMNHr6Sp5';
+        const aliceAddress = alicePair.address;
         const fundingAmount = 1000e10; 
                 
         await assetHub.dev.setStorage({
