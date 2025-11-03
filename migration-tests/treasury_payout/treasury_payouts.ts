@@ -176,6 +176,21 @@ async function testTreasuryPayouts(networkName: 'Kusama' | 'Polkadot', config: N
                 });
                 assert(spendProcessedEvent, `SpendProcessed event is not found for spend ${spendIndex} Event: ${eventsAfterCheckStatus.map((record: any) => record.event.toHuman()).join(', ')}`);
                 assert(assetHub.api.events.treasury.SpendProcessed.is(spendProcessedEvent.event), `SpendProcessed event is not found for spend ${spendIndex} Event: ${spendProcessedEvent.event.toHuman()}`);
+
+                // Get beneficiary balance after payout based on asset type
+                const beneficiaryBalanceAfterValue = await getBeneficiaryBalance(
+                    assetHub,
+                    beneficiaryAddress,
+                    isNativeAsset,
+                    assetId
+                )
+                
+                // ensure the diff of beneficiary balance after payout and before payout is equal to the spend amount
+                assert(beneficiaryBalanceAfterValue - beneficiaryBalanceBefore === spendAmount, 
+                    `The diff of beneficiary balance after payout and before payout is not equal to the spend amount. 
+                    Beneficiary balance before payout: ${beneficiaryBalanceBefore}, Spend amount: ${spendAmount}, 
+                    Beneficiary balance after payout: ${beneficiaryBalanceAfterValue}, 
+                    Diff: ${beneficiaryBalanceAfterValue - beneficiaryBalanceBefore}`);
             } catch (error) {
                 logger.error(`❌ Failed to execute payout for spend ${spendIndex}:`, error);
                 continue; // continue with next spend
