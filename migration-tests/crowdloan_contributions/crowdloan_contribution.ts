@@ -292,15 +292,7 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
             // Decode contribution data: (crowdloan_account, amount)
             const contributionValue = contributionData.unwrap();
             const contributionTuple = contributionValue as any;
-            const crowdloanAccount = contributionTuple[0].toString();
-
-            // get the crowdloan account available balance
-            const crowdloanAccountBalance = await assetHub.api.query.system.account(crowdloanAccount) as any;
-            const crowdloanAccountFreeBalance = crowdloanAccountBalance.data.free.toBn();
-            const crowdloanAccountReservedBalance = crowdloanAccountBalance.data.reserved?.toBn() || 0n;
-            const crowdloanAccountTotalBalance = crowdloanAccountFreeBalance.add(crowdloanAccountReservedBalance);
             const amountBn = contributionTuple[1]; // This is a Balance type
-            
             const contributionAmount = amountBn.toBn();
             
             try {
@@ -385,7 +377,7 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
             }
         }
 
-        logger.info(`✅ Crowdloan contribution withdrawal test completed successfully with ${countOfSuccessfulWithdrawals} successful withdrawals and ${countOfFailedWithdrawals} failed withdrawals`);
+        logger.debug(`✅ Crowdloan contribution withdrawal test completed successfully with ${countOfSuccessfulWithdrawals} successful withdrawals and ${countOfFailedWithdrawals} failed withdrawals`);
         
     } catch (error: any) {
         logger.error('❌ Crowdloan contribution withdrawal test failed:', error);
