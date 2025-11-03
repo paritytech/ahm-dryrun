@@ -149,6 +149,45 @@ async function testTreasuryPayouts(networkName: 'Kusama' | 'Polkadot', config: N
     }
 }
 
+const extractBeneficiaryAddress = (spendDataUnwrapped: any, spendIndex: number): string | null => {
+    const beneficiaryHuman = spendDataUnwrapped.beneficiary.toHuman() as any
+    let beneficiaryAddress: string | null = null
+    
+    // toHuman() uses uppercase keys: V4, X1, AccountId32
+    // Navigate through the nested structure to find the accountId32
+    if (beneficiaryHuman.V4?.accountId?.interior?.X1?.[0]?.AccountId32?.id) {
+      beneficiaryAddress = beneficiaryHuman.V4.accountId.interior.X1[0].AccountId32.id
+    } else if (beneficiaryHuman.V3?.accountId?.interior?.X1?.[0]?.AccountId32?.id) {
+      beneficiaryAddress = beneficiaryHuman.V3.accountId.interior.X1[0].AccountId32.id
+    } else if (beneficiaryHuman.V5?.accountId?.interior?.X1?.[0]?.AccountId32?.id) {
+      beneficiaryAddress = beneficiaryHuman.V5.accountId.interior.X1[0].AccountId32.id
+    } else if (beneficiaryHuman.V4?.accountId?.interior?.X2?.[1]?.AccountId32?.id) {
+      beneficiaryAddress = beneficiaryHuman.V4.accountId.interior.X2[1].AccountId32.id
+    }
+    
+    // Fallback: If still not found, try toJSON() which uses lowercase keys
+    if (!beneficiaryAddress) {
+      const beneficiaryJson = spendDataUnwrapped.beneficiary.toJSON() as any
+      
+      // toJSON() uses lowercase: v4, x1, accountId32
+      if (beneficiaryJson.v4?.accountId?.interior?.x1?.[0]?.accountId32?.id) {
+        beneficiaryAddress = beneficiaryJson.v4.accountId.interior.x1[0].accountId32.id
+      } else if (beneficiaryJson.v3?.accountId?.interior?.x1?.[0]?.accountId32?.id) {
+        beneficiaryAddress = beneficiaryJson.v3.accountId.interior.x1[0].accountId32.id
+      } else if (beneficiaryJson.v5?.accountId?.interior?.x1?.[0]?.accountId32?.id) {
+        beneficiaryAddress = beneficiaryJson.v5.accountId.interior.x1[0].accountId32.id
+      }
+    }
+    
+    if (!beneficiaryAddress) {
+      console.error("Failed to extract beneficiary from spendIndex: ", spendIndex, ". Human structure:", JSON.stringify(beneficiaryHuman, null, 2))
+      throw new Error('Could not extract beneficiary address from spend data')
+    }
+
+    return beneficiaryAddress;
+}
+
+
 
 const polkadot = () => {
     return {
