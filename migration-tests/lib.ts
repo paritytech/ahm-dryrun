@@ -16,6 +16,7 @@ import { treasuryTests } from "./pallets/treasury.js";
 import { referendaTests } from "./pallets/referenda.js";
 import { multisigTests } from "./pallets/multisig.js";
 import { generalStakingTests } from "./pallets/staking/general.js";
+import { crowdloanTests } from "./pallets/crowdloan.js";
 import { ApiDecoration } from "@polkadot/api/types/index.js";
 
 // when updating this, also update the testsByNetwork below
@@ -34,6 +35,7 @@ const allTests = [
   bountiesTests,
   multisigTests,
   generalStakingTests,
+  crowdloanTests
 ];
 
 // Excludes tests from the pool of all available tests
@@ -47,14 +49,16 @@ const excludedTestsPerNetwork: Record<Network, MigrationTest[]> = {
     treasuryTests,
     // https://github.com/paritytech/ahm-dryrun/issues/66
     referendaTests,
-    multisigTests
+    multisigTests,
+    generalStakingTests,
+    crowdloanTests
   ],
   Paseo: [],
   Kusama: [
     // https://github.com/paritytech/ahm-dryrun/issues/67
     convictionVotingTests,
     voterListTests,
-    // proxyTests,
+    crowdloanTests
   ],
   Polkadot: [
     convictionVotingTests,
@@ -175,6 +179,8 @@ async function setupTestContext(
     pre: {
       rc_api_before,
       ah_api_before,
+      rc_api_full: rc_api,
+     
     },
     post: {
       rc_api_after,
