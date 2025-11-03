@@ -18,19 +18,6 @@ export interface NetworkConfig {
     assetHubPort: number;
 }
 
-export interface FailedWithdrawal {
-    contributorAddress: string;
-    paraId: number;
-    withdrawBlock: number;
-    crowdloanAccount: string;
-    amount: string;
-    errorMessage?: string;
-    timestamp: string;
-    crowdloanAccountFreeBalance: string;
-    crowdloanAccountReservedBalance: string;
-    crowdloanAccountTotalBalance: string;
-}
-
 const ALICE_FUNDING_AMOUNT = 100_000_000_000_000_000n; // initail funing to Alice for transaction fees
 const PAST_RC_BLOCK_NUMBER = 28_380_000; // // any past RC block number can be used 
 const MAX_WITHDRAWAL_CALLS = 100; // Limit number of withdrawal calls to avoid running the entire test for too long
@@ -281,7 +268,6 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
         let countOfSuccessfulWithdrawals = 0;
         let countOfFailedWithdrawals = 0;
         let countOfWithdrawals = 0;
-        const failedWithdrawals: FailedWithdrawal[] = [];
 
         for (const entry of eligibleContributions) {
 
@@ -382,22 +368,6 @@ async function testCrowdloanContributionWithdrawal(config: NetworkConfig): Promi
                 }
                 
                 logger.debug(`❌ Failed to withdraw contribution for contributor ${contributorAddress}, para_id=${paraId},  countOfSuccessfulWithdrawals: ${countOfSuccessfulWithdrawals}, countOfFailedWithdrawals: ${countOfFailedWithdrawals}:`, error);
-                
-                // Collect failed withdrawal details
-                const failedWithdrawal: FailedWithdrawal = {
-                    contributorAddress,
-                    paraId,
-                    withdrawBlock,
-                    crowdloanAccount,
-                    amount: contributionAmount.toString(),
-                    errorMessage: error?.message || error?.toString() || 'Unknown error',
-                    timestamp: new Date().toISOString(),
-                    crowdloanAccountFreeBalance: crowdloanAccountFreeBalance.toString(),
-                    crowdloanAccountReservedBalance: crowdloanAccountReservedBalance.toString(),
-                    crowdloanAccountTotalBalance: crowdloanAccountTotalBalance.toString(),
-                };
-                
-                failedWithdrawals.push(failedWithdrawal);
                 
                 // Log the error details if available
                 if (error?.message) {
