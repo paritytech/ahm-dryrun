@@ -152,10 +152,6 @@ treasury-payouts network="Polkadot":
     #!/usr/bin/env bash
     set -euxo pipefail
 
-    if [[ "{{ network }}" != "Kusama" && "{{ network }}" != "Polkadot" ]]; then
-        echo "Error: network must be one of: Kusama, Polkadot"
-        exit 1
-    fi
 
     just ahm _npm-build
     node dist/migration-tests/treasury_payout/run_treasury_payouts.ts {{ network }}
