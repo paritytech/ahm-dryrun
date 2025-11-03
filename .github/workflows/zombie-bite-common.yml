@@ -625,8 +625,6 @@ jobs:
 
             if [[ $RC_EXTRA_ARGS_OVERRIDE != "" ]];then
               export ZOMBIE_BITE_RC_EXTRA_ARGS=$RC_EXTRA_ARGS_OVERRIDE
-            else
-              export ZOMBIE_BITE_RC_EXTRA_ARGS=""
             fi;
 
             COL_PORT=$(jq -r .collator_port ${ZOMBIE_BITE_BASE_PATH}/ports.json)
