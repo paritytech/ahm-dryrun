@@ -18,6 +18,8 @@ export interface NetworkConfig {
     assetHubPort: number;
 }
 
+// any past RC block number can be used to set the validFrom of the spendData to make it eligible for payout
+const PAST_RC_BLOCK_NUMBER = 28_386_000; 
 
 /**
  * @param networkName - 'Kusama' or 'Polkadot'
@@ -91,10 +93,53 @@ async function testTreasuryPayouts(networkName: 'Kusama' | 'Polkadot', config: N
             return;
         }
 
+        // log the length of the pendingOrFailedSpends
+        logger.debug(`Length of pendingOrFailedSpends: ${pendingOrFailedSpends.length}`);
+
         // Test payout for each eligible spend
         for (const spend of pendingOrFailedSpends) {
             const spendIndex = spend[0].toHuman?.() as number;
+            const spendData = spend[1];
+            const spendDataUnwrapped = spendData?.unwrap();
+            let beneficiaryAddress: string | null = extractBeneficiaryAddress(spendDataUnwrapped, spendIndex);
+            const spendAmount = spendDataUnwrapped.amount.toBigInt();
+            // Determine asset type from spend data
+            const assetKindJson = spendDataUnwrapped.assetKind.toJSON() as any
+            const { assetId, isNativeAsset } = extractAssetType(assetKindJson)
+
+            // Get the beneficiary balance before payout based on asset type
+            const beneficiaryBalanceBefore = await getBeneficiaryBalance(
+                assetHub,
+                beneficiaryAddress,
+                isNativeAsset,
+                assetId
+            )
+
             
+            // Use toJSON() and ensure numeric values remain as numbers (not strings)
+            const spendDataJson = spendDataUnwrapped.toJSON() as any
+
+            // Create updated spend data by cloning the structure and updating only validFrom
+            const updatedSpendData = {
+                assetKind: fixNumericValues(spendDataJson.assetKind),
+                amount: typeof spendDataJson.amount === 'string' ? Number(spendDataJson.amount) : spendDataJson.amount,
+                beneficiary: fixNumericValues(spendDataJson.beneficiary),
+                validFrom: PAST_RC_BLOCK_NUMBER,
+                expireAt: typeof spendDataJson.expireAt === 'string' ? Number(spendDataJson.expireAt) : spendDataJson.expireAt,
+                status: spendDataJson.status,
+            }
+
+            // Format: Spends is a StorageMap, so we pass [[key], value] format
+            await assetHub.dev.setStorage({
+                Treasury: {
+                Spends: [[[spendIndex], updatedSpendData]],
+                },
+            })
+
+            const updatedSpendDataStorage = await assetHub.api.query.treasury.spends(spendIndex)
+            const updatedSpendDataStorageUnwrapped = updatedSpendDataStorage?.unwrap()
+            assert(updatedSpendDataStorageUnwrapped?.validFrom.toNumber() === PAST_RC_BLOCK_NUMBER, `Updated spend data validFrom is not ${PAST_RC_BLOCK_NUMBER} but ${updatedSpendDataStorageUnwrapped?.validFrom.toNumber()}`);
+
             try {
                 // Create and sign the payout transaction
                 const payoutTx = assetHub.api.tx.treasury.payout(spendIndex);
@@ -239,6 +284,27 @@ const getBeneficiaryBalance = async (
         const beneficiaryBalance = await assetHub.api.query.system.account(beneficiaryAddress)
         return beneficiaryBalance.data.free.toBigInt()
     }
+}
+
+// Helper function to recursively fix numeric values in nested structures
+const fixNumericValues = (obj: any): any => {
+    if (obj === null || obj === undefined) return obj
+    if (typeof obj === 'string' && /^-?\d+$/.test(obj)) {
+      // Convert numeric strings to numbers
+      const num = Number(obj)
+      if (!isNaN(num) && isFinite(num)) return num
+    }
+    if (Array.isArray(obj)) {
+      return obj.map(fixNumericValues)
+    }
+    if (typeof obj === 'object') {
+      const fixed: any = {}
+      for (const key in obj) {
+        fixed[key] = fixNumericValues(obj[key])
+      }
+      return fixed
+    }
+    return obj
 }
 
 const polkadot = () => {
