@@ -150,7 +150,7 @@ rust-test runtime base_path:
 # Run treasury payout tests for a given network
 treasury-payouts network="Polkadot":
     #!/usr/bin/env bash
-    set -ex
+    set -euxo pipefail
 
     if [[ "{{ network }}" != "Kusama" && "{{ network }}" != "Polkadot" ]]; then
         echo "Error: network must be one of: Kusama, Polkadot"
