@@ -151,7 +151,7 @@ rust-test runtime base_path:
 # Run crowdloan contribution withdrawal tests for Polkadot
 crowdloan-contribution:
     #!/usr/bin/env bash
-    set -ex
+    set -euxo pipefail
 
     just ahm _npm-build
     node dist/migration-tests/crowdloan_contributions/run_crowdloan_contribution.js
