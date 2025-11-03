@@ -187,6 +187,33 @@ const extractBeneficiaryAddress = (spendDataUnwrapped: any, spendIndex: number):
     return beneficiaryAddress;
 }
 
+/**
+ * Extract asset type information from asset kind JSON
+ * @param assetKindJson - The asset kind JSON object from spend data
+ * @returns An object containing assetId (number | null) and isNativeAsset (boolean)
+ */
+const extractAssetType = (assetKindJson: any): { assetId: number | null; isNativeAsset: boolean } => {
+    let assetId: number | null = null
+    let isNativeAsset = false
+
+    // Check if it's a foreign asset (has palletInstance 50 and generalIndex)
+    if (assetKindJson.v5?.assetId?.interior?.x2) {
+        const x2 = assetKindJson.v5.assetId.interior.x2
+        if (x2[0]?.palletInstance === 50 && x2[1]?.generalIndex) {
+            assetId = x2[1].generalIndex
+            isNativeAsset = false
+        }
+    } else if (assetKindJson.v5?.assetId?.parents === 1 && assetKindJson.v5?.assetId?.interior?.here === null) {
+        // Native asset (relay chain native asset, parents: 1 means relay chain)
+        isNativeAsset = true
+    } else if (assetKindJson.v5?.assetId?.parents === 0 && assetKindJson.v5?.assetId?.interior?.here === null) {
+        // Local native asset
+        isNativeAsset = true
+    }
+
+    return { assetId, isNativeAsset }
+}
+
 
 
 const polkadot = () => {
