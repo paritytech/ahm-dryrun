@@ -154,4 +154,4 @@ treasury-payouts network="Polkadot":
 
 
     just ahm _npm-build
-    node dist/migration-tests/treasury_payout/run_treasury_payouts.ts {{ network }}
+    node dist/migration-tests/treasury_payout/run_treasury_payouts.js {{ network }}
