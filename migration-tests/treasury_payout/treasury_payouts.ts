@@ -79,11 +79,9 @@ async function testTreasuryPayouts(networkName: 'Kusama' | 'Polkadot', config: N
         // Filter spends which are pending or failed and are neither expired nor early payout
         const pendingOrFailedSpends = spends.filter((spend: any) => {
             const spendData = spend[1]?.unwrap();
-            return (
-                (spendData?.status.isPending || spendData?.status.isFailed) && // pending or failed
-                spendData?.validFrom.toNumber() < currentRelayChainBlockNumber && // not early payout
-                spendData?.expireAt.toNumber() > currentRelayChainBlockNumber // not expired
-            );
+            const isSpendPendingOrFailed = spendData?.status.isPending || spendData?.status.isFailed ;
+            const isSpendNotExpired = currentRelayChainBlockNumber < spendData?.expireAt.toNumber();
+            return isSpendPendingOrFailed && isSpendNotExpired;
         });
 
         logger.debug(`Found ${pendingOrFailedSpends.length} eligible spends for payout testing`);
