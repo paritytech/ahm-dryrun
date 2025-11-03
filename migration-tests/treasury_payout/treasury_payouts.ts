@@ -214,7 +214,32 @@ const extractAssetType = (assetKindJson: any): { assetId: number | null; isNativ
     return { assetId, isNativeAsset }
 }
 
-
+/**
+ * Get the beneficiary balance based on asset type
+ * @param assetHub - The Asset Hub API instance
+ * @param beneficiaryAddress - The beneficiary's address
+ * @param isNativeAsset - Whether the asset is native
+ * @param assetId - The asset ID if it's a foreign asset, null otherwise
+ * @returns The beneficiary's balance as bigint
+ */
+const getBeneficiaryBalance = async (
+    assetHub: any,
+    beneficiaryAddress: string | null,
+    isNativeAsset: boolean,
+    assetId: number | null
+): Promise<bigint> => {
+    if (isNativeAsset) {
+        const beneficiaryBalance = await assetHub.api.query.system.account(beneficiaryAddress)
+        return beneficiaryBalance.data.free.toBigInt()
+    } else if (assetId !== null) {
+        const assetBalance = await assetHub.api.query.assets.account(assetId, beneficiaryAddress)
+        return assetBalance.isSome ? assetBalance.unwrap().balance.toBigInt() : 0n
+    } else {
+        // Fallback to native balance if we can't determine asset type
+        const beneficiaryBalance = await assetHub.api.query.system.account(beneficiaryAddress)
+        return beneficiaryBalance.data.free.toBigInt()
+    }
+}
 
 const polkadot = () => {
     return {
