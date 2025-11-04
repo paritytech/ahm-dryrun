@@ -183,7 +183,7 @@ In this case, it is unnecessary to have local ZB testnet for access to runtimes 
         - first, it runs some smoke tests - basic transfers, essential staking and nomination pool operations, and a
           quick scheduler check
         - then, the remainder of accounts, balances, staking and nomination pools E2E tests
-        - next is governance, vesting, multisig, proxy, multisig+proxy, the remaining scheduler tests, bounties and child bounties
+        - next is governance, preimages, vesting, multisig, proxy, multisig+proxy, the remaining scheduler tests, bounties and child bounties
         - next are some final accounts tests (the liquidity restriction error from https://github.com/paritytech/polkadot-sdk/pull/8108)
         - finally, it runs E2E tests for Polkadot relay: accounts, proxy, multisig, multisig+proxy, and a filtering check for disabled pallets
 * Or, `yarn test` to allow for filtering by regex pattern matching on test descriptions
