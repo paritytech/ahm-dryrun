@@ -48,7 +48,7 @@ const getEndpoints = (base_path: string) => {
 const NETWORKS: Record<string, Function> = {
     "westend": westend,
     "Kusama": kusama,
-    "polkadot-remote": polkadot,
+    "Polkadot": polkadot,
 };
 const DEFAULT_NETWORK = "Kusama";
 
