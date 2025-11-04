@@ -153,7 +153,7 @@ staged-e2e-tests NETWORK STAGE:
     stages=(
         "Essential Tests:::assetHub${NETWORK_CAPITALIZED}:::staking accounts nominationPools scheduler:::lifecycle|transfer_allow_death|transfer_keep_alive|transfer_all|scheduling a call is possible"
         "More Account Tests, Remainder of (Staking + Nomination Pools):::assetHub${NETWORK_CAPITALIZED}:::accounts staking nominationPools:::^(?!.*(transfer_allow_death|transfer_keep_alive|transfer_all|liquidity|lifecycle))"
-        "Governance, Vesting, Multisig, Proxy, Remaining Scheduler Tests, Bounties & Child Bounties:::assetHub${NETWORK_CAPITALIZED}:::governance vesting multisig proxy scheduler bounties childBounties:::^(?!.*(scheduling a call is possible))"
+        "Governance, Preimages, Vesting, Multisig, Proxy, Remaining Scheduler Tests, Bounties & Child Bounties:::assetHub${NETWORK_CAPITALIZED}:::governance preimage vesting multisig proxy scheduler bounties childBounties:::^(?!.*(scheduling a call is possible))"
         "Remaining PAH Accounts tests:::assetHub${NETWORK_CAPITALIZED}:::accounts:::liquidity"
         "Polkadot Relay E2E Tests:::packages/polkadot/src/{{ NETWORK }}:::accounts proxy multisig postAhmFiltering:::"
     )
