@@ -73,8 +73,6 @@ const main = async () => {
     rc_endpoint,
     ah_endpoint,
   } = getInfoFn();
-  console.log("rc_endpoint: ", rc_endpoint);
-  console.log("ah_endpoint: ", ah_endpoint);
 
   // TODO: add network (default is Westend) parameter to the main function
   let errs = await migrationTestMain(
