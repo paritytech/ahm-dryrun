@@ -179,7 +179,13 @@ In this case, it is unnecessary to have local ZB testnet for access to runtimes 
 * Use `just e2e-tests <network-name>` for all E2E test suites for a given network
     - these run in an undefined order
 * Use `just staged-e2e-tests` to run E2E test suites by stages
-    - there are a few stages, ordered from most critical tests to least
+    - stages are ordered from most critical tests to least:
+        - first, it runs some smoke tests - basic transfers, essential staking and nomination pool operations, and a
+          quick scheduler check
+        - then, the remainder of accounts, balances, staking and nomination pools E2E tests
+        - next is governance, vesting, multisig, proxy, multisig+proxy, the remaining scheduler tests, bounties and child bounties
+        - next are some final accounts tests (the liquidity restriction error from https://github.com/paritytech/polkadot-sdk/pull/8108)
+        - finally, it runs E2E tests for Polkadot relay: accounts, proxy, multisig, multisig+proxy, and a filtering check for disabled pallets
 * Or, `yarn test` to allow for filtering by regex pattern matching on test descriptions
     - when using `yarn`, remember to `cd polkadot-ecosystem-tests` 
 
