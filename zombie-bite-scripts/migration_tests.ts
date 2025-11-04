@@ -26,7 +26,7 @@ const kusama =  () => {
 
 const polkadot =  () => {
     return {
-      rc_endpoint: 'wss://polkadot-rpc.polkadot.io',
+      rc_endpoint: 'wss://polkadot-rpc.n.dwellir.com',
       ah_endpoint: 'wss://polkadot-asset-hub-rpc.polkadot.io',
     }
 };
