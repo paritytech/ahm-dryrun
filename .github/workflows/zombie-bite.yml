@@ -59,8 +59,6 @@ on:
         type: string
         required: false
         default: ""
-  schedule:
-    - cron: "0 0,8,16 * * *" # Every 8 hrs for Polkadot
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ inputs.runner }}-${{ inputs.concurrency-suffix}}
@@ -70,8 +68,8 @@ permissions: {}
 
 jobs:
   zombie_bite_polkadot:
-    # run by schedule or by demand
-    if: ${{ inputs.network == 'ALL' || inputs.network == 'polkadot' || github.event_name == 'schedule' }}
+    # run by demand
+    if: ${{ inputs.network == 'ALL' || inputs.network == 'polkadot' }}
     uses: ./.github/workflows/zombie-bite-common.yml
     with:
       network: polkadot
