@@ -142,13 +142,20 @@ staged-e2e-tests NETWORK STAGE:
     source scripts/setup-e2e-env.sh
     setup_e2e_env "{{ NETWORK }}"
 
-    # Define stages: name:::prefix:::modules:::pattern
+    # Define the stages in which tests will be run.
+    # The following array can be considered as a matrix, where each string is a row, and columns are separated by `:::`.
+    # The columns are (in order):
+    # - name: the name of the stage (in logs)
+    # - prefix: the string that will prefix all modules passed to `yarn test`. Controls the network being tested
+    # - modules: the modules to test; if the suffix defines the network, this conditions the test suite being run
+    # - pattern: the pattern to pass to `yarn test`'s `-t` switch. It being empty means `-t ""`, which means all tests
+    #            in the selected suites.
     stages=(
         "Essential Tests:::assetHub${NETWORK_CAPITALIZED}:::staking accounts nominationPools scheduler:::lifecycle|transfer_allow_death|transfer_keep_alive|transfer_all|scheduling a call is possible"
         "More Account Tests, Remainder of (Staking + Nomination Pools):::assetHub${NETWORK_CAPITALIZED}:::accounts staking nominationPools:::^(?!.*(transfer_allow_death|transfer_keep_alive|transfer_all|liquidity|lifecycle))"
-        "Governance, Vesting, Multisig, Proxy, Remaining Scheduler Tests, Bounties & Child Bounties:::assetHub${NETWORK_CAPITALIZED}:::governance vesting multisig proxy scheduler bounties childBounties:::^(?!.*(scheduling a call is possible))"
+        "Governance, Preimages, Vesting, Multisig, Proxy, Remaining Scheduler Tests, Bounties & Child Bounties:::assetHub${NETWORK_CAPITALIZED}:::governance preimage vesting multisig proxy scheduler bounties childBounties:::^(?!.*(scheduling a call is possible))"
         "Remaining PAH Accounts tests:::assetHub${NETWORK_CAPITALIZED}:::accounts:::liquidity"
-        "Polkadot Relay E2E Tests:::packages/polkadot/src/{{ NETWORK }}:::accounts proxy multisig:::"
+        "Polkadot Relay E2E Tests:::packages/polkadot/src/{{ NETWORK }}:::accounts proxy multisig postAhmFiltering:::"
     )
 
     # Validate STAGE argument - can only be done after `scripts/setup-e2e-env.sh` is run
