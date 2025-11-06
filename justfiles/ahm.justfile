@@ -146,3 +146,12 @@ rust-test runtime base_path:
       --features {{ runtime }}-ahm \
       --features try-runtime \
       post_migration_checks_only -- --include-ignored --nocapture --test-threads 1
+
+
+# Run crowdloan contribution withdrawal tests for Polkadot
+crowdloan-contribution:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    just ahm _npm-build
+    node dist/migration-tests/crowdloan_contributions/run_crowdloan_contribution.js
