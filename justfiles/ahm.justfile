@@ -155,3 +155,12 @@ treasury-payouts network="Polkadot":
 
     just ahm _npm-build
     node dist/migration-tests/treasury_payout/run_treasury_payouts.js {{ network }}
+
+# Run crowdloan contribution withdrawal tests for Polkadot
+crowdloan-contribution:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    just ahm _npm-build
+    node dist/migration-tests/crowdloan_contributions/run_crowdloan_contribution.js
+
