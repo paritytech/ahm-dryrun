@@ -147,6 +147,14 @@ rust-test runtime base_path:
       --features try-runtime \
       post_migration_checks_only -- --include-ignored --nocapture --test-threads 1
 
+# Run treasury payout tests for a given network
+treasury-payouts network="Polkadot":
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+
+    just ahm _npm-build
+    node dist/migration-tests/treasury_payout/run_treasury_payouts.js {{ network }}
 
 # Run crowdloan contribution withdrawal tests for Polkadot
 crowdloan-contribution:
@@ -155,3 +163,4 @@ crowdloan-contribution:
 
     just ahm _npm-build
     node dist/migration-tests/crowdloan_contributions/run_crowdloan_contribution.js
+
